@@ -54,19 +54,18 @@ export default class RecordMediaHandler {
         sender: Browser.runtime.MessageSender,
         senderTab: Browser.tabs.Tab
     ) {
-        const subtitle = recordMediaCommand.message.subtitle;
+        const message = recordMediaCommand.message;
+        const subtitle = message.subtitle;
         let audioPromise = undefined;
         let imagePromise = undefined;
         let imageModel: ImageModel | undefined = undefined;
         let audioModel: AudioModel | undefined = undefined;
         let encodeAsMp3 = false;
 
-        if (recordMediaCommand.message.record) {
-            const time =
-                (subtitle.end - subtitle.start) / recordMediaCommand.message.playbackRate +
-                recordMediaCommand.message.audioPaddingEnd;
+        if (message.record) {
+            const time = (subtitle.end - subtitle.start) / message.playbackRate + message.audioPaddingEnd;
 
-            if (recordMediaCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
+            if (message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
             }
 
@@ -76,14 +75,18 @@ export default class RecordMediaHandler {
             });
         }
 
-        if (recordMediaCommand.message.screenshot) {
-            const { maxWidth, maxHeight, rect, frameId } = recordMediaCommand.message;
-            imagePromise = this._imageCapturer.capture(
-                senderTab.id!,
-                recordMediaCommand.src,
-                Math.min(subtitle.end - subtitle.start, recordMediaCommand.message.imageDelay),
-                { maxWidth, maxHeight, rect, frameId }
+        if (message.screenshot) {
+            const { maxWidth, maxHeight, rect, frameId } = message;
+            const screenshotDelay = Math.max(
+                0,
+                message.record ? message.mediaTimestamp - subtitle.start + message.audioPaddingStart : message.imageDelay
             );
+            imagePromise = this._imageCapturer.capture(senderTab.id!, recordMediaCommand.src, screenshotDelay, {
+                maxWidth,
+                maxHeight,
+                rect,
+                frameId,
+            });
             imagePromise.finally(() => {
                 const screenshotTakenCommand: ExtensionToVideoCommand<ScreenshotTakenMessage> = {
                     sender: 'asbplayer-extension-to-video',
@@ -97,11 +100,7 @@ export default class RecordMediaHandler {
         }
 
         if (audioPromise) {
-            const {
-                audioPaddingStart: paddingStart,
-                audioPaddingEnd: paddingEnd,
-                playbackRate,
-            } = recordMediaCommand.message;
+            const { audioPaddingStart: paddingStart, audioPaddingEnd: paddingEnd, playbackRate } = message;
             const baseAudioModel: AudioModel = {
                 base64: '',
                 extension: encodeAsMp3 ? 'mp3' : 'webm',
@@ -147,7 +146,7 @@ export default class RecordMediaHandler {
             }
         }
 
-        const { isBulkExport, ...messageWithoutBulkFlag } = recordMediaCommand.message;
+        const { isBulkExport, ...messageWithoutBulkFlag } = message;
         const card: CardModel = {
             image: imageModel,
             audio: audioModel,
@@ -159,7 +158,7 @@ export default class RecordMediaHandler {
         } else {
             this._cardPublisher.publish(
                 card,
-                recordMediaCommand.message.postMineAction,
+                message.postMineAction,
                 senderTab.id!,
                 recordMediaCommand.src
             );
