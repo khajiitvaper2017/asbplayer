@@ -160,6 +160,8 @@ export const defaultSettings: AsbplayerSettings = {
     gifStartTrim: 100,
     gifEndTrim: 100,
     gifDetectMotion: true,
+    gifCreateJpegIfLowMotion: true,
+    truncateGifToAudioCreationSpeed: false,
     tabName: 'asbplayer',
     miningHistoryStorageLimit: 25,
     clickToMineDefaultAction: PostMineAction.showAnkiDialog,

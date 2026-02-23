@@ -3,9 +3,12 @@ import { CardModel, FileModel, ImageErrorCode } from './model';
 import { download } from '../util/util';
 import { isActiveBlobUrl } from '../blob-url';
 import type {
+    ApplyPaletteInWorkerMessage,
     EncodeGifInWorkerMessage,
+    EncodeIndexedGifInWorkerMessage,
     EncodeJpegInWorkerMessage,
     GifEncoderResponseMessage,
+    QuantizePaletteInWorkerMessage,
 } from './gif-encoder-message';
 
 const MAX_PREFIX_LENGTH = 24;
@@ -46,9 +49,13 @@ const GIF_MOTION_COLLECTION_BUDGET_MULTIPLIER = 0.9;
 const GIF_MOTION_COLLECTION_BUDGET_PADDING_MS = 500;
 const GIF_MOTION_COLLECTION_BUDGET_MIN_MS = 1_200;
 const GIF_MOTION_SAMPLE_STRIDE = 4;
+const GIF_APPLY_PALETTE_POOL_MIN_FRAMES = 12;
+const GIF_APPLY_PALETTE_POOL_MIN_WORKERS = 2;
+const GIF_APPLY_PALETTE_POOL_MAX_WORKERS = 4;
 const IMAGE_TIMING_LOG_THRESHOLD_MS = 500;
 type TimingDetails = string | (() => string);
 type GifWorkerSuccessCommand = 'encoded' | 'encodedJpeg';
+type GifPalette = number[][];
 
 type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
 
@@ -83,6 +90,7 @@ interface GifRenderStats {
 export interface GifOptions {
     maxDurationMs: number;
     detectMotion: boolean;
+    createJpegIfMotionIsLow: boolean;
     fps: number;
     maxFrames: number;
     startTrimMs: number;
@@ -92,6 +100,7 @@ export interface GifOptions {
 const DEFAULT_GIF_OPTIONS: GifOptions = {
     maxDurationMs: GIF_OPTION_LIMITS.maxDurationMs,
     detectMotion: true,
+    createJpegIfMotionIsLow: true,
     fps: 12,
     maxFrames: 24,
     startTrimMs: 100,
@@ -123,6 +132,10 @@ const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
             GIF_OPTION_LIMITS.maxDurationCapMs
         ),
         detectMotion: normalizeBoolean(gifOptions?.detectMotion, DEFAULT_GIF_OPTIONS.detectMotion),
+        createJpegIfMotionIsLow: normalizeBoolean(
+            gifOptions?.createJpegIfMotionIsLow,
+            DEFAULT_GIF_OPTIONS.createJpegIfMotionIsLow
+        ),
         fps: normalizeRoundedNumber(
             gifOptions?.fps,
             DEFAULT_GIF_OPTIONS.fps,
@@ -572,6 +585,7 @@ class GifFileImageData implements ImageData {
     private readonly _gifOptions: GifOptions;
     private _outputExtension: 'gif' | 'jpeg' = 'gif';
     private _lastRenderStats?: GifRenderStats;
+    private _motionCollectionBudgetOverrideMs?: number;
 
     constructor(
         file: FileModel,
@@ -635,6 +649,13 @@ class GifFileImageData implements ImageData {
         return true;
     }
 
+    setMotionCollectionBudgetMs(motionCollectionBudgetMs: number | undefined) {
+        this._motionCollectionBudgetOverrideMs =
+            typeof motionCollectionBudgetMs === 'number' && Number.isFinite(motionCollectionBudgetMs)
+                ? Math.max(0, Math.round(motionCollectionBudgetMs))
+                : undefined;
+    }
+
     async base64() {
         const dataUrl = await this.dataUrl();
         return dataUrl.substring(dataUrl.indexOf(',') + 1);
@@ -681,7 +702,6 @@ class GifFileImageData implements ImageData {
     }
 
     private async _renderGif() {
-        const worker = await this._worker();
         const video = await this._videoElement(this._file);
         const { width, height } = this._dimensions(video);
         const frameTimestamps = this._frameTimestamps(video.duration);
@@ -703,11 +723,10 @@ class GifFileImageData implements ImageData {
             throw new Error('Could not create image context');
         }
 
-        return await this._renderGifInWorker(worker, video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
+        return await this._renderGifInWorker(video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
     }
 
     private async _renderGifInWorker(
-        worker: Worker,
         video: HTMLVideoElement,
         ctx: CanvasRenderingContext2D,
         width: number,
@@ -715,63 +734,31 @@ class GifFileImageData implements ImageData {
         frameTimestamps: number[],
         baseFrameDelayMs: number
     ) {
-        try {
-            const {
-                frameBuffers,
-                frameDelayMs,
-                motionScore,
-                motionScoreMax,
-                motionScoreComparisons,
-                motionScoreMs,
-                budgetMs,
-                truncatedByBudget,
-                motionDetected,
-            } = await this._collectFrames(video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
+        const {
+            frameBuffers,
+            frameDelayMs,
+            motionScore,
+            motionScoreMax,
+            motionScoreComparisons,
+            motionScoreMs,
+            budgetMs,
+            truncatedByBudget,
+            motionDetected,
+        } = await this._collectFrames(video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
 
-            if (frameBuffers.length === 1) {
-                this._outputExtension = 'jpeg';
-                let jpegWidth = width;
-                let jpegHeight = height;
-                let jpegFrameBuffer = frameBuffers[0];
+        if (frameBuffers.length === 1) {
+            this._outputExtension = 'jpeg';
+            const jpegWidth = width;
+            const jpegHeight = height;
+            const jpegFrameBuffer = frameBuffers[0];
 
-                this._lastRenderStats = {
-                    sourceFrameCount: frameTimestamps.length,
-                    outputFrameCount: 1,
-                    effectiveFps: Math.round((1000 / Math.max(1, baseFrameDelayMs)) * 10) / 10,
-                    outputWidth: jpegWidth,
-                    outputHeight: jpegHeight,
-                    outputExtension: 'jpeg',
-                    motionScore,
-                    motionScoreMax,
-                    motionScoreComparisons,
-                    motionScoreMs,
-                    budgetMs,
-                    truncatedByBudget,
-                    motionDetected,
-                };
-
-                try {
-                    const encodedJpeg = await this._encodeJpegInWorker(worker, {
-                        command: 'encodeJpeg',
-                        width: jpegWidth,
-                        height: jpegHeight,
-                        frameBuffer: jpegFrameBuffer,
-                    });
-                    return new Blob([encodedJpeg], { type: 'image/jpeg' });
-                } catch {
-                    // Keep compatibility in environments without worker JPEG APIs.
-                    return await this._jpegBlobFromFrameBuffer(ctx, jpegWidth, jpegHeight, jpegFrameBuffer);
-                }
-            }
-
-            this._outputExtension = 'gif';
             this._lastRenderStats = {
                 sourceFrameCount: frameTimestamps.length,
-                outputFrameCount: frameBuffers.length,
+                outputFrameCount: 1,
                 effectiveFps: Math.round((1000 / Math.max(1, baseFrameDelayMs)) * 10) / 10,
-                outputWidth: width,
-                outputHeight: height,
-                outputExtension: 'gif',
+                outputWidth: jpegWidth,
+                outputHeight: jpegHeight,
+                outputExtension: 'jpeg',
                 motionScore,
                 motionScoreMax,
                 motionScoreComparisons,
@@ -780,22 +767,81 @@ class GifFileImageData implements ImageData {
                 truncatedByBudget,
                 motionDetected,
             };
-            const paletteFrameIndexes = this._paletteFrameIndexes(frameBuffers.length);
-            const encodedBytes = await this._encodeGifInWorker(worker, {
-                command: 'encode',
-                width,
-                height,
-                frameDelayMs,
-                frameBuffers,
-                paletteFrameIndexes,
-                paletteSize: GIF_PALETTE_OPTIONS.size,
-                paletteFormat: GIF_PALETTE_OPTIONS.format,
-                palettePixelStride: GIF_PALETTE_OPTIONS.pixelStride,
-            });
-            return new Blob([encodedBytes], { type: 'image/gif' });
-        } finally {
-            worker.terminate();
+
+            const worker = await this._worker();
+
+            try {
+                const encodedJpeg = await this._encodeJpegInWorker(worker, {
+                    command: 'encodeJpeg',
+                    width: jpegWidth,
+                    height: jpegHeight,
+                    frameBuffer: jpegFrameBuffer,
+                });
+                return new Blob([encodedJpeg], { type: 'image/jpeg' });
+            } catch {
+                // Keep compatibility in environments without worker JPEG APIs.
+                return await this._jpegBlobFromFrameBuffer(ctx, jpegWidth, jpegHeight, jpegFrameBuffer);
+            } finally {
+                worker.terminate();
+            }
         }
+
+        this._outputExtension = 'gif';
+        this._lastRenderStats = {
+            sourceFrameCount: frameTimestamps.length,
+            outputFrameCount: frameBuffers.length,
+            effectiveFps: Math.round((1000 / Math.max(1, baseFrameDelayMs)) * 10) / 10,
+            outputWidth: width,
+            outputHeight: height,
+            outputExtension: 'gif',
+            motionScore,
+            motionScoreMax,
+            motionScoreComparisons,
+            motionScoreMs,
+            budgetMs,
+            truncatedByBudget,
+            motionDetected,
+        };
+
+        const paletteFrameIndexes = this._paletteFrameIndexes(frameBuffers.length);
+        const applyPaletteWorkerCount = this._applyPaletteWorkerCount(frameBuffers.length);
+
+        if (applyPaletteWorkerCount > 1) {
+            console.debug(
+                `[Image] apply palette worker pool workers=${applyPaletteWorkerCount} frames=${frameBuffers.length}`
+            );
+        }
+
+        if (applyPaletteWorkerCount === 1) {
+            const worker = await this._worker();
+
+            try {
+                const encodedBytes = await this._encodeGifInWorker(worker, {
+                    command: 'encode',
+                    width,
+                    height,
+                    frameDelayMs,
+                    frameBuffers,
+                    paletteFrameIndexes,
+                    paletteSize: GIF_PALETTE_OPTIONS.size,
+                    paletteFormat: GIF_PALETTE_OPTIONS.format,
+                    palettePixelStride: GIF_PALETTE_OPTIONS.pixelStride,
+                });
+                return new Blob([encodedBytes], { type: 'image/gif' });
+            } finally {
+                worker.terminate();
+            }
+        }
+
+        const encodedBytes = await this._encodeGifWithPaletteWorkerPool(
+            width,
+            height,
+            frameDelayMs,
+            frameBuffers,
+            paletteFrameIndexes,
+            applyPaletteWorkerCount
+        );
+        return new Blob([encodedBytes], { type: 'image/gif' });
     }
 
     private async _collectFrames(
@@ -845,12 +891,19 @@ class GifFileImageData implements ImageData {
             Math.min(frameTimestamps.length, GIF_MOTION_PROBE_FRAME_COUNT)
         );
         const collectionStartedAtMs = now();
-        const collectionBudgetMs = Math.max(
+        const defaultCollectionBudgetMs = Math.max(
             GIF_MOTION_COLLECTION_BUDGET_MIN_MS,
             Math.round(
                 this._durationMs * GIF_MOTION_COLLECTION_BUDGET_MULTIPLIER + GIF_MOTION_COLLECTION_BUDGET_PADDING_MS
             )
         );
+        const collectionBudgetMs =
+            this._motionCollectionBudgetOverrideMs === undefined
+                ? defaultCollectionBudgetMs
+                : Math.max(
+                      GIF_MOTION_COLLECTION_BUDGET_MIN_MS,
+                      Math.min(defaultCollectionBudgetMs, this._motionCollectionBudgetOverrideMs)
+                  );
         let probeScoreTotal = 0;
         let probeScoreMax = 0;
         let probeScoreComparisons = 0;
@@ -888,6 +941,7 @@ class GifFileImageData implements ImageData {
         const roundedProbeScoreElapsedMs = Math.round(probeScoreElapsedMs);
 
         if (
+            this._gifOptions.createJpegIfMotionIsLow &&
             probeAverageMotionScore <= GIF_MOTION_SCORE_JPEG_CUTOFF &&
             probeScoreMax <= GIF_MOTION_EARLY_JPEG_MAX_SCORE
         ) {
@@ -987,7 +1041,11 @@ class GifFileImageData implements ImageData {
             `[Image] motion score avg=${roundedAverageMotionScore} max=${roundedMaxMotionScore} comparisons=${motionScoreComparisons} took=${roundedMotionScoreElapsedMs}ms jpegCutoff=${GIF_MOTION_SCORE_JPEG_CUTOFF} maxFpsScore=${GIF_MOTION_SCORE_MAX_FPS} budgetMs=${collectionBudgetMs} truncated=${truncatedByBudget}`
         );
 
-        if (averageMotionScore <= GIF_MOTION_SCORE_JPEG_CUTOFF && motionScoreMax <= GIF_MOTION_SCORE_JPEG_CUTOFF) {
+        if (
+            this._gifOptions.createJpegIfMotionIsLow &&
+            averageMotionScore <= GIF_MOTION_SCORE_JPEG_CUTOFF &&
+            motionScoreMax <= GIF_MOTION_SCORE_JPEG_CUTOFF
+        ) {
             return {
                 frameBuffers: [pendingFrameBuffer],
                 frameDelayMs: [Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs))],
@@ -1077,7 +1135,9 @@ class GifFileImageData implements ImageData {
     private _timingSettingsSummary() {
         return `settings={maxWidth:${this._maxWidth},maxHeight:${this._maxHeight},gifMaxDuration:${
             this._gifOptions.maxDurationMs
-        },gifDetectMotion:${this._gifOptions.detectMotion},gifFps:${this._gifOptions.fps},gifMaxFrames:${
+        },gifDetectMotion:${this._gifOptions.detectMotion},gifCreateJpegIfLowMotion:${
+            this._gifOptions.createJpegIfMotionIsLow
+        },gifFps:${this._gifOptions.fps},gifMaxFrames:${
             this._gifOptions.maxFrames
         },gifStartTrim:${this._gifOptions.startTrimMs},gifEndTrim:${this._gifOptions.endTrimMs}}`;
     }
@@ -1099,8 +1159,171 @@ class GifFileImageData implements ImageData {
         return `render={sourceFrames:${stats.sourceFrameCount},outputFrames:${stats.outputFrameCount},effectiveFps:${stats.effectiveFps},width:${stats.outputWidth},height:${stats.outputHeight},output:${stats.outputExtension},gifDurationMs:${this._durationMs}${motionSummary}}`;
     }
 
+    private _applyPaletteWorkerCount(frameCount: number) {
+        if (frameCount < GIF_APPLY_PALETTE_POOL_MIN_FRAMES) {
+            return 1;
+        }
+
+        const hardwareConcurrency =
+            typeof navigator !== 'undefined' && Number.isFinite(navigator.hardwareConcurrency)
+                ? Math.floor(navigator.hardwareConcurrency)
+                : 2;
+        const maxWorkersFromHardware = Math.max(1, hardwareConcurrency - 1);
+        const workerCount = Math.min(GIF_APPLY_PALETTE_POOL_MAX_WORKERS, maxWorkersFromHardware, frameCount);
+
+        return workerCount >= GIF_APPLY_PALETTE_POOL_MIN_WORKERS ? workerCount : 1;
+    }
+
+    private _paletteFrameBuffers(frameBuffers: ArrayBuffer[], paletteFrameIndexes: number[]) {
+        if (frameBuffers.length === 0) {
+            return [];
+        }
+
+        const selectedBuffers: ArrayBuffer[] = [];
+        const seenIndexes = new Set<number>();
+
+        for (const index of paletteFrameIndexes) {
+            const clampedIndex = Math.max(0, Math.min(index, frameBuffers.length - 1));
+
+            if (seenIndexes.has(clampedIndex)) {
+                continue;
+            }
+
+            selectedBuffers.push(frameBuffers[clampedIndex]);
+            seenIndexes.add(clampedIndex);
+        }
+
+        if (selectedBuffers.length === 0) {
+            selectedBuffers.push(frameBuffers[0]);
+        }
+
+        return selectedBuffers;
+    }
+
+    private async _encodeGifWithPaletteWorkerPool(
+        width: number,
+        height: number,
+        frameDelayMs: number[],
+        frameBuffers: ArrayBuffer[],
+        paletteFrameIndexes: number[],
+        applyPaletteWorkerCount: number
+    ) {
+        const coordinatorWorker = await this._worker();
+        const applyPaletteWorkers: Worker[] = [];
+
+        try {
+            for (let i = 0; i < applyPaletteWorkerCount; ++i) {
+                applyPaletteWorkers.push(await this._worker());
+            }
+
+            const palette = await this._quantizePaletteInWorker(coordinatorWorker, {
+                command: 'quantizePalette',
+                frameBuffers: this._paletteFrameBuffers(frameBuffers, paletteFrameIndexes),
+                paletteSize: GIF_PALETTE_OPTIONS.size,
+                paletteFormat: GIF_PALETTE_OPTIONS.format,
+                palettePixelStride: GIF_PALETTE_OPTIONS.pixelStride,
+            });
+            const frameIndexBuffers = await this._applyPaletteInWorkerPool(applyPaletteWorkers, frameBuffers, palette);
+
+            return await this._encodeIndexedGifInWorker(coordinatorWorker, {
+                command: 'encodeIndexedGif',
+                width,
+                height,
+                frameDelayMs,
+                frameIndexBuffers,
+                palette,
+            });
+        } finally {
+            coordinatorWorker.terminate();
+
+            for (const worker of applyPaletteWorkers) {
+                worker.terminate();
+            }
+        }
+    }
+
+    private async _applyPaletteInWorkerPool(workers: Worker[], frameBuffers: ArrayBuffer[], palette: GifPalette) {
+        if (frameBuffers.length === 0) {
+            return [];
+        }
+
+        if (workers.length === 0) {
+            throw new Error('Could not apply GIF palette: worker pool is empty');
+        }
+
+        const frameIndexBuffers = new Array<ArrayBuffer>(frameBuffers.length);
+        let nextFrameIndex = 0;
+        let completedFrameCount = 0;
+
+        return await new Promise<ArrayBuffer[]>((resolve, reject) => {
+            let settled = false;
+            const fail = (error: Error) => {
+                if (!settled) {
+                    settled = true;
+                    reject(error);
+                }
+            };
+
+            const schedule = (worker: Worker) => {
+                if (settled) {
+                    return;
+                }
+
+                if (nextFrameIndex >= frameBuffers.length) {
+                    if (completedFrameCount >= frameBuffers.length) {
+                        settled = true;
+                        resolve(frameIndexBuffers);
+                    }
+
+                    return;
+                }
+
+                const frameIndex = nextFrameIndex++;
+
+                this._applyPaletteInWorker(worker, {
+                    command: 'applyPalette',
+                    frameIndex,
+                    frameBuffer: frameBuffers[frameIndex],
+                    palette,
+                    paletteFormat: GIF_PALETTE_OPTIONS.format,
+                })
+                    .then((appliedFrame) => {
+                        if (settled) {
+                            return;
+                        }
+
+                        frameIndexBuffers[appliedFrame.frameIndex] = appliedFrame.buffer;
+                        completedFrameCount++;
+
+                        if (completedFrameCount >= frameBuffers.length) {
+                            settled = true;
+                            resolve(frameIndexBuffers);
+                            return;
+                        }
+
+                        schedule(worker);
+                    })
+                    .catch(fail);
+            };
+
+            for (const worker of workers) {
+                schedule(worker);
+            }
+        });
+    }
+
     private async _encodeGifInWorker(worker: Worker, message: EncodeGifInWorkerMessage) {
         return await this._encodeInWorker(worker, message, 'encoded', 'Failed to encode GIF', message.frameBuffers);
+    }
+
+    private async _encodeIndexedGifInWorker(worker: Worker, message: EncodeIndexedGifInWorkerMessage) {
+        return await this._encodeInWorker(
+            worker,
+            message,
+            'encoded',
+            'Failed to encode indexed GIF',
+            message.frameIndexBuffers
+        );
     }
 
     private async _encodeJpegInWorker(worker: Worker, message: EncodeJpegInWorkerMessage) {
@@ -1109,9 +1332,78 @@ class GifFileImageData implements ImageData {
         ]);
     }
 
+    private async _quantizePaletteInWorker(worker: Worker, message: QuantizePaletteInWorkerMessage) {
+        return await new Promise<GifPalette>((resolve, reject) => {
+            const handleError = (error: Error) => {
+                worker.onmessage = null;
+                worker.onerror = null;
+                reject(error);
+            };
+
+            worker.onmessage = (event: MessageEvent<GifEncoderResponseMessage>) => {
+                const data = event.data;
+
+                if (data.command === 'quantizedPalette') {
+                    worker.onmessage = null;
+                    worker.onerror = null;
+                    resolve(data.palette);
+                    return;
+                }
+
+                if (data.command === 'error') {
+                    handleError(new Error(data.error));
+                    return;
+                }
+
+                handleError(new Error(`Unexpected worker response: ${data.command}`));
+            };
+            worker.onerror = (event) => {
+                handleError(event.error ?? new Error(event.message ?? 'Failed to quantize GIF palette'));
+            };
+
+            worker.postMessage(message);
+        });
+    }
+
+    private async _applyPaletteInWorker(worker: Worker, message: ApplyPaletteInWorkerMessage) {
+        return await new Promise<{ frameIndex: number; buffer: ArrayBuffer }>((resolve, reject) => {
+            const handleError = (error: Error) => {
+                worker.onmessage = null;
+                worker.onerror = null;
+                reject(error);
+            };
+
+            worker.onmessage = (event: MessageEvent<GifEncoderResponseMessage>) => {
+                const data = event.data;
+
+                if (data.command === 'appliedPalette') {
+                    worker.onmessage = null;
+                    worker.onerror = null;
+                    resolve({
+                        frameIndex: data.frameIndex,
+                        buffer: data.buffer,
+                    });
+                    return;
+                }
+
+                if (data.command === 'error') {
+                    handleError(new Error(data.error));
+                    return;
+                }
+
+                handleError(new Error(`Unexpected worker response: ${data.command}`));
+            };
+            worker.onerror = (event) => {
+                handleError(event.error ?? new Error(event.message ?? 'Failed to apply GIF palette'));
+            };
+
+            worker.postMessage(message, [message.frameBuffer]);
+        });
+    }
+
     private async _encodeInWorker(
         worker: Worker,
-        message: EncodeGifInWorkerMessage | EncodeJpegInWorkerMessage,
+        message: EncodeGifInWorkerMessage | EncodeIndexedGifInWorkerMessage | EncodeJpegInWorkerMessage,
         expectedCommand: GifWorkerSuccessCommand,
         fallbackErrorMessage: string,
         transfer: Transferable[]
@@ -1431,6 +1723,12 @@ export default class Image {
 
     async blob() {
         return await this.data.blob();
+    }
+
+    setGifMotionCollectionBudgetMs(motionCollectionBudgetMs: number | undefined) {
+        if (this.data instanceof GifFileImageData) {
+            this.data.setMotionCollectionBudgetMs(motionCollectionBudgetMs);
+        }
     }
 
     async pngBlob() {

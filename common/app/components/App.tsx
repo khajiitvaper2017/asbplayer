@@ -517,6 +517,7 @@ function App({
                             {
                                 maxDurationMs: settingsRef.current.gifMaxDuration,
                                 detectMotion: settingsRef.current.gifDetectMotion,
+                                createJpegIfMotionIsLow: settingsRef.current.gifCreateJpegIfLowMotion,
                                 fps: settingsRef.current.gifFps,
                                 maxFrames: settingsRef.current.gifMaxFrames,
                                 startTrimMs: settingsRef.current.gifStartTrim,
@@ -535,7 +536,15 @@ function App({
                     throw new Error('Unknown post mine action: ' + postMineAction);
             }
         },
-        [extension, gifWorkerFactory, miningContext, saveCopyHistoryItem, handleAnkiDialogProceed, handleAnkiDialogRequest, t]
+        [
+            extension,
+            gifWorkerFactory,
+            miningContext,
+            saveCopyHistoryItem,
+            handleAnkiDialogProceed,
+            handleAnkiDialogRequest,
+            t,
+        ]
     );
 
     const handleOpenCopyHistory = useCallback(async () => {
@@ -647,6 +656,7 @@ function App({
                     {
                         maxDurationMs: settings.gifMaxDuration,
                         detectMotion: settings.gifDetectMotion,
+                        createJpegIfMotionIsLow: settings.gifCreateJpegIfLowMotion,
                         fps: settings.gifFps,
                         maxFrames: settings.gifMaxFrames,
                         startTrimMs: settings.gifStartTrim,
@@ -673,6 +683,7 @@ function App({
             settings.preferGif,
             settings.gifMaxDuration,
             settings.gifDetectMotion,
+            settings.gifCreateJpegIfLowMotion,
             settings.gifFps,
             settings.gifMaxFrames,
             settings.gifStartTrim,

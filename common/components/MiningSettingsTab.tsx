@@ -39,6 +39,8 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         gifStartTrim,
         gifEndTrim,
         gifDetectMotion,
+        gifCreateJpegIfLowMotion,
+        truncateGifToAudioCreationSpeed,
         copyToClipboardOnMine,
     } = settings;
     return (
@@ -251,6 +253,34 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                         label={t('settings.gifDetectMotion')}
                         labelPlacement="start"
                     />
+                    {gifDetectMotion && (
+                        <SwitchLabelWithHoverEffect
+                            control={
+                                <Switch
+                                    checked={gifCreateJpegIfLowMotion}
+                                    onChange={(event) =>
+                                        onSettingChanged('gifCreateJpegIfLowMotion', event.target.checked)
+                                    }
+                                />
+                            }
+                            label={t('settings.gifCreateJpegIfLowMotion')}
+                            labelPlacement="start"
+                        />
+                    )}
+                    {gifDetectMotion && (
+                        <SwitchLabelWithHoverEffect
+                            control={
+                                <Switch
+                                    checked={truncateGifToAudioCreationSpeed}
+                                    onChange={(event) =>
+                                        onSettingChanged('truncateGifToAudioCreationSpeed', event.target.checked)
+                                    }
+                                />
+                            }
+                            label={t('settings.truncateGifToAudioCreationSpeed')}
+                            labelPlacement="start"
+                        />
+                    )}
                     <TextField
                         type="number"
                         label={t('settings.gifFps')}
