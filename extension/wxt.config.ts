@@ -138,10 +138,6 @@ export default defineConfig({
                 description: '__MSG_shortcutExportCardDescription__',
             },
             'take-screenshot': {
-                suggested_key: {
-                    default: 'Ctrl+Shift+V',
-                    mac: 'MacCtrl+Shift+V',
-                },
                 description: '__MSG_shortcutTakeScreenshotDescription__',
             },
             'toggle-recording': {
@@ -180,6 +176,13 @@ export default defineConfig({
 
         if (browser === 'firefox') {
             permissions = [...permissions, 'contextMenus', 'webRequest', 'webRequestBlocking', 'clipboardWrite'];
+
+            commands = {
+                _execute_sidebar_action: {
+                    description: '__MSG_shortcutOpenSidePanel__',
+                },
+                ...commands,
+            };
 
             const gecko = isDev
                 ? {

@@ -13,7 +13,6 @@ import { useI18n } from '../hooks/use-i18n';
 import Paper from '@mui/material/Paper';
 import { Anki } from '@project/common/anki';
 import { useSupportedLanguages } from '../hooks/use-supported-languages';
-import { isFirefoxBuild } from '../../services/build-flags';
 import SettingsProfileSelectMenu from '@project/common/components/SettingsProfileSelectMenu';
 import { AsbplayerSettings, Profile, testCard } from '@project/common/settings';
 import { useTheme, type Theme } from '@mui/material/styles';
@@ -116,7 +115,7 @@ const SettingsPage = ({
                         extensionVersion={browser.runtime.getManifest().version}
                         extensionSupportsAppIntegration
                         extensionSupportsOverlay
-                        extensionSupportsSidePanel={!isFirefoxBuild}
+                        extensionSupportsSidePanel
                         extensionSupportsOrderableAnkiFields
                         extensionSupportsTrackSpecificSettings
                         extensionSupportsSubtitlesWidthSetting
