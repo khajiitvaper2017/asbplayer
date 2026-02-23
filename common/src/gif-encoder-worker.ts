@@ -1,8 +1,11 @@
 import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 import type {
     EncodeGifInWorkerMessage,
-    EncodedGifFromWorkerMessage,
     EncodeGifErrorFromWorkerMessage,
+    EncodeJpegInWorkerMessage,
+    EncodedGifFromWorkerMessage,
+    EncodedJpegFromWorkerMessage,
+    GifEncoderRequestMessage,
 } from './gif-encoder-message';
 
 const frameFromBuffer = (buffer: ArrayBuffer) => new Uint8Array(buffer);
@@ -62,7 +65,7 @@ const paletteRgba = (frames: Uint8Array[], paletteFrameIndexes: number[], stride
 const encodeGif = ({
     width,
     height,
-    delayMs,
+    frameDelayMs,
     frameBuffers,
     paletteFrameIndexes,
     paletteSize,
@@ -70,6 +73,7 @@ const encodeGif = ({
     palettePixelStride,
 }: EncodeGifInWorkerMessage) => {
     const frames = frameBuffers.map(frameFromBuffer);
+    const delays = frameDelayMs.length === frames.length ? frameDelayMs : frames.map(() => frameDelayMs[0] ?? 20);
     const palette = quantize(paletteRgba(frames, paletteFrameIndexes, palettePixelStride), paletteSize, {
         format: paletteFormat,
     });
@@ -77,16 +81,17 @@ const encodeGif = ({
 
     for (let i = 0; i < frames.length; ++i) {
         const index = applyPalette(frames[i], palette, paletteFormat);
+        const delay = Math.max(1, Math.round(delays[i]));
 
         if (i === 0) {
             gif.writeFrame(index, width, height, {
                 palette,
-                delay: delayMs,
+                delay,
                 repeat: 0,
             });
         } else {
             gif.writeFrame(index, width, height, {
-                delay: delayMs,
+                delay,
             });
         }
     }
@@ -95,22 +100,56 @@ const encodeGif = ({
     return new Uint8Array(gif.bytesView());
 };
 
+const encodeJpeg = async ({ width, height, frameBuffer }: EncodeJpegInWorkerMessage) => {
+    if (typeof OffscreenCanvas === 'undefined') {
+        throw new Error('OffscreenCanvas is not available for worker JPEG encoding');
+    }
+
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+        throw new Error('Could not create OffscreenCanvas 2d context');
+    }
+
+    const pixels = new Uint8ClampedArray(frameBuffer);
+    ctx.putImageData(new ImageData(pixels, width, height), 0, 0);
+    const blob = await canvas.convertToBlob({ type: 'image/jpeg' });
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    return bytes;
+};
+
+const toArrayBuffer = (bytes: Uint8Array) =>
+    bytes.buffer instanceof ArrayBuffer ? bytes.buffer : new Uint8Array(bytes).buffer;
+
 const onMessage = () => {
-    onmessage = (event: MessageEvent<EncodeGifInWorkerMessage>) => {
+    onmessage = async (event: MessageEvent<GifEncoderRequestMessage>) => {
         try {
             const message = event.data;
 
-            if (message.command !== 'encode') {
+            if (message.command === 'encode') {
+                const bytes = encodeGif(message);
+                const buffer = toArrayBuffer(bytes);
+                const response: EncodedGifFromWorkerMessage = {
+                    command: 'encoded',
+                    buffer,
+                };
+                postMessage(response);
                 return;
             }
 
-            const bytes = encodeGif(message);
-            const buffer = bytes.buffer instanceof ArrayBuffer ? bytes.buffer : new Uint8Array(bytes).buffer;
-            const response: EncodedGifFromWorkerMessage = {
-                command: 'encoded',
-                buffer,
-            };
-            postMessage(response);
+            if (message.command === 'encodeJpeg') {
+                const bytes = await encodeJpeg(message);
+                const buffer = toArrayBuffer(bytes);
+                const response: EncodedJpegFromWorkerMessage = {
+                    command: 'encodedJpeg',
+                    buffer,
+                };
+                postMessage(response);
+                return;
+            }
+
+            throw new Error(`Unknown worker command: ${(message as { command: string }).command}`);
         } catch (error) {
             const response: EncodeGifErrorFromWorkerMessage = {
                 command: 'error',

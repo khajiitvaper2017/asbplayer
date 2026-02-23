@@ -516,6 +516,7 @@ function App({
                             gifWorkerFactory,
                             {
                                 maxDurationMs: settingsRef.current.gifMaxDuration,
+                                detectMotion: settingsRef.current.gifDetectMotion,
                                 fps: settingsRef.current.gifFps,
                                 maxFrames: settingsRef.current.gifMaxFrames,
                                 startTrimMs: settingsRef.current.gifStartTrim,
@@ -645,6 +646,7 @@ function App({
                     gifWorkerFactory,
                     {
                         maxDurationMs: settings.gifMaxDuration,
+                        detectMotion: settings.gifDetectMotion,
                         fps: settings.gifFps,
                         maxFrames: settings.gifMaxFrames,
                         startTrimMs: settings.gifStartTrim,
@@ -670,6 +672,7 @@ function App({
             settings.maxImageHeight,
             settings.preferGif,
             settings.gifMaxDuration,
+            settings.gifDetectMotion,
             settings.gifFps,
             settings.gifMaxFrames,
             settings.gifStartTrim,

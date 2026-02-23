@@ -244,6 +244,7 @@ export interface AnkiSettings {
     readonly gifMaxFrames: number;
     readonly gifStartTrim: number;
     readonly gifEndTrim: number;
+    readonly gifDetectMotion: boolean;
     readonly audioPaddingStart: number;
     readonly audioPaddingEnd: number;
     readonly maxImageWidth: number;
@@ -298,6 +299,7 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     gifMaxFrames: true,
     gifStartTrim: true,
     gifEndTrim: true,
+    gifDetectMotion: true,
     audioPaddingStart: true,
     audioPaddingEnd: true,
     maxImageWidth: true,
