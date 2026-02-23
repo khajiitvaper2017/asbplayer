@@ -113,7 +113,8 @@ Thank you to all those who have contributed to asbplayer:
 [@extremq](https://github.com/extremq),
 [@iamllama](https://github.com/iamllama),
 [@danthemango](https://github.com/danthemango),
-[@L-M-Sherlock](https://github.com/L-M-Sherlock)
+[@L-M-Sherlock](https://github.com/L-M-Sherlock),
+[@Rubinlord](https://github.com/Rubinlord)
 
 Thank you to all those who have translated asbplayer:
 
