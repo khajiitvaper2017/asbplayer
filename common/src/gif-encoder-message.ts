@@ -35,20 +35,8 @@ export interface EncodeIndexedGifInWorkerMessage {
     palette: number[][];
 }
 
-export interface EncodeJpegInWorkerMessage {
-    command: 'encodeJpeg';
-    width: number;
-    height: number;
-    frameBuffer: ArrayBuffer;
-}
-
 export interface EncodedGifFromWorkerMessage {
     command: 'encoded';
-    buffer: ArrayBuffer;
-}
-
-export interface EncodedJpegFromWorkerMessage {
-    command: 'encodedJpeg';
     buffer: ArrayBuffer;
 }
 
@@ -72,12 +60,10 @@ export type GifEncoderRequestMessage =
     | EncodeGifInWorkerMessage
     | QuantizePaletteInWorkerMessage
     | ApplyPaletteInWorkerMessage
-    | EncodeIndexedGifInWorkerMessage
-    | EncodeJpegInWorkerMessage;
+    | EncodeIndexedGifInWorkerMessage;
 
 export type GifEncoderResponseMessage =
     | EncodedGifFromWorkerMessage
-    | EncodedJpegFromWorkerMessage
     | QuantizedPaletteFromWorkerMessage
     | AppliedPaletteFromWorkerMessage
     | EncodeGifErrorFromWorkerMessage;

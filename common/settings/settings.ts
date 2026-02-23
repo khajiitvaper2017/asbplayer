@@ -244,8 +244,6 @@ export interface AnkiSettings {
     readonly gifMaxFrames: number;
     readonly gifStartTrim: number;
     readonly gifEndTrim: number;
-    readonly gifDetectMotion: boolean;
-    readonly gifCreateJpegIfLowMotion: boolean;
     readonly truncateGifToAudioCreationSpeed: boolean;
     readonly audioPaddingStart: number;
     readonly audioPaddingEnd: number;
@@ -301,8 +299,6 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     gifMaxFrames: true,
     gifStartTrim: true,
     gifEndTrim: true,
-    gifDetectMotion: true,
-    gifCreateJpegIfLowMotion: true,
     truncateGifToAudioCreationSpeed: true,
     audioPaddingStart: true,
     audioPaddingEnd: true,

@@ -516,8 +516,6 @@ function App({
                             gifWorkerFactory,
                             {
                                 maxDurationMs: settingsRef.current.gifMaxDuration,
-                                detectMotion: settingsRef.current.gifDetectMotion,
-                                createJpegIfMotionIsLow: settingsRef.current.gifCreateJpegIfLowMotion,
                                 fps: settingsRef.current.gifFps,
                                 maxFrames: settingsRef.current.gifMaxFrames,
                                 startTrimMs: settingsRef.current.gifStartTrim,
@@ -655,8 +653,6 @@ function App({
                     gifWorkerFactory,
                     {
                         maxDurationMs: settings.gifMaxDuration,
-                        detectMotion: settings.gifDetectMotion,
-                        createJpegIfMotionIsLow: settings.gifCreateJpegIfLowMotion,
                         fps: settings.gifFps,
                         maxFrames: settings.gifMaxFrames,
                         startTrimMs: settings.gifStartTrim,
@@ -682,8 +678,6 @@ function App({
             settings.maxImageHeight,
             settings.preferGif,
             settings.gifMaxDuration,
-            settings.gifDetectMotion,
-            settings.gifCreateJpegIfLowMotion,
             settings.gifFps,
             settings.gifMaxFrames,
             settings.gifStartTrim,
