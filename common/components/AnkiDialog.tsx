@@ -425,8 +425,13 @@ const AnkiDialog = ({
             e.preventDefault();
             e.stopPropagation();
             audioClip!.play().catch(console.info);
+
+            if (settings.recordWithAudioPlayback && image?.error === undefined && image?.extension === 'gif') {
+                // Precompute GIF while audio is playing to reduce export-time waiting.
+                image.blob().catch(console.error);
+            }
         },
-        [audioClip]
+        [audioClip, image, settings.recordWithAudioPlayback]
     );
 
     const handleCustomFieldChange = useCallback(
@@ -444,8 +449,8 @@ const AnkiDialog = ({
             return;
         }
 
-        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight));
-    }, [card, open, settings.maxImageWidth, settings.maxImageHeight]);
+        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif));
+    }, [card, open, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif]);
 
     useEffect(() => {
         if (!open && image) {
