@@ -38,6 +38,11 @@ const VIDEO_READY_TIMEOUT_MS = 5_000;
 const GIF_FRAME_YIELD_INTERVAL = 2;
 const MIN_GIF_FRAME_DELAY_MS = 20;
 const VIDEO_SEEK_EPSILON_SECONDS = 0.001;
+const GIF_PLAYBACK_COLLECTION_RATE = 2;
+const GIF_PLAYBACK_COLLECTION_MAX_RATE = 2;
+const GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS = 1_000;
+const GIF_FRAME_CAPTURE_SLOW_THRESHOLD_MS = 150;
+const GIF_FRAME_COLLECTION_MAX_SLOW_FRAMES_LOGGED = 5;
 const GIF_APPLY_PALETTE_POOL_MIN_FRAMES = 12;
 const GIF_APPLY_PALETTE_POOL_MIN_WORKERS = 2;
 const GIF_APPLY_PALETTE_POOL_MAX_WORKERS = 4;
@@ -53,6 +58,15 @@ interface CollectedGifFrames {
     frameDelayMs: number[];
     budgetMs?: number;
     truncatedByBudget?: boolean;
+}
+
+interface CollectedGifFrameTiming {
+    buffer: ArrayBuffer;
+    seekElapsedMs: number;
+    readElapsedMs: number;
+    totalElapsedMs: number;
+    fromTimestampMs: number;
+    toTimestampMs: number;
 }
 
 interface GifRenderStats {
@@ -635,6 +649,7 @@ class GifFileImageData implements ImageData {
         frameTimestamps: number[],
         baseFrameDelayMs: number
     ) {
+        const collectFramesStartedAtMs = now();
         const { frameBuffers, frameDelayMs, budgetMs, truncatedByBudget } = await this._collectFrames(
             video,
             ctx,
@@ -643,6 +658,7 @@ class GifFileImageData implements ImageData {
             frameTimestamps,
             baseFrameDelayMs
         );
+        const collectFramesElapsedMs = Math.round(now() - collectFramesStartedAtMs);
 
         this._outputExtension = 'gif';
         this._lastRenderStats = {
@@ -665,6 +681,7 @@ class GifFileImageData implements ImageData {
             );
         }
 
+        const encodeStartedAtMs = now();
         if (applyPaletteWorkerCount === 1) {
             const worker = await this._worker();
 
@@ -680,6 +697,13 @@ class GifFileImageData implements ImageData {
                     paletteFormat: GIF_PALETTE_OPTIONS.format,
                     palettePixelStride: GIF_PALETTE_OPTIONS.pixelStride,
                 });
+                const encodeElapsedMs = Math.round(now() - encodeStartedAtMs);
+                this._logGifPhaseTimings(
+                    collectFramesElapsedMs,
+                    encodeElapsedMs,
+                    applyPaletteWorkerCount,
+                    frameBuffers.length
+                );
                 return new Blob([encodedBytes], { type: 'image/gif' });
             } finally {
                 worker.terminate();
@@ -694,7 +718,24 @@ class GifFileImageData implements ImageData {
             paletteFrameIndexes,
             applyPaletteWorkerCount
         );
+        const encodeElapsedMs = Math.round(now() - encodeStartedAtMs);
+        this._logGifPhaseTimings(collectFramesElapsedMs, encodeElapsedMs, applyPaletteWorkerCount, frameBuffers.length);
         return new Blob([encodedBytes], { type: 'image/gif' });
+    }
+
+    private _logGifPhaseTimings(
+        collectFramesElapsedMs: number,
+        encodeElapsedMs: number,
+        workerCount: number,
+        frameCount: number
+    ) {
+        if (collectFramesElapsedMs < IMAGE_TIMING_LOG_THRESHOLD_MS && encodeElapsedMs < IMAGE_TIMING_LOG_THRESHOLD_MS) {
+            return;
+        }
+
+        console.debug(
+            `[Image] gif phases collectFrames=${collectFramesElapsedMs}ms encode=${encodeElapsedMs}ms workers=${workerCount} frames=${frameCount}`
+        );
     }
 
     private async _collectFrames(
@@ -716,8 +757,258 @@ class GifFileImageData implements ImageData {
             this._motionCollectionBudgetOverrideMs === undefined
                 ? undefined
                 : Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._motionCollectionBudgetOverrideMs));
+        const playbackFrames = await this._collectFramesWithPlayback(
+            video,
+            ctx,
+            width,
+            height,
+            frameTimestamps,
+            baseFrameDelayMs,
+            collectionBudgetMs
+        );
+
+        if (playbackFrames) {
+            return playbackFrames;
+        }
+
+        return await this._collectFramesWithSeeking(
+            video,
+            ctx,
+            width,
+            height,
+            frameTimestamps,
+            baseFrameDelayMs,
+            collectionBudgetMs
+        );
+    }
+
+    private async _collectFramesWithPlayback(
+        video: HTMLVideoElement,
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        frameTimestamps: number[],
+        baseFrameDelayMs: number,
+        collectionBudgetMs: number | undefined
+    ): Promise<CollectedGifFrames | undefined> {
+        if (
+            collectionBudgetMs !== undefined ||
+            frameTimestamps.length <= 1 ||
+            typeof video.requestVideoFrameCallback !== 'function'
+        ) {
+            return undefined;
+        }
+
+        const collectionStartedAtMs = now();
+        const frameBuffersByIndex = new Array<ArrayBuffer | undefined>(frameTimestamps.length);
+        const captureToleranceMs = Math.max(1, Math.floor(baseFrameDelayMs / 2));
+        const maxCaptureDriftMs = Math.max(captureToleranceMs, baseFrameDelayMs);
+        let totalReadElapsedMs = 0;
+        let callbackCount = 0;
+        let nextFrameIndex = 0;
+        let playbackCapturedCount = 0;
+        let fallbackSeekCount = 0;
+        let playbackElapsedMs = 0;
+
+        if (ctx.canvas.width !== width || ctx.canvas.height !== height) {
+            ctx.canvas.width = width;
+            ctx.canvas.height = height;
+        }
+
+        const captureCurrentFrame = () => {
+            const readStartedAtMs = now();
+            ctx.drawImage(video, 0, 0, width, height);
+            const rgba = ctx.getImageData(0, 0, width, height).data;
+            totalReadElapsedMs += Math.round(now() - readStartedAtMs);
+            return rgba.buffer instanceof ArrayBuffer ? rgba.buffer : new Uint8Array(rgba).buffer;
+        };
+
+        const originalPlaybackRate = video.playbackRate;
+        const originalMuted = video.muted;
+        const originalVolume = video.volume;
+        const originalOnError = video.onerror;
+        const originalOnEnded = video.onended;
+        const videoWithPreservesPitch = video as HTMLVideoElement & { preservesPitch?: boolean };
+        const originalPreservesPitch = videoWithPreservesPitch.preservesPitch;
+
+        let callbackHandle: number | undefined;
+
+        try {
+            await this._seekVideo(video, frameTimestamps[0] / 1000);
+
+            frameBuffersByIndex[0] = captureCurrentFrame();
+            playbackCapturedCount = 1;
+            nextFrameIndex = 1;
+
+            if (nextFrameIndex >= frameTimestamps.length) {
+                return {
+                    frameBuffers: [frameBuffersByIndex[0]!],
+                    frameDelayMs: uniformFrameDelayMs(1, baseFrameDelayMs),
+                    budgetMs: collectionBudgetMs,
+                    truncatedByBudget: false,
+                };
+            }
+
+            const playbackRate = Math.min(GIF_PLAYBACK_COLLECTION_MAX_RATE, Math.max(1, GIF_PLAYBACK_COLLECTION_RATE));
+            const playbackStartedAtMs = now();
+
+            video.muted = true;
+            video.volume = 0;
+            video.playbackRate = playbackRate;
+
+            if (typeof originalPreservesPitch === 'boolean') {
+                videoWithPreservesPitch.preservesPitch = false;
+            }
+
+            await video.play();
+            await new Promise<void>((resolve, reject) => {
+                const finish = () => {
+                    if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                        video.cancelVideoFrameCallback(callbackHandle);
+                        callbackHandle = undefined;
+                    }
+
+                    resolve();
+                };
+
+                const fail = (error: Error) => {
+                    if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                        video.cancelVideoFrameCallback(callbackHandle);
+                        callbackHandle = undefined;
+                    }
+
+                    reject(error);
+                };
+
+                const onFrame: VideoFrameRequestCallback = (_ts, metadata) => {
+                    callbackCount++;
+
+                    try {
+                        const mediaTimeMs = metadata.mediaTime * 1000;
+
+                        while (
+                            nextFrameIndex < frameTimestamps.length &&
+                            frameTimestamps[nextFrameIndex] < mediaTimeMs - maxCaptureDriftMs
+                        ) {
+                            nextFrameIndex++;
+                        }
+
+                        if (nextFrameIndex < frameTimestamps.length) {
+                            const targetTimestampMs = frameTimestamps[nextFrameIndex];
+                            if (
+                                mediaTimeMs >= targetTimestampMs - captureToleranceMs &&
+                                mediaTimeMs <= targetTimestampMs + maxCaptureDriftMs
+                            ) {
+                                frameBuffersByIndex[nextFrameIndex] = captureCurrentFrame();
+                                playbackCapturedCount++;
+                                nextFrameIndex++;
+                            }
+                        }
+
+                        if (nextFrameIndex >= frameTimestamps.length) {
+                            finish();
+                            return;
+                        }
+
+                        callbackHandle = video.requestVideoFrameCallback(onFrame);
+                    } catch (error) {
+                        fail(error instanceof Error ? error : new Error(String(error)));
+                    }
+                };
+
+                video.onerror = () => fail(new Error(video.error?.message ?? 'Could not play video to capture GIF'));
+                video.onended = () => finish();
+                callbackHandle = video.requestVideoFrameCallback(onFrame);
+            });
+            playbackElapsedMs = Math.round(now() - playbackStartedAtMs);
+
+            video.pause();
+
+            for (let i = 0; i < frameTimestamps.length; ++i) {
+                if (frameBuffersByIndex[i] === undefined) {
+                    frameBuffersByIndex[i] = await this._captureFrameBuffer(
+                        video,
+                        ctx,
+                        width,
+                        height,
+                        frameTimestamps[i]
+                    );
+                    fallbackSeekCount++;
+                }
+            }
+
+            const frameBuffers: ArrayBuffer[] = [];
+            for (const frameBuffer of frameBuffersByIndex) {
+                if (frameBuffer === undefined) {
+                    break;
+                }
+
+                frameBuffers.push(frameBuffer);
+            }
+
+            const collectionElapsedMs = Math.round(now() - collectionStartedAtMs);
+            if (collectionElapsedMs >= GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS) {
+                console.debug(
+                    `[Image] collect frames playback total=${collectionElapsedMs}ms captured=${frameBuffers.length}/${frameTimestamps.length} playbackCaptured=${playbackCapturedCount} fallbackSeeks=${fallbackSeekCount} playback=${playbackElapsedMs}ms callbacks=${callbackCount} read=${totalReadElapsedMs}ms`
+                );
+            }
+
+            return {
+                frameBuffers,
+                frameDelayMs: uniformFrameDelayMs(frameBuffers.length, baseFrameDelayMs),
+                budgetMs: collectionBudgetMs,
+                truncatedByBudget: false,
+            };
+        } catch (error) {
+            console.debug(
+                `[Image] collect frames playback unavailable falling back to seek error=${
+                    error instanceof Error ? error.message : String(error)
+                }`
+            );
+            return undefined;
+        } finally {
+            if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                video.cancelVideoFrameCallback(callbackHandle);
+            }
+
+            video.pause();
+            video.playbackRate = originalPlaybackRate;
+            video.muted = originalMuted;
+            video.volume = originalVolume;
+            video.onerror = originalOnError;
+            video.onended = originalOnEnded;
+
+            if (typeof originalPreservesPitch === 'boolean') {
+                videoWithPreservesPitch.preservesPitch = originalPreservesPitch;
+            }
+        }
+    }
+
+    private async _collectFramesWithSeeking(
+        video: HTMLVideoElement,
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        frameTimestamps: number[],
+        baseFrameDelayMs: number,
+        collectionBudgetMs: number | undefined
+    ): Promise<CollectedGifFrames> {
         const collectionStartedAtMs = now();
         const frameBuffers: ArrayBuffer[] = [];
+        let totalYieldElapsedMs = 0;
+        let totalCaptureElapsedMs = 0;
+        let totalSeekElapsedMs = 0;
+        let totalReadElapsedMs = 0;
+        let maxCaptureElapsedMs = 0;
+        const slowFrames: Array<{
+            index: number;
+            targetTimestampMs: number;
+            fromTimestampMs: number;
+            toTimestampMs: number;
+            seekElapsedMs: number;
+            readElapsedMs: number;
+            totalElapsedMs: number;
+        }> = [];
         let truncatedByBudget = false;
 
         for (let i = 0; i < frameTimestamps.length; ++i) {
@@ -727,10 +1018,59 @@ class GifFileImageData implements ImageData {
             }
 
             if (i > 0 && i % GIF_FRAME_YIELD_INTERVAL === 0) {
+                const yieldStartedAtMs = now();
                 await yieldToEventLoop();
+                totalYieldElapsedMs += Math.round(now() - yieldStartedAtMs);
             }
 
-            frameBuffers.push(await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[i]));
+            const capturedFrame = await this._captureFrameBufferWithTiming(
+                video,
+                ctx,
+                width,
+                height,
+                frameTimestamps[i]
+            );
+            frameBuffers.push(capturedFrame.buffer);
+            totalCaptureElapsedMs += capturedFrame.totalElapsedMs;
+            totalSeekElapsedMs += capturedFrame.seekElapsedMs;
+            totalReadElapsedMs += capturedFrame.readElapsedMs;
+            maxCaptureElapsedMs = Math.max(maxCaptureElapsedMs, capturedFrame.totalElapsedMs);
+
+            if (capturedFrame.totalElapsedMs >= GIF_FRAME_CAPTURE_SLOW_THRESHOLD_MS) {
+                slowFrames.push({
+                    index: i,
+                    targetTimestampMs: Math.round(frameTimestamps[i]),
+                    fromTimestampMs: capturedFrame.fromTimestampMs,
+                    toTimestampMs: capturedFrame.toTimestampMs,
+                    seekElapsedMs: capturedFrame.seekElapsedMs,
+                    readElapsedMs: capturedFrame.readElapsedMs,
+                    totalElapsedMs: capturedFrame.totalElapsedMs,
+                });
+            }
+        }
+
+        const collectionElapsedMs = Math.round(now() - collectionStartedAtMs);
+        if (collectionElapsedMs >= GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS) {
+            const capturedFrameCount = frameBuffers.length;
+            const averageCaptureElapsedMs =
+                capturedFrameCount > 0 ? Math.round(totalCaptureElapsedMs / capturedFrameCount) : 0;
+            const slowFrameSummary = slowFrames
+                .sort((a, b) => b.totalElapsedMs - a.totalElapsedMs)
+                .slice(0, GIF_FRAME_COLLECTION_MAX_SLOW_FRAMES_LOGGED)
+                .map(
+                    (frame) =>
+                        `{i:${frame.index},target:${frame.targetTimestampMs},from:${frame.fromTimestampMs},to:${
+                            frame.toTimestampMs
+                        },seek:${frame.seekElapsedMs},read:${frame.readElapsedMs},total:${frame.totalElapsedMs}}`
+                )
+                .join(',');
+            const slowFrameSuffix = slowFrameSummary.length > 0 ? ` slowFrames=[${slowFrameSummary}]` : '';
+
+            console.debug(
+                `[Image] collect frames detail total=${collectionElapsedMs}ms captured=${capturedFrameCount}/${
+                    frameTimestamps.length
+                } yield=${totalYieldElapsedMs}ms capture=${totalCaptureElapsedMs}ms seek=${totalSeekElapsedMs}ms read=${totalReadElapsedMs}ms avgCapture=${averageCaptureElapsedMs}ms maxCapture=${maxCaptureElapsedMs}ms truncatedByBudget=${truncatedByBudget}${slowFrameSuffix}`
+            );
         }
 
         return {
@@ -748,15 +1088,42 @@ class GifFileImageData implements ImageData {
         height: number,
         timestampMs: number
     ) {
+        const capturedFrame = await this._captureFrameBufferWithTiming(video, ctx, width, height, timestampMs);
+        return capturedFrame.buffer;
+    }
+
+    private async _captureFrameBufferWithTiming(
+        video: HTMLVideoElement,
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        timestampMs: number
+    ): Promise<CollectedGifFrameTiming> {
         if (ctx.canvas.width !== width || ctx.canvas.height !== height) {
             ctx.canvas.width = width;
             ctx.canvas.height = height;
         }
 
+        const fromTimestampMs = Math.round(video.currentTime * 1000);
+        const seekStartedAtMs = now();
         await this._seekVideo(video, timestampMs / 1000);
+        const seekElapsedMs = Math.round(now() - seekStartedAtMs);
+
+        const readStartedAtMs = now();
         ctx.drawImage(video, 0, 0, width, height);
         const rgba = ctx.getImageData(0, 0, width, height).data;
-        return rgba.buffer instanceof ArrayBuffer ? rgba.buffer : new Uint8Array(rgba).buffer;
+        const readElapsedMs = Math.round(now() - readStartedAtMs);
+        const buffer = rgba.buffer instanceof ArrayBuffer ? rgba.buffer : new Uint8Array(rgba).buffer;
+        const toTimestampMs = Math.round(video.currentTime * 1000);
+
+        return {
+            buffer,
+            seekElapsedMs,
+            readElapsedMs,
+            totalElapsedMs: seekElapsedMs + readElapsedMs,
+            fromTimestampMs,
+            toTimestampMs,
+        };
     }
 
     private _timingSettingsSummary() {
@@ -829,12 +1196,15 @@ class GifFileImageData implements ImageData {
         paletteFrameIndexes: number[],
         applyPaletteWorkerCount: number
     ) {
-        const coordinatorWorker = await this._worker();
-        const applyPaletteWorkers: Worker[] = [];
+        const workerPoolStartedAtMs = now();
+        const [coordinatorWorker, ...applyPaletteWorkers] = await this._workerPool(applyPaletteWorkerCount + 1);
+        const workerPoolElapsedMs = Math.round(now() - workerPoolStartedAtMs);
 
         try {
-            for (let i = 0; i < applyPaletteWorkerCount; ++i) {
-                applyPaletteWorkers.push(await this._worker());
+            if (workerPoolElapsedMs >= IMAGE_TIMING_LOG_THRESHOLD_MS) {
+                console.debug(
+                    `[Image] gif workers ready in ${workerPoolElapsedMs}ms workers=${applyPaletteWorkerCount + 1}`
+                );
             }
 
             const palette = await this._quantizePaletteInWorker(coordinatorWorker, {
@@ -1058,6 +1428,34 @@ class GifFileImageData implements ImageData {
     private async _worker() {
         const workerFactoryResult = this._workerFactory();
         return workerFactoryResult instanceof Worker ? workerFactoryResult : await workerFactoryResult;
+    }
+
+    private async _workerPool(size: number) {
+        if (size <= 0) {
+            return [];
+        }
+
+        const workerResults = await Promise.allSettled(Array.from({ length: size }, () => this._worker()));
+        const workers: Worker[] = [];
+        let firstError: Error | undefined;
+
+        for (const result of workerResults) {
+            if (result.status === 'fulfilled') {
+                workers.push(result.value);
+            } else if (!firstError) {
+                firstError = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
+            }
+        }
+
+        if (firstError) {
+            for (const worker of workers) {
+                worker.terminate();
+            }
+
+            throw firstError;
+        }
+
+        return workers;
     }
 
     private _paletteFrameIndexes(frameCount: number) {
