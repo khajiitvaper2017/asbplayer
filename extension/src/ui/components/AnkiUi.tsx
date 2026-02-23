@@ -39,6 +39,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { base64ToBlob, blobToBase64 } from '@project/common/base64';
 import { isMobile } from '@project/common/device-detection/mobile';
 import { StyledEngineProvider } from '@mui/material/styles';
+import { gifEncoderWorkerFactory } from '../../services/gif-encoder-worker-factory';
 
 interface Props {
     bridge: Bridge;
@@ -386,6 +387,7 @@ export default function AnkiUi({ bridge }: Props) {
                         onDismissShowQuickSelectFtue={handleDismissShowQuickSelectFtue}
                         stateRef={dialogStateRef}
                         mp3Encoder={mp3Encoder}
+                        gifWorkerFactory={gifEncoderWorkerFactory}
                         lastSelectedExportMode={settings.lastSelectedAnkiExportMode}
                         inTutorial={inTutorial}
                     />
