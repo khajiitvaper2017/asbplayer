@@ -32,6 +32,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         postMiningPlaybackState,
         recordWithAudioPlayback,
         preferMp3,
+        preferGif,
         copyToClipboardOnMine,
     } = settings;
     return (
@@ -205,6 +206,16 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 }}
             />
             <SettingsSection>{t('settings.screenshots')}</SettingsSection>
+            <SwitchLabelWithHoverEffect
+                control={
+                    <Switch
+                        checked={preferGif}
+                        onChange={(event) => onSettingChanged('preferGif', event.target.checked)}
+                    />
+                }
+                label={t('settings.gifPreference')}
+                labelPlacement="start"
+            />
             <TextField
                 type="number"
                 label={t('settings.maxImageWidth')}

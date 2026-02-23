@@ -509,7 +509,8 @@ function App({
                         image: Image.fromCard(
                             newCard,
                             settingsRef.current.maxImageWidth,
-                            settingsRef.current.maxImageHeight
+                            settingsRef.current.maxImageHeight,
+                            settingsRef.current.preferGif
                         ),
                         word: newCard.word ?? '',
                         source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
@@ -626,7 +627,12 @@ function App({
     const handleDownloadImage = useCallback(
         (item: CardModel) => {
             try {
-                const image = Image.fromCard(item, settings.maxImageWidth, settings.maxImageHeight)!;
+                const image = Image.fromCard(
+                    item,
+                    settings.maxImageWidth,
+                    settings.maxImageHeight,
+                    settings.preferGif
+                )!;
 
                 if (image.error === undefined) {
                     image.download();
@@ -639,7 +645,7 @@ function App({
                 handleError(e);
             }
         },
-        [handleError, settings.maxImageWidth, settings.maxImageHeight, t]
+        [handleError, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, t]
     );
 
     const handleDownloadCopyHistorySectionAsSrt = useCallback(

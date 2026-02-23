@@ -379,6 +379,7 @@
         "clickToMineDefaultAction": "Mining button default action",
         "misc": "Misc",
         "mp3Preference": "Re-encode audio as mp3 (slower)",
+        "gifPreference": "Create animated GIF from local video (slower)",
         "noteType": "Note Type",
         "pages": "Pages",
         "preCacheSubtitleDom": "Pre-cache Subtitle DOM",

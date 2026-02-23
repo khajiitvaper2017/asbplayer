@@ -418,7 +418,7 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     browser.tabs.sendMessage(currentTabId, downloadImageCommand);
                 }
             } else {
-                const image = Image.fromCard(item, settings.maxImageWidth, settings.maxImageHeight);
+                const image = Image.fromCard(item, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif);
 
                 if (image) {
                     image.download();
