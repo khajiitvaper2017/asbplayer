@@ -6,7 +6,6 @@ import type {
     ApplyPaletteInWorkerMessage,
     EncodeGifInWorkerMessage,
     EncodeIndexedGifInWorkerMessage,
-    EncodeJpegInWorkerMessage,
     GifEncoderResponseMessage,
     QuantizePaletteInWorkerMessage,
 } from './gif-encoder-message';
@@ -39,22 +38,12 @@ const VIDEO_READY_TIMEOUT_MS = 5_000;
 const GIF_FRAME_YIELD_INTERVAL = 2;
 const MIN_GIF_FRAME_DELAY_MS = 20;
 const VIDEO_SEEK_EPSILON_SECONDS = 0.001;
-const GIF_MOTION_SCORE_JPEG_CUTOFF = 50;
-const GIF_MOTION_SCORE_MAX_FPS = 200;
-const GIF_MOTION_NEW_DRAWING_THRESHOLD = 4;
-const GIF_MOTION_EARLY_JPEG_MAX_SCORE = 8;
-const GIF_MOTION_PROBE_FRAME_COUNT = 5;
-const GIF_MOTION_SLOW_SCENE_MIN_DELAY_MS = 100;
-const GIF_MOTION_COLLECTION_BUDGET_MULTIPLIER = 0.9;
-const GIF_MOTION_COLLECTION_BUDGET_PADDING_MS = 500;
-const GIF_MOTION_COLLECTION_BUDGET_MIN_MS = 1_200;
-const GIF_MOTION_SAMPLE_STRIDE = 4;
 const GIF_APPLY_PALETTE_POOL_MIN_FRAMES = 12;
 const GIF_APPLY_PALETTE_POOL_MIN_WORKERS = 2;
 const GIF_APPLY_PALETTE_POOL_MAX_WORKERS = 4;
 const IMAGE_TIMING_LOG_THRESHOLD_MS = 500;
 type TimingDetails = string | (() => string);
-type GifWorkerSuccessCommand = 'encoded' | 'encodedJpeg';
+type GifWorkerSuccessCommand = 'encoded';
 type GifPalette = number[][];
 
 type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
@@ -62,13 +51,8 @@ type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
 interface CollectedGifFrames {
     frameBuffers: ArrayBuffer[];
     frameDelayMs: number[];
-    motionScore?: number;
-    motionScoreMax?: number;
-    motionScoreComparisons?: number;
-    motionScoreMs?: number;
     budgetMs?: number;
     truncatedByBudget?: boolean;
-    motionDetected?: boolean;
 }
 
 interface GifRenderStats {
@@ -77,20 +61,13 @@ interface GifRenderStats {
     effectiveFps: number;
     outputWidth: number;
     outputHeight: number;
-    outputExtension: 'gif' | 'jpeg';
-    motionScore?: number;
-    motionScoreMax?: number;
-    motionScoreComparisons?: number;
-    motionScoreMs?: number;
+    outputExtension: 'gif';
     budgetMs?: number;
     truncatedByBudget?: boolean;
-    motionDetected?: boolean;
 }
 
 export interface GifOptions {
     maxDurationMs: number;
-    detectMotion: boolean;
-    createJpegIfMotionIsLow: boolean;
     fps: number;
     maxFrames: number;
     startTrimMs: number;
@@ -99,8 +76,6 @@ export interface GifOptions {
 
 const DEFAULT_GIF_OPTIONS: GifOptions = {
     maxDurationMs: GIF_OPTION_LIMITS.maxDurationMs,
-    detectMotion: true,
-    createJpegIfMotionIsLow: true,
     fps: 12,
     maxFrames: 24,
     startTrimMs: 100,
@@ -120,9 +95,6 @@ const normalizeRoundedNumber = (value: number | undefined, fallback: number, min
     return clamp(resolvedValue, min, max);
 };
 
-const normalizeBoolean = (value: boolean | undefined, fallback: boolean) =>
-    typeof value === 'boolean' ? value : fallback;
-
 const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
     return {
         maxDurationMs: normalizeRoundedNumber(
@@ -130,11 +102,6 @@ const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
             DEFAULT_GIF_OPTIONS.maxDurationMs,
             GIF_OPTION_LIMITS.minDurationMs,
             GIF_OPTION_LIMITS.maxDurationCapMs
-        ),
-        detectMotion: normalizeBoolean(gifOptions?.detectMotion, DEFAULT_GIF_OPTIONS.detectMotion),
-        createJpegIfMotionIsLow: normalizeBoolean(
-            gifOptions?.createJpegIfMotionIsLow,
-            DEFAULT_GIF_OPTIONS.createJpegIfMotionIsLow
         ),
         fps: normalizeRoundedNumber(
             gifOptions?.fps,
@@ -163,75 +130,9 @@ const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
     };
 };
 
-const motionScore = (previous: Uint8Array, current: Uint8Array, sampleStride: number) => {
-    const pixelStep = Math.max(1, sampleStride) * 4;
-    const maxLength = Math.min(previous.length, current.length);
-    let diff = 0;
-    let sampledPixelCount = 0;
-
-    for (let i = 0; i + 2 < maxLength; i += pixelStep) {
-        diff +=
-            Math.abs(previous[i] - current[i]) +
-            Math.abs(previous[i + 1] - current[i + 1]) +
-            Math.abs(previous[i + 2] - current[i + 2]);
-        sampledPixelCount++;
-    }
-
-    return sampledPixelCount === 0 ? 0 : diff / sampledPixelCount;
-};
-
 const yieldToEventLoop = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 const uniformFrameDelayMs = (frameCount: number, delayMs: number) => Array.from({ length: frameCount }, () => delayMs);
-
-const evenlySpacedIndexes = (frameCount: number, targetFrameCount: number) => {
-    const safeFrameCount = Math.max(1, frameCount);
-    const safeTargetFrameCount = Math.max(1, Math.min(targetFrameCount, safeFrameCount));
-
-    if (safeTargetFrameCount === safeFrameCount) {
-        return [...Array(safeFrameCount).keys()];
-    }
-
-    if (safeTargetFrameCount === 1) {
-        return [safeFrameCount - 1];
-    }
-
-    const indexes: number[] = [];
-
-    for (let i = 0; i < safeTargetFrameCount; ++i) {
-        const index = Math.round((i * (safeFrameCount - 1)) / (safeTargetFrameCount - 1));
-
-        if (indexes[indexes.length - 1] !== index) {
-            indexes.push(index);
-        }
-    }
-
-    if (indexes[0] !== 0) {
-        indexes.unshift(0);
-    }
-
-    if (indexes[indexes.length - 1] !== safeFrameCount - 1) {
-        indexes.push(safeFrameCount - 1);
-    }
-
-    return indexes;
-};
-
-const requiredDelayMsForMotionScore = (score: number, baseFrameDelayMs: number) => {
-    const fastDelayMs = Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(baseFrameDelayMs));
-    const slowDelayMs = Math.max(fastDelayMs, GIF_MOTION_SLOW_SCENE_MIN_DELAY_MS);
-
-    if (score >= GIF_MOTION_SCORE_MAX_FPS) {
-        return fastDelayMs;
-    }
-
-    if (score <= GIF_MOTION_SCORE_JPEG_CUTOFF) {
-        return slowDelayMs;
-    }
-
-    const t = (score - GIF_MOTION_SCORE_JPEG_CUTOFF) / (GIF_MOTION_SCORE_MAX_FPS - GIF_MOTION_SCORE_JPEG_CUTOFF);
-    return Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(slowDelayMs - t * (slowDelayMs - fastDelayMs)));
-};
 
 const durationFromInterval = (startTimestamp: number, endTimestamp: number, gifOptions: GifOptions) => {
     const duration = Math.abs(endTimestamp - startTimestamp);
@@ -583,7 +484,7 @@ class GifFileImageData implements ImageData {
     private _cachedDataUrl?: string;
     private readonly _workerFactory: GifEncoderWorkerFactory;
     private readonly _gifOptions: GifOptions;
-    private _outputExtension: 'gif' | 'jpeg' = 'gif';
+    private _outputExtension: 'gif' = 'gif';
     private _lastRenderStats?: GifRenderStats;
     private _motionCollectionBudgetOverrideMs?: number;
 
@@ -734,57 +635,14 @@ class GifFileImageData implements ImageData {
         frameTimestamps: number[],
         baseFrameDelayMs: number
     ) {
-        const {
-            frameBuffers,
-            frameDelayMs,
-            motionScore,
-            motionScoreMax,
-            motionScoreComparisons,
-            motionScoreMs,
-            budgetMs,
-            truncatedByBudget,
-            motionDetected,
-        } = await this._collectFrames(video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
-
-        if (frameBuffers.length === 1) {
-            this._outputExtension = 'jpeg';
-            const jpegWidth = width;
-            const jpegHeight = height;
-            const jpegFrameBuffer = frameBuffers[0];
-
-            this._lastRenderStats = {
-                sourceFrameCount: frameTimestamps.length,
-                outputFrameCount: 1,
-                effectiveFps: Math.round((1000 / Math.max(1, baseFrameDelayMs)) * 10) / 10,
-                outputWidth: jpegWidth,
-                outputHeight: jpegHeight,
-                outputExtension: 'jpeg',
-                motionScore,
-                motionScoreMax,
-                motionScoreComparisons,
-                motionScoreMs,
-                budgetMs,
-                truncatedByBudget,
-                motionDetected,
-            };
-
-            const worker = await this._worker();
-
-            try {
-                const encodedJpeg = await this._encodeJpegInWorker(worker, {
-                    command: 'encodeJpeg',
-                    width: jpegWidth,
-                    height: jpegHeight,
-                    frameBuffer: jpegFrameBuffer,
-                });
-                return new Blob([encodedJpeg], { type: 'image/jpeg' });
-            } catch {
-                // Keep compatibility in environments without worker JPEG APIs.
-                return await this._jpegBlobFromFrameBuffer(ctx, jpegWidth, jpegHeight, jpegFrameBuffer);
-            } finally {
-                worker.terminate();
-            }
-        }
+        const { frameBuffers, frameDelayMs, budgetMs, truncatedByBudget } = await this._collectFrames(
+            video,
+            ctx,
+            width,
+            height,
+            frameTimestamps,
+            baseFrameDelayMs
+        );
 
         this._outputExtension = 'gif';
         this._lastRenderStats = {
@@ -794,13 +652,8 @@ class GifFileImageData implements ImageData {
             outputWidth: width,
             outputHeight: height,
             outputExtension: 'gif',
-            motionScore,
-            motionScoreMax,
-            motionScoreComparisons,
-            motionScoreMs,
             budgetMs,
             truncatedByBudget,
-            motionDetected,
         };
 
         const paletteFrameIndexes = this._paletteFrameIndexes(frameBuffers.length);
@@ -859,133 +712,16 @@ class GifFileImageData implements ImageData {
             };
         }
 
-        if (frameTimestamps.length === 1) {
-            const singleFrame = await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[0]);
-            return {
-                frameBuffers: [singleFrame],
-                frameDelayMs: [baseFrameDelayMs],
-            };
-        }
-
-        if (!this._gifOptions.detectMotion) {
-            const frameBuffers = await this._captureFrameBuffers(
-                video,
-                ctx,
-                width,
-                height,
-                frameTimestamps,
-                0,
-                frameTimestamps.length
-            );
-
-            return {
-                frameBuffers,
-                frameDelayMs: uniformFrameDelayMs(frameBuffers.length, baseFrameDelayMs),
-            };
-        }
-
-        const firstFrameBuffer = await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[0]);
-        const preCapturedFrames = new Map<number, ArrayBuffer>([[0, firstFrameBuffer]]);
-        const probeIndexes = evenlySpacedIndexes(
-            frameTimestamps.length,
-            Math.min(frameTimestamps.length, GIF_MOTION_PROBE_FRAME_COUNT)
-        );
-        const collectionStartedAtMs = now();
-        const defaultCollectionBudgetMs = Math.max(
-            GIF_MOTION_COLLECTION_BUDGET_MIN_MS,
-            Math.round(
-                this._durationMs * GIF_MOTION_COLLECTION_BUDGET_MULTIPLIER + GIF_MOTION_COLLECTION_BUDGET_PADDING_MS
-            )
-        );
         const collectionBudgetMs =
             this._motionCollectionBudgetOverrideMs === undefined
-                ? defaultCollectionBudgetMs
-                : Math.max(
-                      GIF_MOTION_COLLECTION_BUDGET_MIN_MS,
-                      Math.min(defaultCollectionBudgetMs, this._motionCollectionBudgetOverrideMs)
-                  );
-        let probeScoreTotal = 0;
-        let probeScoreMax = 0;
-        let probeScoreComparisons = 0;
-        let probeScoreElapsedMs = 0;
-
-        for (let i = 0; i < probeIndexes.length; ++i) {
-            const index = probeIndexes[i];
-
-            if (preCapturedFrames.has(index)) {
-                continue;
-            }
-
-            preCapturedFrames.set(
-                index,
-                await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[index])
-            );
-        }
-
-        for (let i = 1; i < probeIndexes.length; ++i) {
-            const previousIndex = probeIndexes[i - 1];
-            const currentIndex = probeIndexes[i];
-            const previousProbeFrame = new Uint8Array(preCapturedFrames.get(previousIndex)!);
-            const currentProbeFrame = new Uint8Array(preCapturedFrames.get(currentIndex)!);
-            const scoreStartedAtMs = now();
-            const score = motionScore(previousProbeFrame, currentProbeFrame, GIF_MOTION_SAMPLE_STRIDE);
-            probeScoreElapsedMs += now() - scoreStartedAtMs;
-            probeScoreTotal += score;
-            probeScoreMax = probeScoreComparisons === 0 ? score : Math.max(probeScoreMax, score);
-            probeScoreComparisons++;
-        }
-
-        const probeAverageMotionScore = probeScoreComparisons === 0 ? 0 : probeScoreTotal / probeScoreComparisons;
-        const roundedProbeAverageMotionScore = Math.round(probeAverageMotionScore * 10) / 10;
-        const roundedProbeMaxMotionScore = Math.round(probeScoreMax * 10) / 10;
-        const roundedProbeScoreElapsedMs = Math.round(probeScoreElapsedMs);
-
-        if (
-            this._gifOptions.createJpegIfMotionIsLow &&
-            probeAverageMotionScore <= GIF_MOTION_SCORE_JPEG_CUTOFF &&
-            probeScoreMax <= GIF_MOTION_EARLY_JPEG_MAX_SCORE
-        ) {
-            const lastFrameBuffer =
-                preCapturedFrames.get(frameTimestamps.length - 1) ??
-                (await this._captureFrameBuffer(
-                    video,
-                    ctx,
-                    width,
-                    height,
-                    frameTimestamps[frameTimestamps.length - 1]
-                ));
-
-            console.debug(
-                `[Image] motion score avg=${roundedProbeAverageMotionScore} max=${roundedProbeMaxMotionScore} comparisons=${probeScoreComparisons} took=${roundedProbeScoreElapsedMs}ms jpegCutoff=${GIF_MOTION_SCORE_JPEG_CUTOFF} maxFpsScore=${GIF_MOTION_SCORE_MAX_FPS} earlyProbe=true`
-            );
-
-            return {
-                frameBuffers: [lastFrameBuffer],
-                frameDelayMs: [Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs))],
-                motionScore: probeAverageMotionScore,
-                motionScoreMax: probeScoreMax,
-                motionScoreComparisons: probeScoreComparisons,
-                motionScoreMs: roundedProbeScoreElapsedMs,
-                budgetMs: collectionBudgetMs,
-                truncatedByBudget: false,
-                motionDetected: false,
-            };
-        }
-
-        let previousFrame = new Uint8Array(firstFrameBuffer);
-        let pendingFrameBuffer = firstFrameBuffer;
-        let pendingTimestampMs = frameTimestamps[0];
-        let lastFlushedTimestampMs = frameTimestamps[0];
+                ? undefined
+                : Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._motionCollectionBudgetOverrideMs));
+        const collectionStartedAtMs = now();
         const frameBuffers: ArrayBuffer[] = [];
-        const frameDelayMs: number[] = [];
-        let motionScoreTotal = 0;
-        let motionScoreMax = 0;
-        let motionScoreComparisons = 0;
-        let motionScoreElapsedMs = 0;
         let truncatedByBudget = false;
 
-        for (let i = 1; i < frameTimestamps.length; ++i) {
-            if (now() - collectionStartedAtMs >= collectionBudgetMs) {
+        for (let i = 0; i < frameTimestamps.length; ++i) {
+            if (collectionBudgetMs !== undefined && i > 0 && now() - collectionStartedAtMs >= collectionBudgetMs) {
                 truncatedByBudget = true;
                 break;
             }
@@ -994,124 +730,15 @@ class GifFileImageData implements ImageData {
                 await yieldToEventLoop();
             }
 
-            const currentFrameBuffer =
-                preCapturedFrames.get(i) ??
-                (await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[i]));
-            const currentFrame = new Uint8Array(currentFrameBuffer);
-
-            const scoreStartedAtMs = now();
-            const score = motionScore(previousFrame, currentFrame, GIF_MOTION_SAMPLE_STRIDE);
-            motionScoreElapsedMs += now() - scoreStartedAtMs;
-
-            motionScoreTotal += score;
-            motionScoreMax = motionScoreComparisons === 0 ? score : Math.max(motionScoreMax, score);
-            motionScoreComparisons++;
-
-            const elapsedSinceFlushMs = Math.max(
-                MIN_GIF_FRAME_DELAY_MS,
-                Math.round(frameTimestamps[i] - lastFlushedTimestampMs)
-            );
-            const requiredDelayMs = requiredDelayMsForMotionScore(score, baseFrameDelayMs);
-            const isNewDrawing = score > GIF_MOTION_NEW_DRAWING_THRESHOLD;
-
-            if (isNewDrawing && elapsedSinceFlushMs >= requiredDelayMs) {
-                frameBuffers.push(pendingFrameBuffer);
-                frameDelayMs.push(elapsedSinceFlushMs);
-                lastFlushedTimestampMs = frameTimestamps[i];
-            }
-
-            pendingFrameBuffer = currentFrameBuffer;
-            pendingTimestampMs = frameTimestamps[i];
-            previousFrame = currentFrame;
-        }
-
-        const finalFrameDelayMs = Math.max(
-            MIN_GIF_FRAME_DELAY_MS,
-            Math.round(Math.max(baseFrameDelayMs, pendingTimestampMs - lastFlushedTimestampMs))
-        );
-        frameBuffers.push(pendingFrameBuffer);
-        frameDelayMs.push(finalFrameDelayMs);
-
-        const averageMotionScore = motionScoreComparisons === 0 ? 0 : motionScoreTotal / motionScoreComparisons;
-        const roundedAverageMotionScore = Math.round(averageMotionScore * 10) / 10;
-        const roundedMaxMotionScore = Math.round(motionScoreMax * 10) / 10;
-        const roundedMotionScoreElapsedMs = Math.round(motionScoreElapsedMs);
-
-        console.debug(
-            `[Image] motion score avg=${roundedAverageMotionScore} max=${roundedMaxMotionScore} comparisons=${motionScoreComparisons} took=${roundedMotionScoreElapsedMs}ms jpegCutoff=${GIF_MOTION_SCORE_JPEG_CUTOFF} maxFpsScore=${GIF_MOTION_SCORE_MAX_FPS} budgetMs=${collectionBudgetMs} truncated=${truncatedByBudget}`
-        );
-
-        if (
-            this._gifOptions.createJpegIfMotionIsLow &&
-            averageMotionScore <= GIF_MOTION_SCORE_JPEG_CUTOFF &&
-            motionScoreMax <= GIF_MOTION_SCORE_JPEG_CUTOFF
-        ) {
-            return {
-                frameBuffers: [pendingFrameBuffer],
-                frameDelayMs: [Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs))],
-                motionScore: averageMotionScore,
-                motionScoreMax,
-                motionScoreComparisons,
-                motionScoreMs: roundedMotionScoreElapsedMs,
-                budgetMs: collectionBudgetMs,
-                truncatedByBudget,
-                motionDetected: false,
-            };
+            frameBuffers.push(await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[i]));
         }
 
         return {
             frameBuffers,
-            frameDelayMs,
-            motionScore: averageMotionScore,
-            motionScoreMax,
-            motionScoreComparisons,
-            motionScoreMs: roundedMotionScoreElapsedMs,
+            frameDelayMs: uniformFrameDelayMs(frameBuffers.length, baseFrameDelayMs),
             budgetMs: collectionBudgetMs,
             truncatedByBudget,
-            motionDetected: true,
         };
-    }
-
-    private async _captureFrameBuffers(
-        video: HTMLVideoElement,
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-        frameTimestamps: number[],
-        startIndex: number,
-        endIndexExclusive: number
-    ) {
-        const frameBuffers: ArrayBuffer[] = [];
-
-        for (let i = startIndex; i < endIndexExclusive; ++i) {
-            if (i > 0 && i % GIF_FRAME_YIELD_INTERVAL === 0) {
-                await yieldToEventLoop();
-            }
-
-            frameBuffers.push(await this._captureFrameBuffer(video, ctx, width, height, frameTimestamps[i]));
-        }
-
-        return frameBuffers;
-    }
-
-    private async _jpegBlobFromFrameBuffer(
-        ctx: CanvasRenderingContext2D,
-        width: number,
-        height: number,
-        frameBuffer: ArrayBuffer
-    ) {
-        const framePixels = new Uint8ClampedArray(frameBuffer);
-        ctx.putImageData(new ImageData(framePixels, width, height), 0, 0);
-        return await new Promise<Blob>((resolve, reject) => {
-            ctx.canvas.toBlob((blob) => {
-                if (blob === null) {
-                    reject(new Error('Could not create JPEG from single-frame GIF fallback'));
-                    return;
-                }
-
-                resolve(blob);
-            }, 'image/jpeg');
-        });
     }
 
     private async _captureFrameBuffer(
@@ -1135,8 +762,6 @@ class GifFileImageData implements ImageData {
     private _timingSettingsSummary() {
         return `settings={maxWidth:${this._maxWidth},maxHeight:${this._maxHeight},gifMaxDuration:${
             this._gifOptions.maxDurationMs
-        },gifDetectMotion:${this._gifOptions.detectMotion},gifCreateJpegIfLowMotion:${
-            this._gifOptions.createJpegIfMotionIsLow
         },gifFps:${this._gifOptions.fps},gifMaxFrames:${
             this._gifOptions.maxFrames
         },gifStartTrim:${this._gifOptions.startTrimMs},gifEndTrim:${this._gifOptions.endTrimMs}}`;
@@ -1148,15 +773,11 @@ class GifFileImageData implements ImageData {
         }
 
         const stats = this._lastRenderStats;
-        const motionSummary =
-            stats.motionScore === undefined
+        const budgetSummary =
+            stats.budgetMs === undefined
                 ? ''
-                : `,motionScore:${Math.round(stats.motionScore * 10) / 10},motionScoreMax:${
-                      Math.round((stats.motionScoreMax ?? 0) * 10) / 10
-                  },motionScoreComparisons:${stats.motionScoreComparisons ?? 0},motionScoreMs:${
-                      stats.motionScoreMs ?? 0
-                  },motionBudgetMs:${stats.budgetMs ?? 0},motionTruncated:${stats.truncatedByBudget === true},motionDetected:${stats.motionDetected}`;
-        return `render={sourceFrames:${stats.sourceFrameCount},outputFrames:${stats.outputFrameCount},effectiveFps:${stats.effectiveFps},width:${stats.outputWidth},height:${stats.outputHeight},output:${stats.outputExtension},gifDurationMs:${this._durationMs}${motionSummary}}`;
+                : `,collectionBudgetMs:${stats.budgetMs},truncatedByBudget:${stats.truncatedByBudget === true}`;
+        return `render={sourceFrames:${stats.sourceFrameCount},outputFrames:${stats.outputFrameCount},effectiveFps:${stats.effectiveFps},width:${stats.outputWidth},height:${stats.outputHeight},output:${stats.outputExtension},gifDurationMs:${this._durationMs}${budgetSummary}}`;
     }
 
     private _applyPaletteWorkerCount(frameCount: number) {
@@ -1326,12 +947,6 @@ class GifFileImageData implements ImageData {
         );
     }
 
-    private async _encodeJpegInWorker(worker: Worker, message: EncodeJpegInWorkerMessage) {
-        return await this._encodeInWorker(worker, message, 'encodedJpeg', 'Failed to encode JPEG', [
-            message.frameBuffer,
-        ]);
-    }
-
     private async _quantizePaletteInWorker(worker: Worker, message: QuantizePaletteInWorkerMessage) {
         return await new Promise<GifPalette>((resolve, reject) => {
             const handleError = (error: Error) => {
@@ -1403,7 +1018,7 @@ class GifFileImageData implements ImageData {
 
     private async _encodeInWorker(
         worker: Worker,
-        message: EncodeGifInWorkerMessage | EncodeIndexedGifInWorkerMessage | EncodeJpegInWorkerMessage,
+        message: EncodeGifInWorkerMessage | EncodeIndexedGifInWorkerMessage,
         expectedCommand: GifWorkerSuccessCommand,
         fallbackErrorMessage: string,
         transfer: Transferable[]

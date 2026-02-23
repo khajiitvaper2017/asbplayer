@@ -5,9 +5,7 @@ import type {
     EncodeGifInWorkerMessage,
     EncodeGifErrorFromWorkerMessage,
     EncodeIndexedGifInWorkerMessage,
-    EncodeJpegInWorkerMessage,
     EncodedGifFromWorkerMessage,
-    EncodedJpegFromWorkerMessage,
     GifEncoderRequestMessage,
     QuantizePaletteInWorkerMessage,
     QuantizedPaletteFromWorkerMessage,
@@ -157,25 +155,6 @@ const encodeIndexedGif = ({
     return encodeGifFromIndexes(width, height, indexes, frameDelayMs, palette);
 };
 
-const encodeJpeg = async ({ width, height, frameBuffer }: EncodeJpegInWorkerMessage) => {
-    if (typeof OffscreenCanvas === 'undefined') {
-        throw new Error('OffscreenCanvas is not available for worker JPEG encoding');
-    }
-
-    const canvas = new OffscreenCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-        throw new Error('Could not create OffscreenCanvas 2d context');
-    }
-
-    const pixels = new Uint8ClampedArray(frameBuffer);
-    ctx.putImageData(new ImageData(pixels, width, height), 0, 0);
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg' });
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    return bytes;
-};
-
 const toArrayBuffer = (bytes: Uint8Array) =>
     bytes.buffer instanceof ArrayBuffer ? bytes.buffer : new Uint8Array(bytes).buffer;
 
@@ -222,17 +201,6 @@ const onMessage = () => {
                 const buffer = toArrayBuffer(bytes);
                 const response: EncodedGifFromWorkerMessage = {
                     command: 'encoded',
-                    buffer,
-                };
-                postMessage(response, { transfer: [buffer] });
-                return;
-            }
-
-            if (message.command === 'encodeJpeg') {
-                const bytes = await encodeJpeg(message);
-                const buffer = toArrayBuffer(bytes);
-                const response: EncodedJpegFromWorkerMessage = {
-                    command: 'encodedJpeg',
                     buffer,
                 };
                 postMessage(response, { transfer: [buffer] });

@@ -385,12 +385,6 @@ const settingsSchema = {
         gifEndTrim: {
             type: 'number',
         },
-        gifDetectMotion: {
-            type: 'boolean',
-        },
-        gifCreateJpegIfLowMotion: {
-            type: 'boolean',
-        },
         truncateGifToAudioCreationSpeed: {
             type: 'boolean',
         },
@@ -546,10 +540,14 @@ const settingsSchema = {
 const ignoreKeys: (keyof AsbplayerSettings)[] = [
     'streamingPages', // Ignored due to security risk (e.g. disable CSP)
 ];
+const legacyIgnoredKeys = ['gifDetectMotion', 'gifCreateJpegIfLowMotion'];
 
 const withIgnoredKeysRemoved = (settings: any) => {
     const copy = { ...settings };
     for (const ignoreKey of ignoreKeys) {
+        delete copy[ignoreKey];
+    }
+    for (const ignoreKey of legacyIgnoredKeys) {
         delete copy[ignoreKey];
     }
     return copy;
