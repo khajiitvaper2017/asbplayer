@@ -38,8 +38,11 @@ const VIDEO_READY_TIMEOUT_MS = 5_000;
 const GIF_FRAME_YIELD_INTERVAL = 2;
 const MIN_GIF_FRAME_DELAY_MS = 20;
 const VIDEO_SEEK_EPSILON_SECONDS = 0.001;
-const GIF_PLAYBACK_COLLECTION_RATE = 2;
-const GIF_PLAYBACK_COLLECTION_MAX_RATE = 2;
+const GIF_PLAYBACK_COLLECTION_HIGH_FPS_THRESHOLD = 20;
+const GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_THRESHOLD = 14;
+const GIF_PLAYBACK_COLLECTION_HIGH_FPS_RATE = 1;
+const GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_RATE = 1.5;
+const GIF_PLAYBACK_COLLECTION_LOW_FPS_RATE = 2;
 const GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS = 1_000;
 const GIF_FRAME_CAPTURE_SLOW_THRESHOLD_MS = 150;
 const GIF_FRAME_COLLECTION_MAX_SLOW_FRAMES_LOGGED = 5;
@@ -849,7 +852,7 @@ class GifFileImageData implements ImageData {
                 };
             }
 
-            const playbackRate = Math.min(GIF_PLAYBACK_COLLECTION_MAX_RATE, Math.max(1, GIF_PLAYBACK_COLLECTION_RATE));
+            const playbackRate = this._playbackCollectionRate(baseFrameDelayMs);
             const playbackStartedAtMs = now();
 
             video.muted = true;
@@ -949,7 +952,7 @@ class GifFileImageData implements ImageData {
             const collectionElapsedMs = Math.round(now() - collectionStartedAtMs);
             if (collectionElapsedMs >= GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS) {
                 console.debug(
-                    `[Image] collect frames playback total=${collectionElapsedMs}ms captured=${frameBuffers.length}/${frameTimestamps.length} playbackCaptured=${playbackCapturedCount} fallbackSeeks=${fallbackSeekCount} playback=${playbackElapsedMs}ms callbacks=${callbackCount} read=${totalReadElapsedMs}ms`
+                    `[Image] collect frames playback total=${collectionElapsedMs}ms captured=${frameBuffers.length}/${frameTimestamps.length} playbackCaptured=${playbackCapturedCount} fallbackSeeks=${fallbackSeekCount} playback=${playbackElapsedMs}ms callbacks=${callbackCount} read=${totalReadElapsedMs}ms playbackRate=${playbackRate}`
                 );
             }
 
@@ -982,6 +985,20 @@ class GifFileImageData implements ImageData {
                 videoWithPreservesPitch.preservesPitch = originalPreservesPitch;
             }
         }
+    }
+
+    private _playbackCollectionRate(baseFrameDelayMs: number) {
+        const targetFps = 1000 / Math.max(1, baseFrameDelayMs);
+
+        if (targetFps >= GIF_PLAYBACK_COLLECTION_HIGH_FPS_THRESHOLD) {
+            return GIF_PLAYBACK_COLLECTION_HIGH_FPS_RATE;
+        }
+
+        if (targetFps >= GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_THRESHOLD) {
+            return GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_RATE;
+        }
+
+        return GIF_PLAYBACK_COLLECTION_LOW_FPS_RATE;
     }
 
     private async _collectFramesWithSeeking(
