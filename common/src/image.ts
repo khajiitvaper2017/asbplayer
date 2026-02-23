@@ -2,7 +2,11 @@ import { resizeCanvas } from './image-transformer';
 import { CardModel, FileModel, ImageErrorCode } from './model';
 import { download } from '../util/util';
 import { isActiveBlobUrl } from '../blob-url';
-import { GIFEncoder, applyPalette, quantize } from 'gifenc';
+import type {
+    EncodeGifInWorkerMessage,
+    EncodedGifFromWorkerMessage,
+    EncodeGifErrorFromWorkerMessage,
+} from './gif-encoder-message';
 
 const maxPrefixLength = 24;
 const defaultGifDurationMs = 1500;
@@ -17,6 +21,8 @@ const gifPaletteKeyframeCount = 5;
 const gifPalettePixelStride = 4;
 const gifStartTrimMs = 100;
 const gifEndTrimMs = 100;
+
+type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
 
 const makeFileName = (prefix: string, timestamp: number) => {
     return `${prefix.replaceAll(' ', '_').substring(0, Math.min(prefix.length, maxPrefixLength))}_${Math.floor(
@@ -323,6 +329,7 @@ class GifFileImageData implements ImageData {
     private _blobPromiseReject?: (error: Error) => void;
     private _cachedBlob?: Blob;
     private _cachedDataUrl?: string;
+    private readonly _workerFactory: GifEncoderWorkerFactory;
 
     constructor(
         file: FileModel,
@@ -330,8 +337,9 @@ class GifFileImageData implements ImageData {
         endTimestamp: number,
         maxWidth: number,
         maxHeight: number,
-        video?: HTMLVideoElement,
-        canvas?: HTMLCanvasElement
+        video: HTMLVideoElement | undefined,
+        canvas: HTMLCanvasElement | undefined,
+        workerFactory: GifEncoderWorkerFactory
     ) {
         this._file = file;
         this._startTimestamp = Math.max(0, startTimestamp);
@@ -341,6 +349,7 @@ class GifFileImageData implements ImageData {
         this._name = `${makeFileName(file.name, this._startTimestamp)}.gif`;
         this._video = video;
         this._canvas = canvas;
+        this._workerFactory = workerFactory;
     }
 
     get name() {
@@ -376,7 +385,8 @@ class GifFileImageData implements ImageData {
             this._maxWidth,
             this._maxHeight,
             this._video,
-            this._canvas
+            this._canvas,
+            this._workerFactory
         );
     }
 
@@ -424,6 +434,7 @@ class GifFileImageData implements ImageData {
     }
 
     private async _renderGif() {
+        const worker = await this._worker();
         const video = await this._videoElement(this._file);
         const { width, height } = this._dimensions(video);
         const frameTimestamps = this._frameTimestamps(video.duration);
@@ -445,121 +456,105 @@ class GifFileImageData implements ImageData {
             throw new Error('Could not create image context');
         }
 
-        const palette = await this._globalPalette(video, ctx, width, height, frameTimestamps);
-        const gif = GIFEncoder();
-
-        for (let i = 0; i < frameTimestamps.length; ++i) {
-            if (i > 0 && i % 2 === 0) {
-                await new Promise((resolve) => setTimeout(resolve, 0));
-            }
-
-            await this._seekVideo(video, frameTimestamps[i] / 1000);
-            ctx.drawImage(video, 0, 0, width, height);
-            const rgba = ctx.getImageData(0, 0, width, height).data;
-            const index = applyPalette(rgba, palette, gifPaletteFormat);
-
-            if (i === 0) {
-                gif.writeFrame(index, width, height, {
-                    palette,
-                    delay: delayMs,
-                    repeat: 0,
-                });
-            } else {
-                gif.writeFrame(index, width, height, {
-                    delay: delayMs,
-                });
-            }
-        }
-
-        gif.finish();
-        return new Blob([gif.bytesView()], { type: 'image/gif' });
+        return await this._renderGifInWorker(worker, video, ctx, width, height, frameTimestamps, delayMs);
     }
 
-    private async _globalPalette(
+    private async _renderGifInWorker(
+        worker: Worker,
         video: HTMLVideoElement,
         ctx: CanvasRenderingContext2D,
         width: number,
         height: number,
-        frameTimestamps: number[]
+        frameTimestamps: number[],
+        delayMs: number
     ) {
-        const paletteTimestamps = this._paletteTimestamps(frameTimestamps);
-        const sampledFrames: Uint8Array[] = [];
-        let totalSampledLength = 0;
+        try {
+            const frameBuffers: ArrayBuffer[] = [];
 
-        for (let i = 0; i < paletteTimestamps.length; ++i) {
-            if (i > 0 && i % 2 === 0) {
-                await new Promise((resolve) => setTimeout(resolve, 0));
+            for (let i = 0; i < frameTimestamps.length; ++i) {
+                if (i > 0 && i % 2 === 0) {
+                    await new Promise((resolve) => setTimeout(resolve, 0));
+                }
+
+                await this._seekVideo(video, frameTimestamps[i] / 1000);
+                ctx.drawImage(video, 0, 0, width, height);
+                const rgba = ctx.getImageData(0, 0, width, height).data;
+                const frameBuffer = rgba.buffer instanceof ArrayBuffer ? rgba.buffer : new Uint8Array(rgba).buffer;
+                frameBuffers.push(frameBuffer);
             }
 
-            await this._seekVideo(video, paletteTimestamps[i] / 1000);
-            ctx.drawImage(video, 0, 0, width, height);
-            const rgba = ctx.getImageData(0, 0, width, height).data;
-            const sampled = this._sampleRgbaPixels(rgba);
-            sampledFrames.push(sampled);
-            totalSampledLength += sampled.length;
-        }
-
-        if (totalSampledLength === 0) {
-            return quantize(new Uint8Array([0, 0, 0, 255]), gifPaletteSize, {
-                format: gifPaletteFormat,
+            const paletteFrameIndexes = this._paletteFrameIndexes(frameTimestamps.length);
+            const encodedBytes = await this._encodeGifInWorker(worker, {
+                command: 'encode',
+                width,
+                height,
+                delayMs,
+                frameBuffers,
+                paletteFrameIndexes,
+                paletteSize: gifPaletteSize,
+                paletteFormat: gifPaletteFormat,
+                palettePixelStride: gifPalettePixelStride,
             });
+            return new Blob([encodedBytes], { type: 'image/gif' });
+        } finally {
+            worker.terminate();
         }
+    }
 
-        const sampledFramesMerged = new Uint8Array(totalSampledLength);
-        let offset = 0;
-        for (const sampled of sampledFrames) {
-            sampledFramesMerged.set(sampled, offset);
-            offset += sampled.length;
-        }
+    private async _encodeGifInWorker(worker: Worker, message: EncodeGifInWorkerMessage) {
+        return await new Promise<Uint8Array>((resolve, reject) => {
+            const handleError = (error: Error) => {
+                worker.onmessage = null;
+                worker.onerror = null;
+                reject(error);
+            };
 
-        return quantize(sampledFramesMerged, gifPaletteSize, {
-            format: gifPaletteFormat,
+            worker.onmessage = (event: MessageEvent<EncodedGifFromWorkerMessage | EncodeGifErrorFromWorkerMessage>) => {
+                const data = event.data;
+
+                if (data.command === 'encoded') {
+                    worker.onmessage = null;
+                    worker.onerror = null;
+                    resolve(new Uint8Array(data.buffer));
+                    return;
+                }
+
+                handleError(new Error(data.error));
+            };
+            worker.onerror = (event) => {
+                handleError(event.error ?? new Error(event.message ?? 'Failed to encode GIF'));
+            };
+
+            worker.postMessage(message, message.frameBuffers);
         });
     }
 
-    private _paletteTimestamps(frameTimestamps: number[]) {
-        const targetFrameCount = Math.max(1, Math.min(gifPaletteKeyframeCount, frameTimestamps.length));
+    private async _worker() {
+        const workerFactoryResult = this._workerFactory();
+        return workerFactoryResult instanceof Worker ? workerFactoryResult : await workerFactoryResult;
+    }
 
-        if (targetFrameCount === frameTimestamps.length) {
-            return frameTimestamps;
+    private _paletteFrameIndexes(frameCount: number) {
+        const targetFrameCount = Math.max(1, Math.min(gifPaletteKeyframeCount, frameCount));
+
+        if (targetFrameCount === frameCount) {
+            return [...Array(frameCount).keys()];
         }
 
         if (targetFrameCount === 1) {
-            return [frameTimestamps[0]];
+            return [0];
         }
 
-        const timestamps: number[] = [];
+        const indexes: number[] = [];
         for (let i = 0; i < targetFrameCount; ++i) {
-            const index = Math.round((i * (frameTimestamps.length - 1)) / (targetFrameCount - 1));
-            const timestamp = frameTimestamps[index];
+            const index = Math.round((i * (frameCount - 1)) / (targetFrameCount - 1));
 
-            if (timestamps[timestamps.length - 1] !== timestamp) {
-                timestamps.push(timestamp);
+            if (indexes[indexes.length - 1] !== index) {
+                indexes.push(index);
             }
         }
 
-        return timestamps;
-    }
-
-    private _sampleRgbaPixels(rgba: Uint8ClampedArray) {
-        if (gifPalettePixelStride <= 1) {
-            return new Uint8Array(rgba);
-        }
-
-        const pixelCount = Math.floor(rgba.length / 4);
-        const sampledPixelCount = Math.ceil(pixelCount / gifPalettePixelStride);
-        const sampled = new Uint8Array(sampledPixelCount * 4);
-        let outIndex = 0;
-
-        for (let pixel = 0; pixel < pixelCount; pixel += gifPalettePixelStride) {
-            const sourceIndex = pixel * 4;
-            sampled[outIndex++] = rgba[sourceIndex];
-            sampled[outIndex++] = rgba[sourceIndex + 1];
-            sampled[outIndex++] = rgba[sourceIndex + 2];
-            sampled[outIndex++] = rgba[sourceIndex + 3];
-        }
-
-        return sampled;
+        return indexes;
     }
 
     private _frameTimestamps(videoDurationSeconds: number) {
@@ -680,7 +675,35 @@ export default class Image {
         this.data = data;
     }
 
-    static fromCard(card: CardModel, maxWidth: number, maxHeight: number, preferGif = false) {
+    static fromCard(card: CardModel, maxWidth: number, maxHeight: number): Image | undefined;
+    static fromCard(
+        card: CardModel,
+        maxWidth: number,
+        maxHeight: number,
+        preferGif: false,
+        gifWorkerFactory?: GifEncoderWorkerFactory
+    ): Image | undefined;
+    static fromCard(
+        card: CardModel,
+        maxWidth: number,
+        maxHeight: number,
+        preferGif: true,
+        gifWorkerFactory: GifEncoderWorkerFactory
+    ): Image | undefined;
+    static fromCard(
+        card: CardModel,
+        maxWidth: number,
+        maxHeight: number,
+        preferGif: boolean,
+        gifWorkerFactory: GifEncoderWorkerFactory
+    ): Image | undefined;
+    static fromCard(
+        card: CardModel,
+        maxWidth: number,
+        maxHeight: number,
+        preferGif = false,
+        gifWorkerFactory?: GifEncoderWorkerFactory
+    ) {
         if (card.image) {
             return Image.fromBase64(
                 card.subtitleFileName,
@@ -693,8 +716,19 @@ export default class Image {
 
         if (card.file) {
             if (preferGif) {
+                if (!gifWorkerFactory) {
+                    throw new Error('GIF worker factory is required when preferGif is true');
+                }
+
                 const { startTimestamp, endTimestamp } = trimmedGifInterval(card.subtitle.start, card.subtitle.end);
-                return Image.fromGifFile(card.file, startTimestamp, endTimestamp, maxWidth, maxHeight);
+                return Image.fromGifFile(
+                    card.file,
+                    startTimestamp,
+                    endTimestamp,
+                    maxWidth,
+                    maxHeight,
+                    gifWorkerFactory
+                );
             }
 
             return Image.fromFile(card.file, card.mediaTimestamp ?? card.subtitle.start, maxWidth, maxHeight);
@@ -724,9 +758,21 @@ export default class Image {
         startTimestamp: number,
         endTimestamp: number,
         maxWidth: number,
-        maxHeight: number
+        maxHeight: number,
+        gifWorkerFactory: GifEncoderWorkerFactory
     ) {
-        return new Image(new GifFileImageData(file, startTimestamp, endTimestamp, maxWidth, maxHeight));
+        return new Image(
+            new GifFileImageData(
+                file,
+                startTimestamp,
+                endTimestamp,
+                maxWidth,
+                maxHeight,
+                undefined,
+                undefined,
+                gifWorkerFactory
+            )
+        );
     }
 
     get name() {

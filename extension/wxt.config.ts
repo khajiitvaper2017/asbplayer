@@ -97,6 +97,7 @@ export default defineConfig({
                         'anki-ui.js',
                         'mp3-encoder-worker.js',
                         'pgs-parser-worker.js',
+                        'gif-encoder-worker.js',
                         'video-data-sync-ui.js',
                         'video-select-ui.js',
                         'notification-ui.js',

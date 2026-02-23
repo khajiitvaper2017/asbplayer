@@ -51,6 +51,7 @@ import BulkExportModal from '@project/common/app/components/BulkExportModal';
 import { IndexedDBCopyHistoryRepository } from '@project/common/copy-history';
 import { mp3WorkerFactory } from '../../services/mp3-worker-factory';
 import { pgsParserWorkerFactory } from '../../services/pgs-parser-worker-factory';
+import { gifEncoderWorkerFactory } from '../../services/gif-encoder-worker-factory';
 import { DictionaryProvider } from '@project/common/dictionary-db';
 
 interface Props {
@@ -418,7 +419,13 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     browser.tabs.sendMessage(currentTabId, downloadImageCommand);
                 }
             } else {
-                const image = Image.fromCard(item, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif);
+                const image = Image.fromCard(
+                    item,
+                    settings.maxImageWidth,
+                    settings.maxImageHeight,
+                    settings.preferGif,
+                    gifEncoderWorkerFactory
+                );
 
                 if (image) {
                     image.download();
