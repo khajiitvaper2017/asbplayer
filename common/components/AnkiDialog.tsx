@@ -454,6 +454,7 @@ const AnkiDialog = ({
         setImage(
             Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, gifWorkerFactory, {
                 maxDurationMs: settings.gifMaxDuration,
+                detectMotion: settings.gifDetectMotion,
                 fps: settings.gifFps,
                 maxFrames: settings.gifMaxFrames,
                 startTrimMs: settings.gifStartTrim,
@@ -468,6 +469,7 @@ const AnkiDialog = ({
         settings.maxImageHeight,
         settings.preferGif,
         settings.gifMaxDuration,
+        settings.gifDetectMotion,
         settings.gifFps,
         settings.gifMaxFrames,
         settings.gifStartTrim,

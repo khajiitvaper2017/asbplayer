@@ -388,6 +388,9 @@ const settingsSchema = {
         gifEndTrim: {
             type: 'number',
         },
+        gifDetectMotion: {
+            type: 'boolean',
+        },
         tabName: {
             type: 'string',
         },

@@ -387,6 +387,7 @@
         "mp3Preference": "Re-encode audio as mp3 (slower)",
         "gifPreference": "Create animated GIF from local video (slower)",
         "gifMaxDuration": "GIF max duration",
+        "gifDetectMotion": "Enable low-motion detection",
         "gifFps": "GIF FPS",
         "gifMaxFrames": "GIF max frames",
         "gifStartTrim": "GIF start trim",
