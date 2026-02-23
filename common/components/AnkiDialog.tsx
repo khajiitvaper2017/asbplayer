@@ -452,14 +452,22 @@ const AnkiDialog = ({
         }
 
         setImage(
-            Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, gifWorkerFactory, {
-                maxDurationMs: settings.gifMaxDuration,
-                detectMotion: settings.gifDetectMotion,
-                fps: settings.gifFps,
-                maxFrames: settings.gifMaxFrames,
-                startTrimMs: settings.gifStartTrim,
-                endTrimMs: settings.gifEndTrim,
-            })
+            Image.fromCard(
+                card,
+                settings.maxImageWidth,
+                settings.maxImageHeight,
+                settings.preferGif,
+                gifWorkerFactory,
+                {
+                    maxDurationMs: settings.gifMaxDuration,
+                    detectMotion: settings.gifDetectMotion,
+                    createJpegIfMotionIsLow: settings.gifCreateJpegIfLowMotion,
+                    fps: settings.gifFps,
+                    maxFrames: settings.gifMaxFrames,
+                    startTrimMs: settings.gifStartTrim,
+                    endTrimMs: settings.gifEndTrim,
+                }
+            )
         );
     }, [
         card,
@@ -470,6 +478,7 @@ const AnkiDialog = ({
         settings.preferGif,
         settings.gifMaxDuration,
         settings.gifDetectMotion,
+        settings.gifCreateJpegIfLowMotion,
         settings.gifFps,
         settings.gifMaxFrames,
         settings.gifStartTrim,
