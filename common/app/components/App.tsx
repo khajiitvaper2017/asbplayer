@@ -62,6 +62,7 @@ import { isMobile } from 'react-device-detect';
 import { GlobalState } from '../../global-state';
 import mp3WorkerFactory from '../../audio-clip/mp3-encoder-worker.ts?worker';
 import pgsParserWorkerFactory from '../../subtitle-reader/pgs-parser-worker.ts?worker';
+import gifEncoderWorkerFactory from '../../src/gif-encoder-worker.ts?worker';
 import CssBaseline from '@mui/material/CssBaseline';
 import { StyledEngineProvider } from '@mui/material/styles';
 import { useServiceWorker } from '../hooks/use-service-worker';
@@ -453,6 +454,7 @@ function App({
     // Avoid unnecessary re-renders by having handleCopy operate on a ref to settings
     const settingsRef = useRef(settings);
     settingsRef.current = settings;
+    const gifWorkerFactory = useCallback(() => new gifEncoderWorkerFactory(), []);
     const handleCopy = useCallback(
         async (card: CardModel, postMineAction?: PostMineAction, id?: string) => {
             if (card.subtitle && settingsRef.current.copyToClipboardOnMine) {
@@ -510,7 +512,8 @@ function App({
                             newCard,
                             settingsRef.current.maxImageWidth,
                             settingsRef.current.maxImageHeight,
-                            settingsRef.current.preferGif
+                            settingsRef.current.preferGif,
+                            gifWorkerFactory
                         ),
                         word: newCard.word ?? '',
                         source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
@@ -524,7 +527,7 @@ function App({
                     throw new Error('Unknown post mine action: ' + postMineAction);
             }
         },
-        [extension, miningContext, saveCopyHistoryItem, handleAnkiDialogProceed, handleAnkiDialogRequest, t]
+        [extension, gifWorkerFactory, miningContext, saveCopyHistoryItem, handleAnkiDialogProceed, handleAnkiDialogRequest, t]
     );
 
     const handleOpenCopyHistory = useCallback(async () => {
@@ -631,7 +634,8 @@ function App({
                     item,
                     settings.maxImageWidth,
                     settings.maxImageHeight,
-                    settings.preferGif
+                    settings.preferGif,
+                    gifWorkerFactory
                 )!;
 
                 if (image.error === undefined) {
@@ -645,7 +649,7 @@ function App({
                 handleError(e);
             }
         },
-        [handleError, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, t]
+        [gifWorkerFactory, handleError, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, t]
     );
 
     const handleDownloadCopyHistorySectionAsSrt = useCallback(
@@ -1324,6 +1328,7 @@ function App({
                                     onProceed={handleAnkiDialogProceed}
                                     onCopyToClipboard={handleCopyToClipboard}
                                     mp3Encoder={mp3Encoder}
+                                    gifWorkerFactory={gifWorkerFactory}
                                     showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
                                     onDismissShowQuickSelectFtue={handleDismissShowAnkiDialogQuickSelectFtue}
                                     {...profilesContext}
@@ -1358,6 +1363,7 @@ function App({
                                     onOpenSettings={handleOpenSettings}
                                     onCopyToClipboard={handleCopyToClipboard}
                                     mp3Encoder={mp3Encoder}
+                                    gifWorkerFactory={gifWorkerFactory}
                                     showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
                                     onDismissShowQuickSelectFtue={handleDismissShowAnkiDialogQuickSelectFtue}
                                     {...profilesContext}

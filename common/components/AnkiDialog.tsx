@@ -200,6 +200,7 @@ interface AnkiDialogProps {
     lastAppliedTimestampIntervalToAudio?: number[];
     stateRef?: MutableRefObject<AnkiDialogState | undefined>;
     mp3Encoder: (blob: Blob, extension: string) => Promise<Blob>;
+    gifWorkerFactory: () => Worker | Promise<Worker>;
     profiles?: Profile[];
     activeProfile?: string;
     onSetActiveProfile?: (profile: string | undefined) => void;
@@ -228,6 +229,7 @@ const AnkiDialog = ({
     lastAppliedTimestampIntervalToAudio: initialLastAppliedTimestampIntervalToAudio,
     stateRef,
     mp3Encoder,
+    gifWorkerFactory,
     profiles,
     activeProfile,
     onSetActiveProfile,
@@ -449,8 +451,8 @@ const AnkiDialog = ({
             return;
         }
 
-        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif));
-    }, [card, open, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif]);
+        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, gifWorkerFactory));
+    }, [card, gifWorkerFactory, open, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif]);
 
     useEffect(() => {
         if (!open && image) {
