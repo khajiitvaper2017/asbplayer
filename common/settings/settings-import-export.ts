@@ -388,6 +388,12 @@ const settingsSchema = {
         gifDetectMotion: {
             type: 'boolean',
         },
+        gifCreateJpegIfLowMotion: {
+            type: 'boolean',
+        },
+        truncateGifToAudioCreationSpeed: {
+            type: 'boolean',
+        },
         tabName: {
             type: 'string',
         },

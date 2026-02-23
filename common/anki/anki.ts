@@ -15,6 +15,10 @@ const alphaNumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv
 const unsafeURLChars = /[:\/\?#\[\]@!$&'()*+,;= "<>%{}|\\^`]/g;
 const replacement = '_';
 const ANKI_TIMING_LOG_THRESHOLD_MS = 500;
+const GIF_AUDIO_SPEED_BUDGET_MP3_MULTIPLIER = 0.75;
+const GIF_AUDIO_SPEED_BUDGET_DEFAULT_MULTIPLIER = 0.6;
+const GIF_AUDIO_SPEED_BUDGET_PADDING_MS = 150;
+const GIF_AUDIO_SPEED_BUDGET_MIN_MS = 900;
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export function escapeAnkiQuery(query: string) {
@@ -250,6 +254,26 @@ export class Anki {
 
     get ankiConnectUrl() {
         return this.settingsProvider.ankiConnectUrl;
+    }
+
+    private _gifMotionCollectionBudgetFromAudio(audioClip: AudioClip | undefined) {
+        if (!this.settingsProvider.truncateGifToAudioCreationSpeed || !audioClip) {
+            return undefined;
+        }
+
+        const audioDurationMs = Math.max(0, Math.round(audioClip.end - audioClip.start));
+
+        if (audioDurationMs === 0) {
+            return undefined;
+        }
+
+        const multiplier = this.settingsProvider.preferMp3
+            ? GIF_AUDIO_SPEED_BUDGET_MP3_MULTIPLIER
+            : GIF_AUDIO_SPEED_BUDGET_DEFAULT_MULTIPLIER;
+        return Math.max(
+            GIF_AUDIO_SPEED_BUDGET_MIN_MS,
+            Math.round(audioDurationMs * multiplier + GIF_AUDIO_SPEED_BUDGET_PADDING_MS)
+        );
     }
 
     private _logTiming(message: string, elapsedMs?: number) {
@@ -515,6 +539,16 @@ export class Anki {
         const imagePreparationTask = (async () => {
             if (!this.settingsProvider.imageField || !image || image.error !== undefined) {
                 return {};
+            }
+
+            const gifMotionCollectionBudgetMs = this._gifMotionCollectionBudgetFromAudio(audioClip);
+            const audioDurationMs = audioClip ? Math.max(0, Math.round(audioClip.end - audioClip.start)) : 0;
+            image.setGifMotionCollectionBudgetMs(gifMotionCollectionBudgetMs);
+
+            if (gifMotionCollectionBudgetMs !== undefined) {
+                this._logTiming(
+                    `image motion budget set to ${gifMotionCollectionBudgetMs}ms fromAudioDurationMs=${audioDurationMs}`
+                );
             }
 
             const sanitizedName = this._sanitizeFileName(image.name);

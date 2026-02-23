@@ -88,6 +88,12 @@ class SettingsAccessor {
     get gifDetectMotion() {
         return this.settings.gifDetectMotion;
     }
+    get gifCreateJpegIfLowMotion() {
+        return this.settings.gifCreateJpegIfLowMotion;
+    }
+    get truncateGifToAudioCreationSpeed() {
+        return this.settings.truncateGifToAudioCreationSpeed;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }

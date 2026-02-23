@@ -1,11 +1,16 @@
 import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 import type {
+    AppliedPaletteFromWorkerMessage,
+    ApplyPaletteInWorkerMessage,
     EncodeGifInWorkerMessage,
     EncodeGifErrorFromWorkerMessage,
+    EncodeIndexedGifInWorkerMessage,
     EncodeJpegInWorkerMessage,
     EncodedGifFromWorkerMessage,
     EncodedJpegFromWorkerMessage,
     GifEncoderRequestMessage,
+    QuantizePaletteInWorkerMessage,
+    QuantizedPaletteFromWorkerMessage,
 } from './gif-encoder-message';
 
 const frameFromBuffer = (buffer: ArrayBuffer) => new Uint8Array(buffer);
@@ -62,6 +67,48 @@ const paletteRgba = (frames: Uint8Array[], paletteFrameIndexes: number[], stride
     return merged;
 };
 
+const quantizedPalette = (
+    frames: Uint8Array[],
+    paletteFrameIndexes: number[],
+    paletteSize: number,
+    paletteFormat: 'rgb444' | 'rgb565' | 'rgba4444',
+    palettePixelStride: number
+) =>
+    quantize(paletteRgba(frames, paletteFrameIndexes, palettePixelStride), paletteSize, {
+        format: paletteFormat,
+    });
+
+const encodeGifFromIndexes = (
+    width: number,
+    height: number,
+    frameIndexes: Uint8Array[],
+    frameDelayMs: number[],
+    palette: number[][]
+) => {
+    const delays =
+        frameDelayMs.length === frameIndexes.length ? frameDelayMs : frameIndexes.map(() => frameDelayMs[0] ?? 20);
+    const gif = GIFEncoder();
+
+    for (let i = 0; i < frameIndexes.length; ++i) {
+        const delay = Math.max(1, Math.round(delays[i]));
+
+        if (i === 0) {
+            gif.writeFrame(frameIndexes[i], width, height, {
+                palette,
+                delay,
+                repeat: 0,
+            });
+        } else {
+            gif.writeFrame(frameIndexes[i], width, height, {
+                delay,
+            });
+        }
+    }
+
+    gif.finish();
+    return new Uint8Array(gif.bytesView());
+};
+
 const encodeGif = ({
     width,
     height,
@@ -74,30 +121,40 @@ const encodeGif = ({
 }: EncodeGifInWorkerMessage) => {
     const frames = frameBuffers.map(frameFromBuffer);
     const delays = frameDelayMs.length === frames.length ? frameDelayMs : frames.map(() => frameDelayMs[0] ?? 20);
-    const palette = quantize(paletteRgba(frames, paletteFrameIndexes, palettePixelStride), paletteSize, {
-        format: paletteFormat,
-    });
-    const gif = GIFEncoder();
+    const palette = quantizedPalette(frames, paletteFrameIndexes, paletteSize, paletteFormat, palettePixelStride);
+    const indexes = frames.map((frame) => applyPalette(frame, palette, paletteFormat));
+    return encodeGifFromIndexes(width, height, indexes, delays, palette);
+};
 
-    for (let i = 0; i < frames.length; ++i) {
-        const index = applyPalette(frames[i], palette, paletteFormat);
-        const delay = Math.max(1, Math.round(delays[i]));
+const quantizePalette = ({
+    frameBuffers,
+    paletteSize,
+    paletteFormat,
+    palettePixelStride,
+}: QuantizePaletteInWorkerMessage) => {
+    const frames = frameBuffers.map(frameFromBuffer);
+    const paletteFrameIndexes = frames.map((_, index) => index);
+    return quantizedPalette(frames, paletteFrameIndexes, paletteSize, paletteFormat, palettePixelStride);
+};
 
-        if (i === 0) {
-            gif.writeFrame(index, width, height, {
-                palette,
-                delay,
-                repeat: 0,
-            });
-        } else {
-            gif.writeFrame(index, width, height, {
-                delay,
-            });
-        }
-    }
+const applyPaletteToFrame = ({ frameIndex, frameBuffer, palette, paletteFormat }: ApplyPaletteInWorkerMessage) => {
+    const frame = frameFromBuffer(frameBuffer);
+    const index = applyPalette(frame, palette, paletteFormat);
+    return {
+        frameIndex,
+        index,
+    };
+};
 
-    gif.finish();
-    return new Uint8Array(gif.bytesView());
+const encodeIndexedGif = ({
+    width,
+    height,
+    frameDelayMs,
+    frameIndexBuffers,
+    palette,
+}: EncodeIndexedGifInWorkerMessage) => {
+    const indexes = frameIndexBuffers.map(frameFromBuffer);
+    return encodeGifFromIndexes(width, height, indexes, frameDelayMs, palette);
 };
 
 const encodeJpeg = async ({ width, height, frameBuffer }: EncodeJpegInWorkerMessage) => {
@@ -134,7 +191,40 @@ const onMessage = () => {
                     command: 'encoded',
                     buffer,
                 };
+                postMessage(response, { transfer: [buffer] });
+                return;
+            }
+
+            if (message.command === 'quantizePalette') {
+                const palette = quantizePalette(message);
+                const response: QuantizedPaletteFromWorkerMessage = {
+                    command: 'quantizedPalette',
+                    palette,
+                };
                 postMessage(response);
+                return;
+            }
+
+            if (message.command === 'applyPalette') {
+                const { frameIndex, index } = applyPaletteToFrame(message);
+                const buffer = toArrayBuffer(index);
+                const response: AppliedPaletteFromWorkerMessage = {
+                    command: 'appliedPalette',
+                    frameIndex,
+                    buffer,
+                };
+                postMessage(response, { transfer: [buffer] });
+                return;
+            }
+
+            if (message.command === 'encodeIndexedGif') {
+                const bytes = encodeIndexedGif(message);
+                const buffer = toArrayBuffer(bytes);
+                const response: EncodedGifFromWorkerMessage = {
+                    command: 'encoded',
+                    buffer,
+                };
+                postMessage(response, { transfer: [buffer] });
                 return;
             }
 
@@ -145,7 +235,7 @@ const onMessage = () => {
                     command: 'encodedJpeg',
                     buffer,
                 };
-                postMessage(response);
+                postMessage(response, { transfer: [buffer] });
                 return;
             }
 
