@@ -35,6 +35,11 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         recordWithAudioPlayback,
         preferMp3,
         preferGif,
+        gifMaxDuration,
+        gifFps,
+        gifMaxFrames,
+        gifStartTrim,
+        gifEndTrim,
         copyToClipboardOnMine,
         miningScreenshotCaptureTimestamp,
     } = settings;
@@ -218,6 +223,85 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 }
                 label={t('settings.gifPreference')}
                 labelPlacement="start"
+            />
+            <TextField
+                type="number"
+                label={t('settings.gifMaxDuration')}
+                fullWidth
+                value={gifMaxDuration}
+                color="primary"
+                onChange={(event) => onSettingChanged('gifMaxDuration', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        min: 300,
+                        step: 100,
+                    },
+                    input: {
+                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                    },
+                }}
+            />
+            <TextField
+                type="number"
+                label={t('settings.gifFps')}
+                fullWidth
+                value={gifFps}
+                color="primary"
+                onChange={(event) => onSettingChanged('gifFps', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        min: 1,
+                        step: 1,
+                    },
+                }}
+            />
+            <TextField
+                type="number"
+                label={t('settings.gifMaxFrames')}
+                fullWidth
+                value={gifMaxFrames}
+                color="primary"
+                onChange={(event) => onSettingChanged('gifMaxFrames', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        min: 1,
+                        step: 1,
+                    },
+                }}
+            />
+            <TextField
+                type="number"
+                label={t('settings.gifStartTrim')}
+                fullWidth
+                value={gifStartTrim}
+                color="primary"
+                onChange={(event) => onSettingChanged('gifStartTrim', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        min: 0,
+                        step: 1,
+                    },
+                    input: {
+                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                    },
+                }}
+            />
+            <TextField
+                type="number"
+                label={t('settings.gifEndTrim')}
+                fullWidth
+                value={gifEndTrim}
+                color="primary"
+                onChange={(event) => onSettingChanged('gifEndTrim', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        min: 0,
+                        step: 1,
+                    },
+                    input: {
+                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                    },
+                }}
             />
             <TextField
                 type="number"

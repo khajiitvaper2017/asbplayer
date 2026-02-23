@@ -8,39 +8,111 @@ import type {
     EncodeGifErrorFromWorkerMessage,
 } from './gif-encoder-message';
 
-const maxPrefixLength = 24;
-const defaultGifDurationMs = 1500;
-const minGifDurationMs = 300;
-const maxGifDurationMs = 2500;
-const gifFps = 10;
-const maxGifFrames = 24;
-const defaultGifMaxWidth = 480;
-const gifPaletteSize = 128;
-const gifPaletteFormat = 'rgb444';
-const gifPaletteKeyframeCount = 5;
-const gifPalettePixelStride = 4;
-const gifStartTrimMs = 100;
-const gifEndTrimMs = 100;
+const MAX_PREFIX_LENGTH = 24;
+
+const DEFAULT_GIF_DURATION_MS = 1500;
+const DEFAULT_GIF_MAX_WIDTH = 480;
+
+const GIF_OPTION_LIMITS = {
+    minDurationMs: 300,
+    maxDurationMs: 2500,
+    maxDurationCapMs: 60_000,
+    minFps: 1,
+    maxFps: 60,
+    minFrames: 1,
+    maxFrames: 300,
+    minTrimMs: 0,
+    maxTrimMs: 30_000,
+} as const;
+
+const GIF_PALETTE_OPTIONS = {
+    size: 128,
+    format: 'rgb444',
+    keyframeCount: 5,
+    pixelStride: 4,
+} as const;
+
+const VIDEO_READY_TIMEOUT_MS = 5_000;
+const VIDEO_READY_POLL_INTERVAL_MS = 100;
+const GIF_FRAME_YIELD_INTERVAL = 2;
+const MIN_GIF_FRAME_DELAY_MS = 20;
+const VIDEO_SEEK_EPSILON_SECONDS = 0.001;
 
 type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
 
+export interface GifOptions {
+    maxDurationMs: number;
+    fps: number;
+    maxFrames: number;
+    startTrimMs: number;
+    endTrimMs: number;
+}
+
+const DEFAULT_GIF_OPTIONS: GifOptions = {
+    maxDurationMs: GIF_OPTION_LIMITS.maxDurationMs,
+    fps: 10,
+    maxFrames: 24,
+    startTrimMs: 100,
+    endTrimMs: 100,
+};
+
 const makeFileName = (prefix: string, timestamp: number) => {
-    return `${prefix.replaceAll(' ', '_').substring(0, Math.min(prefix.length, maxPrefixLength))}_${Math.floor(
+    return `${prefix.replaceAll(' ', '_').substring(0, Math.min(prefix.length, MAX_PREFIX_LENGTH))}_${Math.floor(
         timestamp
     )}`;
 };
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-const durationFromInterval = (startTimestamp: number, endTimestamp: number) => {
-    const duration = Math.abs(endTimestamp - startTimestamp);
-    const resolvedDuration = duration > 0 ? duration : defaultGifDurationMs;
-    return clamp(resolvedDuration, minGifDurationMs, maxGifDurationMs);
+const normalizeRoundedNumber = (value: number | undefined, fallback: number, min: number, max: number) => {
+    const resolvedValue = typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : fallback;
+    return clamp(resolvedValue, min, max);
 };
 
-const trimmedGifInterval = (startTimestamp: number, endTimestamp: number) => {
-    const trimmedStartTimestamp = startTimestamp + gifStartTrimMs;
-    const trimmedEndTimestamp = endTimestamp - gifEndTrimMs;
+const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
+    return {
+        maxDurationMs: normalizeRoundedNumber(
+            gifOptions?.maxDurationMs,
+            DEFAULT_GIF_OPTIONS.maxDurationMs,
+            GIF_OPTION_LIMITS.minDurationMs,
+            GIF_OPTION_LIMITS.maxDurationCapMs
+        ),
+        fps: normalizeRoundedNumber(
+            gifOptions?.fps,
+            DEFAULT_GIF_OPTIONS.fps,
+            GIF_OPTION_LIMITS.minFps,
+            GIF_OPTION_LIMITS.maxFps
+        ),
+        maxFrames: normalizeRoundedNumber(
+            gifOptions?.maxFrames,
+            DEFAULT_GIF_OPTIONS.maxFrames,
+            GIF_OPTION_LIMITS.minFrames,
+            GIF_OPTION_LIMITS.maxFrames
+        ),
+        startTrimMs: normalizeRoundedNumber(
+            gifOptions?.startTrimMs,
+            DEFAULT_GIF_OPTIONS.startTrimMs,
+            GIF_OPTION_LIMITS.minTrimMs,
+            GIF_OPTION_LIMITS.maxTrimMs
+        ),
+        endTrimMs: normalizeRoundedNumber(
+            gifOptions?.endTrimMs,
+            DEFAULT_GIF_OPTIONS.endTrimMs,
+            GIF_OPTION_LIMITS.minTrimMs,
+            GIF_OPTION_LIMITS.maxTrimMs
+        ),
+    };
+};
+
+const durationFromInterval = (startTimestamp: number, endTimestamp: number, gifOptions: GifOptions) => {
+    const duration = Math.abs(endTimestamp - startTimestamp);
+    const resolvedDuration = duration > 0 ? duration : DEFAULT_GIF_DURATION_MS;
+    return clamp(resolvedDuration, GIF_OPTION_LIMITS.minDurationMs, gifOptions.maxDurationMs);
+};
+
+const trimmedGifInterval = (startTimestamp: number, endTimestamp: number, gifOptions: GifOptions) => {
+    const trimmedStartTimestamp = startTimestamp + gifOptions.startTrimMs;
+    const trimmedEndTimestamp = endTimestamp - gifOptions.endTrimMs;
 
     if (trimmedEndTimestamp > trimmedStartTimestamp) {
         return {
@@ -59,6 +131,45 @@ const blobToDataUrl = async (blob: Blob): Promise<string> =>
         reader.onerror = () => reject(reader.error ?? new Error('Could not read blob as data URL'));
         reader.readAsDataURL(blob);
     });
+
+const imageErrorForFile = (file: FileModel): ImageErrorCode | undefined => {
+    if (file.blobUrl) {
+        return isActiveBlobUrl(file.blobUrl) ? undefined : ImageErrorCode.fileLinkLost;
+    }
+
+    return undefined;
+};
+
+const createVideoElement = async (blobUrl: string): Promise<HTMLVideoElement> =>
+    await new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.src = blobUrl;
+        video.preload = 'auto';
+        video.autoplay = false;
+        video.volume = 0;
+        video.controls = false;
+        video.pause();
+        const t0 = Date.now();
+        const interval = setInterval(() => {
+            if (
+                (video.seekable.length > 0 && video.seekable.end(0) === video.duration) ||
+                Date.now() - t0 >= VIDEO_READY_TIMEOUT_MS
+            ) {
+                clearInterval(interval);
+                resolve(video);
+            }
+        }, VIDEO_READY_POLL_INTERVAL_MS);
+    });
+
+const disposeVideoElement = (video: HTMLVideoElement | undefined) => {
+    if (!video) {
+        return;
+    }
+
+    video.removeAttribute('src');
+    video.load();
+    video.remove();
+};
 
 class Base64ImageData implements ImageData {
     private readonly _name: string;
@@ -171,11 +282,7 @@ class FileImageData implements ImageData {
     }
 
     get error(): ImageErrorCode | undefined {
-        if (this._file.blobUrl) {
-            return isActiveBlobUrl(this._file.blobUrl) ? undefined : ImageErrorCode.fileLinkLost;
-        }
-
-        return undefined;
+        return imageErrorForFile(this._file);
     }
 
     atTimestamp(timestamp: number) {
@@ -277,40 +384,15 @@ class FileImageData implements ImageData {
     }
 
     private async _videoElement(file: FileModel): Promise<HTMLVideoElement> {
-        if (this._video) {
-            return this._video;
+        if (!this._video) {
+            this._video = await createVideoElement(file.blobUrl);
         }
 
-        return new Promise((resolve) => {
-            const video = document.createElement('video');
-            video.src = file.blobUrl;
-            video.preload = 'auto';
-            video.autoplay = false;
-            video.volume = 0;
-            video.controls = false;
-            video.pause();
-            const t0 = Date.now();
-            const interval = setInterval(() => {
-                if (
-                    (video.seekable.length > 0 && video.seekable.end(0) === video.duration) ||
-                    Date.now() - t0 >= 5_000
-                ) {
-                    this._video = video;
-                    clearInterval(interval);
-                    resolve(video);
-                }
-            }, 100);
-        });
+        return this._video;
     }
 
     dispose() {
-        if (!this._video) {
-            return;
-        }
-
-        this._video.removeAttribute('src');
-        this._video.load();
-        this._video.remove();
+        disposeVideoElement(this._video);
         this._video = undefined;
         this._canvas?.remove();
     }
@@ -330,6 +412,7 @@ class GifFileImageData implements ImageData {
     private _cachedBlob?: Blob;
     private _cachedDataUrl?: string;
     private readonly _workerFactory: GifEncoderWorkerFactory;
+    private readonly _gifOptions: GifOptions;
 
     constructor(
         file: FileModel,
@@ -339,17 +422,19 @@ class GifFileImageData implements ImageData {
         maxHeight: number,
         video: HTMLVideoElement | undefined,
         canvas: HTMLCanvasElement | undefined,
-        workerFactory: GifEncoderWorkerFactory
+        workerFactory: GifEncoderWorkerFactory,
+        gifOptions: GifOptions
     ) {
         this._file = file;
         this._startTimestamp = Math.max(0, startTimestamp);
-        this._durationMs = durationFromInterval(startTimestamp, endTimestamp);
+        this._durationMs = durationFromInterval(startTimestamp, endTimestamp, gifOptions);
         this._maxWidth = maxWidth;
         this._maxHeight = maxHeight;
         this._name = `${makeFileName(file.name, this._startTimestamp)}.gif`;
         this._video = video;
         this._canvas = canvas;
         this._workerFactory = workerFactory;
+        this._gifOptions = gifOptions;
     }
 
     get name() {
@@ -365,11 +450,7 @@ class GifFileImageData implements ImageData {
     }
 
     get error(): ImageErrorCode | undefined {
-        if (this._file.blobUrl) {
-            return isActiveBlobUrl(this._file.blobUrl) ? undefined : ImageErrorCode.fileLinkLost;
-        }
-
-        return undefined;
+        return imageErrorForFile(this._file);
     }
 
     atTimestamp(timestamp: number) {
@@ -386,7 +467,8 @@ class GifFileImageData implements ImageData {
             this._maxHeight,
             this._video,
             this._canvas,
-            this._workerFactory
+            this._workerFactory,
+            this._gifOptions
         );
     }
 
@@ -441,7 +523,7 @@ class GifFileImageData implements ImageData {
         const delayMs =
             frameTimestamps.length <= 1
                 ? this._durationMs
-                : Math.max(20, Math.round(this._durationMs / (frameTimestamps.length - 1)));
+                : Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs / (frameTimestamps.length - 1)));
 
         if (!this._canvas) {
             this._canvas = document.createElement('canvas');
@@ -472,7 +554,7 @@ class GifFileImageData implements ImageData {
             const frameBuffers: ArrayBuffer[] = [];
 
             for (let i = 0; i < frameTimestamps.length; ++i) {
-                if (i > 0 && i % 2 === 0) {
+                if (i > 0 && i % GIF_FRAME_YIELD_INTERVAL === 0) {
                     await new Promise((resolve) => setTimeout(resolve, 0));
                 }
 
@@ -491,9 +573,9 @@ class GifFileImageData implements ImageData {
                 delayMs,
                 frameBuffers,
                 paletteFrameIndexes,
-                paletteSize: gifPaletteSize,
-                paletteFormat: gifPaletteFormat,
-                palettePixelStride: gifPalettePixelStride,
+                paletteSize: GIF_PALETTE_OPTIONS.size,
+                paletteFormat: GIF_PALETTE_OPTIONS.format,
+                palettePixelStride: GIF_PALETTE_OPTIONS.pixelStride,
             });
             return new Blob([encodedBytes], { type: 'image/gif' });
         } finally {
@@ -535,7 +617,7 @@ class GifFileImageData implements ImageData {
     }
 
     private _paletteFrameIndexes(frameCount: number) {
-        const targetFrameCount = Math.max(1, Math.min(gifPaletteKeyframeCount, frameCount));
+        const targetFrameCount = Math.max(1, Math.min(GIF_PALETTE_OPTIONS.keyframeCount, frameCount));
 
         if (targetFrameCount === frameCount) {
             return [...Array(frameCount).keys()];
@@ -564,7 +646,10 @@ class GifFileImageData implements ImageData {
         const start = clamp(this._startTimestamp, 0, maxVideoDurationMs);
         const end = clamp(start + this._durationMs, start, maxVideoDurationMs);
         const durationMs = Math.max(0, end - start);
-        const frameCount = Math.max(1, Math.min(maxGifFrames, Math.floor((durationMs / 1000) * gifFps) + 1));
+        const frameCount = Math.max(
+            1,
+            Math.min(this._gifOptions.maxFrames, Math.floor((durationMs / 1000) * this._gifOptions.fps) + 1)
+        );
 
         if (frameCount === 1) {
             return [start];
@@ -581,7 +666,8 @@ class GifFileImageData implements ImageData {
     }
 
     private _dimensions(video: HTMLVideoElement) {
-        const effectiveMaxWidth = this._maxWidth > 0 ? this._maxWidth : this._maxHeight > 0 ? 0 : defaultGifMaxWidth;
+        const effectiveMaxWidth =
+            this._maxWidth > 0 ? this._maxWidth : this._maxHeight > 0 ? 0 : DEFAULT_GIF_MAX_WIDTH;
         const widthRatio = effectiveMaxWidth <= 0 ? 1 : effectiveMaxWidth / video.videoWidth;
         const heightRatio = this._maxHeight <= 0 ? 1 : this._maxHeight / video.videoHeight;
         const ratio = Math.min(1, Math.min(widthRatio, heightRatio));
@@ -604,7 +690,7 @@ class GifFileImageData implements ImageData {
             video.onseeked = resolveWithCleanup;
             video.onerror = () => reject(video.error?.message ?? 'Could not seek video to create GIF');
 
-            if (Math.abs(video.currentTime - seekTo) <= 0.001) {
+            if (Math.abs(video.currentTime - seekTo) <= VIDEO_SEEK_EPSILON_SECONDS) {
                 resolveWithCleanup();
                 return;
             }
@@ -614,42 +700,17 @@ class GifFileImageData implements ImageData {
     }
 
     private async _videoElement(file: FileModel): Promise<HTMLVideoElement> {
-        if (this._video) {
-            return this._video;
+        if (!this._video) {
+            this._video = await createVideoElement(file.blobUrl);
         }
 
-        return await new Promise((resolve) => {
-            const video = document.createElement('video');
-            video.src = file.blobUrl;
-            video.preload = 'auto';
-            video.autoplay = false;
-            video.volume = 0;
-            video.controls = false;
-            video.pause();
-            const t0 = Date.now();
-            const interval = setInterval(() => {
-                if (
-                    (video.seekable.length > 0 && video.seekable.end(0) === video.duration) ||
-                    Date.now() - t0 >= 5_000
-                ) {
-                    this._video = video;
-                    clearInterval(interval);
-                    resolve(video);
-                }
-            }, 100);
-        });
+        return this._video;
     }
 
     dispose() {
         this._blobPromiseReject?.(new CancelledImageDataRenderingError());
 
-        if (!this._video) {
-            return;
-        }
-
-        this._video.removeAttribute('src');
-        this._video.load();
-        this._video.remove();
+        disposeVideoElement(this._video);
         this._video = undefined;
         this._canvas?.remove();
     }
@@ -681,28 +742,32 @@ export default class Image {
         maxWidth: number,
         maxHeight: number,
         preferGif: false,
-        gifWorkerFactory?: GifEncoderWorkerFactory
+        gifWorkerFactory?: GifEncoderWorkerFactory,
+        gifOptions?: Partial<GifOptions>
     ): Image | undefined;
     static fromCard(
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
         preferGif: true,
-        gifWorkerFactory: GifEncoderWorkerFactory
+        gifWorkerFactory: GifEncoderWorkerFactory,
+        gifOptions?: Partial<GifOptions>
     ): Image | undefined;
     static fromCard(
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
         preferGif: boolean,
-        gifWorkerFactory: GifEncoderWorkerFactory
+        gifWorkerFactory: GifEncoderWorkerFactory,
+        gifOptions?: Partial<GifOptions>
     ): Image | undefined;
     static fromCard(
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
         preferGif = false,
-        gifWorkerFactory?: GifEncoderWorkerFactory
+        gifWorkerFactory?: GifEncoderWorkerFactory,
+        gifOptions?: Partial<GifOptions>
     ) {
         if (card.image) {
             return Image.fromBase64(
@@ -720,14 +785,20 @@ export default class Image {
                     throw new Error('GIF worker factory is required when preferGif is true');
                 }
 
-                const { startTimestamp, endTimestamp } = trimmedGifInterval(card.subtitle.start, card.subtitle.end);
-                return Image.fromGifFile(
+                const resolvedGifOptions = normalizeGifOptions(gifOptions);
+                const { startTimestamp, endTimestamp } = trimmedGifInterval(
+                    card.subtitle.start,
+                    card.subtitle.end,
+                    resolvedGifOptions
+                );
+                return Image._fromGifFileWithOptions(
                     card.file,
                     startTimestamp,
                     endTimestamp,
                     maxWidth,
                     maxHeight,
-                    gifWorkerFactory
+                    gifWorkerFactory,
+                    resolvedGifOptions
                 );
             }
 
@@ -759,7 +830,29 @@ export default class Image {
         endTimestamp: number,
         maxWidth: number,
         maxHeight: number,
-        gifWorkerFactory: GifEncoderWorkerFactory
+        gifWorkerFactory: GifEncoderWorkerFactory,
+        gifOptions?: Partial<GifOptions>
+    ) {
+        const resolvedGifOptions = normalizeGifOptions(gifOptions);
+        return Image._fromGifFileWithOptions(
+            file,
+            startTimestamp,
+            endTimestamp,
+            maxWidth,
+            maxHeight,
+            gifWorkerFactory,
+            resolvedGifOptions
+        );
+    }
+
+    private static _fromGifFileWithOptions(
+        file: FileModel,
+        startTimestamp: number,
+        endTimestamp: number,
+        maxWidth: number,
+        maxHeight: number,
+        gifWorkerFactory: GifEncoderWorkerFactory,
+        gifOptions: GifOptions
     ) {
         return new Image(
             new GifFileImageData(
@@ -770,7 +863,8 @@ export default class Image {
                 maxHeight,
                 undefined,
                 undefined,
-                gifWorkerFactory
+                gifWorkerFactory,
+                gifOptions
             )
         );
     }

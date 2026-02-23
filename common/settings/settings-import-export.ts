@@ -373,6 +373,21 @@ const settingsSchema = {
         preferGif: {
             type: 'boolean',
         },
+        gifMaxDuration: {
+            type: 'number',
+        },
+        gifFps: {
+            type: 'number',
+        },
+        gifMaxFrames: {
+            type: 'number',
+        },
+        gifStartTrim: {
+            type: 'number',
+        },
+        gifEndTrim: {
+            type: 'number',
+        },
         tabName: {
             type: 'string',
         },

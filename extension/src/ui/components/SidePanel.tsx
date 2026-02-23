@@ -424,7 +424,14 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     settings.maxImageWidth,
                     settings.maxImageHeight,
                     settings.preferGif,
-                    gifEncoderWorkerFactory
+                    gifEncoderWorkerFactory,
+                    {
+                        maxDurationMs: settings.gifMaxDuration,
+                        fps: settings.gifFps,
+                        maxFrames: settings.gifMaxFrames,
+                        startTrimMs: settings.gifStartTrim,
+                        endTrimMs: settings.gifEndTrim,
+                    }
                 );
 
                 if (image) {
