@@ -451,8 +451,28 @@ const AnkiDialog = ({
             return;
         }
 
-        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, gifWorkerFactory));
-    }, [card, gifWorkerFactory, open, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif]);
+        setImage(
+            Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, gifWorkerFactory, {
+                maxDurationMs: settings.gifMaxDuration,
+                fps: settings.gifFps,
+                maxFrames: settings.gifMaxFrames,
+                startTrimMs: settings.gifStartTrim,
+                endTrimMs: settings.gifEndTrim,
+            })
+        );
+    }, [
+        card,
+        gifWorkerFactory,
+        open,
+        settings.maxImageWidth,
+        settings.maxImageHeight,
+        settings.preferGif,
+        settings.gifMaxDuration,
+        settings.gifFps,
+        settings.gifMaxFrames,
+        settings.gifStartTrim,
+        settings.gifEndTrim,
+    ]);
 
     useEffect(() => {
         if (!open && image) {
