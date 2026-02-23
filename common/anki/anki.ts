@@ -15,8 +15,7 @@ const alphaNumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuv
 const unsafeURLChars = /[:\/\?#\[\]@!$&'()*+,;= "<>%{}|\\^`]/g;
 const replacement = '_';
 const ANKI_TIMING_LOG_THRESHOLD_MS = 500;
-const GIF_AUDIO_SPEED_BUDGET_MP3_MULTIPLIER = 0.75;
-const GIF_AUDIO_SPEED_BUDGET_DEFAULT_MULTIPLIER = 0.6;
+const GIF_AUDIO_SPEED_BUDGET_MULTIPLIER = 1.5;
 const GIF_AUDIO_SPEED_BUDGET_PADDING_MS = 150;
 const GIF_AUDIO_SPEED_BUDGET_MIN_MS = 900;
 const BYTES_PER_MEBIBYTE = 1024 * 1024;
@@ -268,12 +267,9 @@ export class Anki {
             return undefined;
         }
 
-        const multiplier = this.settingsProvider.preferMp3
-            ? GIF_AUDIO_SPEED_BUDGET_MP3_MULTIPLIER
-            : GIF_AUDIO_SPEED_BUDGET_DEFAULT_MULTIPLIER;
         return Math.max(
             GIF_AUDIO_SPEED_BUDGET_MIN_MS,
-            Math.round(audioDurationMs * multiplier + GIF_AUDIO_SPEED_BUDGET_PADDING_MS)
+            Math.round(audioDurationMs * GIF_AUDIO_SPEED_BUDGET_MULTIPLIER + GIF_AUDIO_SPEED_BUDGET_PADDING_MS)
         );
     }
 
