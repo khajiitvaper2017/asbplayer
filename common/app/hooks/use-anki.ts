@@ -85,6 +85,9 @@ class SettingsAccessor {
     get gifEndTrim() {
         return this.settings.gifEndTrim;
     }
+    get gifDetectMotion() {
+        return this.settings.gifDetectMotion;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }
