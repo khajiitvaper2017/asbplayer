@@ -38,11 +38,16 @@ const VIDEO_READY_TIMEOUT_MS = 5_000;
 const GIF_FRAME_YIELD_INTERVAL = 2;
 const MIN_GIF_FRAME_DELAY_MS = 20;
 const VIDEO_SEEK_EPSILON_SECONDS = 0.001;
-const GIF_PLAYBACK_COLLECTION_HIGH_FPS_THRESHOLD = 20;
-const GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_THRESHOLD = 14;
-const GIF_PLAYBACK_COLLECTION_HIGH_FPS_RATE = 1;
-const GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_RATE = 1.5;
-const GIF_PLAYBACK_COLLECTION_LOW_FPS_RATE = 2;
+const SOURCE_FPS_FALLBACK = 24;
+const SOURCE_FPS_SAMPLE_FRAME_COUNT = 12;
+const SOURCE_FPS_SAMPLE_TIMEOUT_MS = 1_200;
+const SOURCE_FPS_MIN = 1;
+const SOURCE_FPS_MAX = 240;
+const GIF_PLAYBACK_COLLECTION_FORMULA_OFFSET_RATE = 1.25;
+const GIF_PLAYBACK_COLLECTION_FORMULA_SCALE = 1.5;
+const GIF_PLAYBACK_COLLECTION_MIN_RATE = 1;
+const GIF_PLAYBACK_COLLECTION_MAX_RATE = 2;
+const GIF_PLAYBACK_COLLECTION_RATE_STEP = 0.25;
 const GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS = 1_000;
 const GIF_FRAME_CAPTURE_SLOW_THRESHOLD_MS = 150;
 const GIF_FRAME_COLLECTION_MAX_SLOW_FRAMES_LOGGED = 5;
@@ -53,6 +58,7 @@ const IMAGE_TIMING_LOG_THRESHOLD_MS = 500;
 type TimingDetails = string | (() => string);
 type GifWorkerSuccessCommand = 'encoded';
 type GifPalette = number[][];
+const sourceFpsByVideo = new WeakMap<HTMLVideoElement, number>();
 
 type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
 
@@ -145,6 +151,45 @@ const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
             GIF_OPTION_LIMITS.maxTrimMs
         ),
     };
+};
+
+const isFinitePositiveNumber = (value: number | undefined) =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+const roundedPlaybackRate = (playbackRate: number) => {
+    const rounded = Math.round(playbackRate / GIF_PLAYBACK_COLLECTION_RATE_STEP) * GIF_PLAYBACK_COLLECTION_RATE_STEP;
+    return Math.round(rounded * 100) / 100;
+};
+
+const playbackRateFromFps = (videoFps: number, targetFps: number) => {
+    const resolvedTargetFps = isFinitePositiveNumber(targetFps) ? targetFps : 1;
+    const resolvedVideoFps = isFinitePositiveNumber(videoFps) ? videoFps : resolvedTargetFps;
+    const minFps = Math.min(resolvedTargetFps, resolvedVideoFps);
+    const candidateRate = Math.min(
+        GIF_PLAYBACK_COLLECTION_MAX_RATE,
+        GIF_PLAYBACK_COLLECTION_FORMULA_OFFSET_RATE +
+            GIF_PLAYBACK_COLLECTION_FORMULA_SCALE * (1 - minFps / resolvedVideoFps)
+    );
+    return clamp(
+        roundedPlaybackRate(candidateRate),
+        GIF_PLAYBACK_COLLECTION_MIN_RATE,
+        GIF_PLAYBACK_COLLECTION_MAX_RATE
+    );
+};
+
+const median = (values: number[]) => {
+    if (values.length === 0) {
+        return undefined;
+    }
+
+    const sorted = [...values].sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+
+    if (sorted.length % 2 === 0) {
+        return (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
+    return sorted[middle];
 };
 
 const yieldToEventLoop = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -812,6 +857,7 @@ class GifFileImageData implements ImageData {
         let playbackCapturedCount = 0;
         let fallbackSeekCount = 0;
         let playbackElapsedMs = 0;
+        const sourceFps = await this._sourceFps(video, frameTimestamps[0]);
 
         if (ctx.canvas.width !== width || ctx.canvas.height !== height) {
             ctx.canvas.width = width;
@@ -852,7 +898,7 @@ class GifFileImageData implements ImageData {
                 };
             }
 
-            const playbackRate = this._playbackCollectionRate(baseFrameDelayMs);
+            const playbackRate = this._playbackCollectionRate(baseFrameDelayMs, sourceFps);
             const playbackStartedAtMs = now();
 
             video.muted = true;
@@ -950,9 +996,12 @@ class GifFileImageData implements ImageData {
             }
 
             const collectionElapsedMs = Math.round(now() - collectionStartedAtMs);
+            const fallbackSeekRatio = frameTimestamps.length > 0 ? fallbackSeekCount / frameTimestamps.length : 0;
             if (collectionElapsedMs >= GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS) {
                 console.debug(
-                    `[Image] collect frames playback total=${collectionElapsedMs}ms captured=${frameBuffers.length}/${frameTimestamps.length} playbackCaptured=${playbackCapturedCount} fallbackSeeks=${fallbackSeekCount} playback=${playbackElapsedMs}ms callbacks=${callbackCount} read=${totalReadElapsedMs}ms playbackRate=${playbackRate}`
+                    `[Image] collect frames playback total=${collectionElapsedMs}ms captured=${frameBuffers.length}/${frameTimestamps.length} playbackCaptured=${playbackCapturedCount} fallbackSeeks=${fallbackSeekCount} fallbackRatio=${
+                        Math.round(fallbackSeekRatio * 1000) / 10
+                    }% playback=${playbackElapsedMs}ms callbacks=${callbackCount} read=${totalReadElapsedMs}ms sourceFps=${sourceFps} playbackRate=${playbackRate}`
                 );
             }
 
@@ -987,18 +1036,125 @@ class GifFileImageData implements ImageData {
         }
     }
 
-    private _playbackCollectionRate(baseFrameDelayMs: number) {
+    private async _sourceFps(video: HTMLVideoElement, startTimestampMs: number) {
+        const cachedSourceFps = sourceFpsByVideo.get(video);
+        if (cachedSourceFps !== undefined) {
+            return cachedSourceFps;
+        }
+
+        if (typeof video.requestVideoFrameCallback !== 'function') {
+            return SOURCE_FPS_FALLBACK;
+        }
+
+        const originalPlaybackRate = video.playbackRate;
+        const originalMuted = video.muted;
+        const originalVolume = video.volume;
+        const originalOnError = video.onerror;
+        const originalOnEnded = video.onended;
+        const videoWithPreservesPitch = video as HTMLVideoElement & { preservesPitch?: boolean };
+        const originalPreservesPitch = videoWithPreservesPitch.preservesPitch;
+        const sampledMediaTimesMs: number[] = [];
+        let callbackHandle: number | undefined;
+
+        try {
+            await this._seekVideo(video, startTimestampMs / 1000);
+            video.muted = true;
+            video.volume = 0;
+            video.playbackRate = 1;
+
+            if (typeof originalPreservesPitch === 'boolean') {
+                videoWithPreservesPitch.preservesPitch = false;
+            }
+
+            await video.play();
+            const samplingStartedAtMs = now();
+            await new Promise<void>((resolve, reject) => {
+                const finish = () => {
+                    if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                        video.cancelVideoFrameCallback(callbackHandle);
+                        callbackHandle = undefined;
+                    }
+
+                    resolve();
+                };
+
+                const fail = (error: Error) => {
+                    if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                        video.cancelVideoFrameCallback(callbackHandle);
+                        callbackHandle = undefined;
+                    }
+
+                    reject(error);
+                };
+
+                const onFrame: VideoFrameRequestCallback = (_ts, metadata) => {
+                    const mediaTimeMs = metadata.mediaTime * 1000;
+                    if (
+                        sampledMediaTimesMs.length === 0 ||
+                        mediaTimeMs > sampledMediaTimesMs[sampledMediaTimesMs.length - 1]
+                    ) {
+                        sampledMediaTimesMs.push(mediaTimeMs);
+                    }
+
+                    if (
+                        sampledMediaTimesMs.length >= SOURCE_FPS_SAMPLE_FRAME_COUNT + 1 ||
+                        now() - samplingStartedAtMs >= SOURCE_FPS_SAMPLE_TIMEOUT_MS
+                    ) {
+                        finish();
+                        return;
+                    }
+
+                    callbackHandle = video.requestVideoFrameCallback(onFrame);
+                };
+
+                video.onerror = () =>
+                    fail(new Error(video.error?.message ?? 'Could not estimate video FPS from playback'));
+                video.onended = () => finish();
+                callbackHandle = video.requestVideoFrameCallback(onFrame);
+            });
+        } catch (error) {
+            console.debug(
+                `[Image] source fps estimation failed fallback=${SOURCE_FPS_FALLBACK} error=${
+                    error instanceof Error ? error.message : String(error)
+                }`
+            );
+        } finally {
+            if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                video.cancelVideoFrameCallback(callbackHandle);
+            }
+
+            video.pause();
+            video.playbackRate = originalPlaybackRate;
+            video.muted = originalMuted;
+            video.volume = originalVolume;
+            video.onerror = originalOnError;
+            video.onended = originalOnEnded;
+
+            if (typeof originalPreservesPitch === 'boolean') {
+                videoWithPreservesPitch.preservesPitch = originalPreservesPitch;
+            }
+        }
+
+        const frameDurationsMs: number[] = [];
+        for (let i = 1; i < sampledMediaTimesMs.length; ++i) {
+            const frameDurationMs = sampledMediaTimesMs[i] - sampledMediaTimesMs[i - 1];
+            if (frameDurationMs > 0) {
+                frameDurationsMs.push(frameDurationMs);
+            }
+        }
+
+        const medianFrameDurationMs = median(frameDurationsMs);
+        const estimatedSourceFps =
+            medianFrameDurationMs === undefined
+                ? SOURCE_FPS_FALLBACK
+                : clamp(Math.round((1000 / medianFrameDurationMs) * 10) / 10, SOURCE_FPS_MIN, SOURCE_FPS_MAX);
+        sourceFpsByVideo.set(video, estimatedSourceFps);
+        return estimatedSourceFps;
+    }
+
+    private _playbackCollectionRate(baseFrameDelayMs: number, sourceFps: number) {
         const targetFps = 1000 / Math.max(1, baseFrameDelayMs);
-
-        if (targetFps >= GIF_PLAYBACK_COLLECTION_HIGH_FPS_THRESHOLD) {
-            return GIF_PLAYBACK_COLLECTION_HIGH_FPS_RATE;
-        }
-
-        if (targetFps >= GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_THRESHOLD) {
-            return GIF_PLAYBACK_COLLECTION_MEDIUM_FPS_RATE;
-        }
-
-        return GIF_PLAYBACK_COLLECTION_LOW_FPS_RATE;
+        return playbackRateFromFps(sourceFps, targetFps);
     }
 
     private async _collectFramesWithSeeking(
