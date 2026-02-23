@@ -367,6 +367,9 @@ const settingsSchema = {
         preferMp3: {
             type: 'boolean',
         },
+        preferGif: {
+            type: 'boolean',
+        },
         tabName: {
             type: 'string',
         },
