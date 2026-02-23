@@ -23,6 +23,14 @@ it('fails validation when an unknown key bind key is encountered', () => {
     ).toThrow("Unknown key 'keyBindSet.asdf'");
 });
 
+it('ignores removed GIF motion settings', () => {
+    validateSettings({
+        ...(defaultSettings as any),
+        gifDetectMotion: true,
+        gifCreateJpegIfLowMotion: true,
+    });
+});
+
 it('validates last languages synced', () => {
     validateSettings({ ...defaultSettings, streamingLastLanguagesSynced: { 'domain.com': ['en', 'ja'] } });
 });

@@ -85,12 +85,6 @@ class SettingsAccessor {
     get gifEndTrim() {
         return this.settings.gifEndTrim;
     }
-    get gifDetectMotion() {
-        return this.settings.gifDetectMotion;
-    }
-    get gifCreateJpegIfLowMotion() {
-        return this.settings.gifCreateJpegIfLowMotion;
-    }
     get truncateGifToAudioCreationSpeed() {
         return this.settings.truncateGifToAudioCreationSpeed;
     }
