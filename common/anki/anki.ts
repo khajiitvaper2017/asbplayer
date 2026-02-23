@@ -19,6 +19,7 @@ const GIF_AUDIO_SPEED_BUDGET_MP3_MULTIPLIER = 0.75;
 const GIF_AUDIO_SPEED_BUDGET_DEFAULT_MULTIPLIER = 0.6;
 const GIF_AUDIO_SPEED_BUDGET_PADDING_MS = 150;
 const GIF_AUDIO_SPEED_BUDGET_MIN_MS = 900;
+const BYTES_PER_MEBIBYTE = 1024 * 1024;
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export function escapeAnkiQuery(query: string) {
@@ -704,11 +705,33 @@ export class Anki {
     }
 
     private async _storeMediaFile(name: string, base64: string, ankiConnectUrl?: string) {
-        return this._executeAction(
+        const filename = makeUniqueFileName(name);
+        const payloadBytes = this._base64ByteSize(base64);
+        const payloadMiB = Math.round((payloadBytes / BYTES_PER_MEBIBYTE) * 100) / 100;
+        this._logTiming(`storeMediaFile payload filename=${filename} bytes=${payloadBytes} mib=${payloadMiB}`);
+        const uploadStartedAt = now();
+        const response = await this._executeAction(
             'storeMediaFile',
-            { filename: makeUniqueFileName(name), data: base64, deleteExisting: false },
+            { filename, data: base64, deleteExisting: false },
             ankiConnectUrl
         );
+        const uploadElapsedMs = Math.max(1, Math.round(now() - uploadStartedAt));
+        const bytesPerSecond = Math.round((payloadBytes * 1000) / uploadElapsedMs);
+        const mibPerSecond = Math.round((bytesPerSecond / BYTES_PER_MEBIBYTE) * 100) / 100;
+        this._logTiming(
+            `storeMediaFile throughput filename=${filename} elapsedMs=${uploadElapsedMs} bytesPerSec=${bytesPerSecond} mibPerSec=${mibPerSecond}`,
+            uploadElapsedMs
+        );
+        return response;
+    }
+
+    private _base64ByteSize(base64: string) {
+        if (base64.length === 0) {
+            return 0;
+        }
+
+        const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+        return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
     }
 
     private _inheritHtmlMarkupFromField(fieldKey: AnkiSettingsFieldKey, info: any, params: any) {
