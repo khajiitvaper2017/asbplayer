@@ -406,6 +406,7 @@ function App({
     const handleAnkiDialogProceed = useCallback(
         async (params: ExportParams) => {
             setAnkiDialogDisabled(true);
+            const shouldDisposeMedia = params.mode !== 'gui';
 
             try {
                 const result = await anki.export(params);
@@ -436,6 +437,11 @@ function App({
             } catch (e) {
                 handleError(e);
             } finally {
+                if (shouldDisposeMedia) {
+                    params.audioClip?.stop();
+                    params.image?.dispose();
+                }
+
                 setAnkiDialogDisabled(false);
                 setDisableKeyEvents(false);
             }

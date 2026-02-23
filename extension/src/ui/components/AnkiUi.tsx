@@ -167,6 +167,7 @@ export default function AnkiUi({ bridge }: Props) {
     const handleProceed = useCallback(
         async (params: ExportParams) => {
             setDisabled(true);
+            const shouldDisposeMedia = params.mode !== 'gui';
 
             try {
                 await anki!.export(params);
@@ -204,6 +205,11 @@ export default function AnkiUi({ bridge }: Props) {
 
                 setAlertOpen(true);
             } finally {
+                if (shouldDisposeMedia) {
+                    params.audioClip?.stop();
+                    params.image?.dispose();
+                }
+
                 setDisabled(false);
             }
         },
