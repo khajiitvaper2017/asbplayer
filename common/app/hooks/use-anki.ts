@@ -70,6 +70,21 @@ class SettingsAccessor {
     get preferGif() {
         return this.settings.preferGif;
     }
+    get gifMaxDuration() {
+        return this.settings.gifMaxDuration;
+    }
+    get gifFps() {
+        return this.settings.gifFps;
+    }
+    get gifMaxFrames() {
+        return this.settings.gifMaxFrames;
+    }
+    get gifStartTrim() {
+        return this.settings.gifStartTrim;
+    }
+    get gifEndTrim() {
+        return this.settings.gifEndTrim;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }

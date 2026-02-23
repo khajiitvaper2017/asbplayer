@@ -513,7 +513,14 @@ function App({
                             settingsRef.current.maxImageWidth,
                             settingsRef.current.maxImageHeight,
                             settingsRef.current.preferGif,
-                            gifWorkerFactory
+                            gifWorkerFactory,
+                            {
+                                maxDurationMs: settingsRef.current.gifMaxDuration,
+                                fps: settingsRef.current.gifFps,
+                                maxFrames: settingsRef.current.gifMaxFrames,
+                                startTrimMs: settingsRef.current.gifStartTrim,
+                                endTrimMs: settingsRef.current.gifEndTrim,
+                            }
                         ),
                         word: newCard.word ?? '',
                         source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
@@ -635,7 +642,14 @@ function App({
                     settings.maxImageWidth,
                     settings.maxImageHeight,
                     settings.preferGif,
-                    gifWorkerFactory
+                    gifWorkerFactory,
+                    {
+                        maxDurationMs: settings.gifMaxDuration,
+                        fps: settings.gifFps,
+                        maxFrames: settings.gifMaxFrames,
+                        startTrimMs: settings.gifStartTrim,
+                        endTrimMs: settings.gifEndTrim,
+                    }
                 )!;
 
                 if (image.error === undefined) {
@@ -649,7 +663,19 @@ function App({
                 handleError(e);
             }
         },
-        [gifWorkerFactory, handleError, settings.maxImageWidth, settings.maxImageHeight, settings.preferGif, t]
+        [
+            gifWorkerFactory,
+            handleError,
+            settings.maxImageWidth,
+            settings.maxImageHeight,
+            settings.preferGif,
+            settings.gifMaxDuration,
+            settings.gifFps,
+            settings.gifMaxFrames,
+            settings.gifStartTrim,
+            settings.gifEndTrim,
+            t,
+        ]
     );
 
     const handleDownloadCopyHistorySectionAsSrt = useCallback(

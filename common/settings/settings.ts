@@ -239,6 +239,11 @@ export interface AnkiSettings {
     readonly recordWithAudioPlayback: boolean;
     readonly preferMp3: boolean;
     readonly preferGif: boolean;
+    readonly gifMaxDuration: number;
+    readonly gifFps: number;
+    readonly gifMaxFrames: number;
+    readonly gifStartTrim: number;
+    readonly gifEndTrim: number;
     readonly audioPaddingStart: number;
     readonly audioPaddingEnd: number;
     readonly maxImageWidth: number;
@@ -288,6 +293,11 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     recordWithAudioPlayback: true,
     preferMp3: true,
     preferGif: true,
+    gifMaxDuration: true,
+    gifFps: true,
+    gifMaxFrames: true,
+    gifStartTrim: true,
+    gifEndTrim: true,
     audioPaddingStart: true,
     audioPaddingEnd: true,
     maxImageWidth: true,
