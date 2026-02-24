@@ -14,7 +14,7 @@ const ankiQueryDeckSpecialCharacters = ['"', '*', '_', '\\'];
 const alphaNumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const unsafeURLChars = /[:\/\?#\[\]@!$&'()*+,;= "<>%{}|\\^`]/g;
 const replacement = '_';
-const ANKI_TIMING_LOG_THRESHOLD_MS = 500;
+const ANKI_TIMING_LOG_THRESHOLD_MS = 1_000;
 const GIF_AUDIO_SPEED_BUDGET_MULTIPLIER = 1.5;
 const GIF_AUDIO_SPEED_BUDGET_PADDING_MS = 150;
 const GIF_AUDIO_SPEED_BUDGET_MIN_MS = 900;
@@ -452,7 +452,6 @@ export class Anki {
         ankiConnectUrl,
     }: ExportParams) {
         const exportStartedAt = now();
-        this._logTiming(`export start mode=${mode}`);
 
         const fields = {};
         const fieldsStartedAt = now();
@@ -504,8 +503,6 @@ export class Anki {
             }
 
             const sanitizedName = this._sanitizeFileName(audioClip.name);
-            const audioDurationMs = Math.max(0, Math.round(audioClip.end - audioClip.start));
-            this._logTiming(`audio base64 generation started durationMs=${audioDurationMs}`);
             const audioBase64StartedAt = now();
             const data = await audioClip.base64();
             const audioBase64ElapsedMs = Math.round(now() - audioBase64StartedAt);
@@ -516,7 +513,6 @@ export class Anki {
             }
 
             if (gui || updateLast) {
-                this._logTiming('audio media upload started');
                 const audioUploadStartedAt = now();
                 const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
                 const audioUploadElapsedMs = Math.round(now() - audioUploadStartedAt);
@@ -549,7 +545,6 @@ export class Anki {
             }
 
             const sanitizedName = this._sanitizeFileName(image.name);
-            this._logTiming('image base64 generation started');
             const imageBase64StartedAt = now();
             const data = await image.base64();
             const imageBase64ElapsedMs = Math.round(now() - imageBase64StartedAt);
@@ -560,7 +555,6 @@ export class Anki {
             }
 
             if (gui || updateLast) {
-                this._logTiming('image media upload started');
                 const imageUploadStartedAt = now();
                 const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
                 const imageUploadElapsedMs = Math.round(now() - imageUploadStartedAt);
@@ -703,8 +697,6 @@ export class Anki {
     private async _storeMediaFile(name: string, base64: string, ankiConnectUrl?: string) {
         const filename = makeUniqueFileName(name);
         const payloadBytes = this._base64ByteSize(base64);
-        const payloadMiB = Math.round((payloadBytes / BYTES_PER_MEBIBYTE) * 100) / 100;
-        this._logTiming(`storeMediaFile payload filename=${filename} bytes=${payloadBytes} mib=${payloadMiB}`);
         const uploadStartedAt = now();
         const response = await this._executeAction(
             'storeMediaFile',

@@ -48,13 +48,13 @@ const GIF_PLAYBACK_COLLECTION_FORMULA_SCALE = 1.5;
 const GIF_PLAYBACK_COLLECTION_MIN_RATE = 1;
 const GIF_PLAYBACK_COLLECTION_MAX_RATE = 2;
 const GIF_PLAYBACK_COLLECTION_RATE_STEP = 0.25;
-const GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS = 1_000;
+const GIF_FRAME_COLLECTION_DETAIL_LOG_THRESHOLD_MS = 2_000;
 const GIF_FRAME_CAPTURE_SLOW_THRESHOLD_MS = 150;
 const GIF_FRAME_COLLECTION_MAX_SLOW_FRAMES_LOGGED = 5;
 const GIF_APPLY_PALETTE_POOL_MIN_FRAMES = 12;
 const GIF_APPLY_PALETTE_POOL_MIN_WORKERS = 2;
 const GIF_APPLY_PALETTE_POOL_MAX_WORKERS = 4;
-const IMAGE_TIMING_LOG_THRESHOLD_MS = 500;
+const IMAGE_TIMING_LOG_THRESHOLD_MS = 2_000;
 type TimingDetails = string | (() => string);
 type GifWorkerSuccessCommand = 'encoded';
 type GifPalette = number[][];
@@ -722,12 +722,6 @@ class GifFileImageData implements ImageData {
 
         const paletteFrameIndexes = this._paletteFrameIndexes(frameBuffers.length);
         const applyPaletteWorkerCount = this._applyPaletteWorkerCount(frameBuffers.length);
-
-        if (applyPaletteWorkerCount > 1) {
-            console.debug(
-                `[Image] apply palette worker pool workers=${applyPaletteWorkerCount} frames=${frameBuffers.length}`
-            );
-        }
 
         const encodeStartedAtMs = now();
         if (applyPaletteWorkerCount === 1) {
