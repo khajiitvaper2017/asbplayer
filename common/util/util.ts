@@ -244,10 +244,7 @@ function withinBoundaryAroundInterval(
     return false;
 }
 
-export function subtitleTimestampWithDelay(
-    subtitle: Pick<SubtitleModel, 'start' | 'end'>,
-    delay: number
-): number {
+export function subtitleTimestampWithDelay(subtitle: Pick<SubtitleModel, 'start' | 'end'>, delay: number): number {
     const start = Math.min(subtitle.start, subtitle.end);
     const end = Math.max(subtitle.start, subtitle.end);
 

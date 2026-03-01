@@ -79,7 +79,9 @@ export default class RecordMediaHandler {
             const { maxWidth, maxHeight, rect, frameId } = message;
             const screenshotDelay = Math.max(
                 0,
-                message.record ? message.mediaTimestamp - subtitle.start + message.audioPaddingStart : message.imageDelay
+                message.record
+                    ? message.mediaTimestamp - subtitle.start + message.audioPaddingStart
+                    : message.imageDelay
             );
             imagePromise = this._imageCapturer.capture(senderTab.id!, recordMediaCommand.src, screenshotDelay, {
                 maxWidth,
@@ -156,12 +158,7 @@ export default class RecordMediaHandler {
         if (isBulkExport) {
             this._cardPublisher.publishBulk(card, senderTab.id!, recordMediaCommand.src);
         } else {
-            this._cardPublisher.publish(
-                card,
-                message.postMineAction,
-                senderTab.id!,
-                recordMediaCommand.src
-            );
+            this._cardPublisher.publish(card, message.postMineAction, senderTab.id!, recordMediaCommand.src);
         }
     }
 }
