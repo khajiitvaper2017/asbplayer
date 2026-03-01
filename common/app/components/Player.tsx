@@ -1224,32 +1224,22 @@ const Player = React.memo(function Player({
         videoAspectRatio && Number.isFinite(videoAspectRatio) && videoAspectRatio > 0
             ? Math.max(minVideoPlayerWidth, Math.round(playerHeight * videoAspectRatio))
             : undefined;
-    const subtitlePlayerMaxResizeWidth =
-        videoInWindow && aspectFitVideoWidth !== undefined
-            ? Math.max(0, windowWidth - aspectFitVideoWidth)
-            : Math.max(0, windowWidth - minVideoPlayerWidth);
-    const notEnoughSpaceForSubtitlePlayer = subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
+    const subtitlePlayerInitialWidth =
+        videoInWindow && aspectFitVideoWidth !== undefined ? Math.max(0, windowWidth - aspectFitVideoWidth) : undefined;
+    const subtitlePlayerMaxResizeWidth = Math.max(0, windowWidth - minVideoPlayerWidth);
+    const notEnoughSpaceForSubtitlePlayer =
+        videoInWindow && subtitlePlayerInitialWidth !== undefined
+            ? subtitlePlayerInitialWidth < minSubtitlePlayerWidth
+            : subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
     const actuallyHideSubtitlePlayer =
         videoInWindow &&
         (hideSubtitlePlayer || !subtitles || subtitles?.length === 0 || notEnoughSpaceForSubtitlePlayer);
-    const fixedVideoPaneWidth =
-        videoInWindow && !actuallyHideSubtitlePlayer && aspectFitVideoWidth !== undefined
-            ? aspectFitVideoWidth
-            : undefined;
 
     return (
         <div onMouseMove={handleMouseMove} className={classes.root}>
             <Grid container direction="row" wrap="nowrap" className={classes.container}>
                 {videoInWindow && (
-                    <Grid
-                        item
-                        style={{
-                            flexGrow: fixedVideoPaneWidth === undefined ? 1 : 0,
-                            flexShrink: 0,
-                            minWidth: minVideoPlayerWidth,
-                            width: fixedVideoPaneWidth,
-                        }}
-                    >
+                    <Grid item style={{ flexGrow: 1, minWidth: minVideoPlayerWidth }}>
                         <iframe
                             ref={videoFrameRef}
                             className={classes.videoFrame}
@@ -1341,6 +1331,8 @@ const Player = React.memo(function Player({
                         settings={settings}
                         keyBinder={keyBinder}
                         webSocketClient={webSocketClient}
+                        initialWidth={subtitlePlayerInitialWidth}
+                        initialWidthKey={videoInWindow ? videoFileUrl : undefined}
                     />
                 </Grid>
             </Grid>
