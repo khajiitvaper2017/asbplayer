@@ -70,9 +70,6 @@ class SettingsAccessor {
     get preferGif() {
         return this.settings.preferGif;
     }
-    get gifMaxDuration() {
-        return this.settings.gifMaxDuration;
-    }
     get gifFps() {
         return this.settings.gifFps;
     }
