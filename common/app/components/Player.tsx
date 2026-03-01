@@ -1227,10 +1227,7 @@ const Player = React.memo(function Player({
     const subtitlePlayerInitialWidth =
         videoInWindow && aspectFitVideoWidth !== undefined ? Math.max(0, windowWidth - aspectFitVideoWidth) : undefined;
     const subtitlePlayerMaxResizeWidth = Math.max(0, windowWidth - minVideoPlayerWidth);
-    const notEnoughSpaceForSubtitlePlayer =
-        videoInWindow && subtitlePlayerInitialWidth !== undefined
-            ? subtitlePlayerInitialWidth < minSubtitlePlayerWidth
-            : subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
+    const notEnoughSpaceForSubtitlePlayer = subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
     const actuallyHideSubtitlePlayer =
         videoInWindow &&
         (hideSubtitlePlayer || !subtitles || subtitles?.length === 0 || notEnoughSpaceForSubtitlePlayer);
@@ -1264,6 +1261,7 @@ const Player = React.memo(function Player({
                     hidden={actuallyHideSubtitlePlayer}
                     style={{
                         flexGrow: videoInWindow ? 0 : 1,
+                        flexShrink: 0,
                         width: 'auto',
                     }}
                 >
