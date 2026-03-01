@@ -14,12 +14,9 @@ const ankiQueryDeckSpecialCharacters = ['"', '*', '_', '\\'];
 const alphaNumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const unsafeURLChars = /[:\/\?#\[\]@!$&'()*+,;= "<>%{}|\\^`]/g;
 const replacement = '_';
-const ANKI_TIMING_LOG_THRESHOLD_MS = 1_000;
 const GIF_AUDIO_SPEED_BUDGET_MULTIPLIER = 1.5;
 const GIF_AUDIO_SPEED_BUDGET_PADDING_MS = 150;
 const GIF_AUDIO_SPEED_BUDGET_MIN_MS = 900;
-const BYTES_PER_MEBIBYTE = 1024 * 1024;
-const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 export function escapeAnkiQuery(query: string) {
     let escaped = '';
@@ -273,14 +270,6 @@ export class Anki {
         );
     }
 
-    private _logTiming(message: string, elapsedMs?: number) {
-        if (elapsedMs !== undefined && elapsedMs < ANKI_TIMING_LOG_THRESHOLD_MS) {
-            return;
-        }
-
-        console.debug(`[Anki] ${message}`);
-    }
-
     async deckNames(ankiConnectUrl?: string): Promise<string[]> {
         const response = await this._executeAction('deckNames', null, ankiConnectUrl);
         return response.result;
@@ -451,10 +440,7 @@ export class Anki {
         mode,
         ankiConnectUrl,
     }: ExportParams) {
-        const exportStartedAt = now();
-
         const fields = {};
-        const fieldsStartedAt = now();
 
         this._appendField(fields, this.settingsProvider.sentenceField, text, true);
         this._appendField(fields, this.settingsProvider.track1Field, track1, true);
@@ -475,8 +461,6 @@ export class Anki {
                 );
             }
         }
-        const fieldsElapsedMs = Math.round(now() - fieldsStartedAt);
-        this._logTiming(`field preparation took ${fieldsElapsedMs}ms`, fieldsElapsedMs);
 
         const params: any = {
             note: {
@@ -499,28 +483,26 @@ export class Anki {
 
         const audioPreparationTask = (async () => {
             if (!this.settingsProvider.audioField || !audioClip || audioClip.error !== undefined) {
-                return {};
+                return { audioFieldValue: undefined, noteAudio: undefined };
             }
 
             const sanitizedName = this._sanitizeFileName(audioClip.name);
-            const audioBase64StartedAt = now();
             const data = await audioClip.base64();
-            const audioBase64ElapsedMs = Math.round(now() - audioBase64StartedAt);
-            this._logTiming(`audio base64 generation took ${audioBase64ElapsedMs}ms`, audioBase64ElapsedMs);
 
             if (!data) {
-                return {};
+                return { audioFieldValue: undefined, noteAudio: undefined };
             }
 
             if (gui || updateLast) {
-                const audioUploadStartedAt = now();
                 const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
-                const audioUploadElapsedMs = Math.round(now() - audioUploadStartedAt);
-                this._logTiming(`audio media upload took ${audioUploadElapsedMs}ms`, audioUploadElapsedMs);
-                return { audioFieldValue: `[sound:${fileName}]` };
+                return {
+                    audioFieldValue: `[sound:${fileName}]`,
+                    noteAudio: undefined,
+                };
             }
 
             return {
+                audioFieldValue: undefined,
                 noteAudio: {
                     filename: sanitizedName,
                     data,
@@ -531,38 +513,28 @@ export class Anki {
 
         const imagePreparationTask = (async () => {
             if (!this.settingsProvider.imageField || !image || image.error !== undefined) {
-                return {};
+                return { imageFieldValue: undefined, notePicture: undefined };
             }
 
             const gifMotionCollectionBudgetMs = this._gifMotionCollectionBudgetFromAudio(audioClip);
-            const audioDurationMs = audioClip ? Math.max(0, Math.round(audioClip.end - audioClip.start)) : 0;
             image.setGifMotionCollectionBudgetMs(gifMotionCollectionBudgetMs);
-
-            if (gifMotionCollectionBudgetMs !== undefined) {
-                this._logTiming(
-                    `image motion budget set to ${gifMotionCollectionBudgetMs}ms fromAudioDurationMs=${audioDurationMs}`
-                );
-            }
-
             const sanitizedName = this._sanitizeFileName(image.name);
-            const imageBase64StartedAt = now();
             const data = await image.base64();
-            const imageBase64ElapsedMs = Math.round(now() - imageBase64StartedAt);
-            this._logTiming(`image base64 generation took ${imageBase64ElapsedMs}ms`, imageBase64ElapsedMs);
 
             if (!data) {
-                return {};
+                return { imageFieldValue: undefined, notePicture: undefined };
             }
 
             if (gui || updateLast) {
-                const imageUploadStartedAt = now();
                 const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
-                const imageUploadElapsedMs = Math.round(now() - imageUploadStartedAt);
-                this._logTiming(`image media upload took ${imageUploadElapsedMs}ms`, imageUploadElapsedMs);
-                return { imageFieldValue: `<img src="${fileName}">` };
+                return {
+                    imageFieldValue: `<img src="${fileName}">`,
+                    notePicture: undefined,
+                };
             }
 
             return {
+                imageFieldValue: undefined,
                 notePicture: {
                     filename: sanitizedName,
                     data,
@@ -573,19 +545,19 @@ export class Anki {
 
         const [audioPrepared, imagePrepared] = await Promise.all([audioPreparationTask, imagePreparationTask]);
 
-        if ('audioFieldValue' in audioPrepared && audioPrepared.audioFieldValue) {
+        if (audioPrepared.audioFieldValue) {
             this._appendField(fields, this.settingsProvider.audioField, audioPrepared.audioFieldValue, false);
         }
 
-        if ('noteAudio' in audioPrepared && audioPrepared.noteAudio) {
+        if (audioPrepared.noteAudio) {
             params.note['audio'] = audioPrepared.noteAudio;
         }
 
-        if ('imageFieldValue' in imagePrepared && imagePrepared.imageFieldValue) {
+        if (imagePrepared.imageFieldValue) {
             this._appendField(fields, this.settingsProvider.imageField, imagePrepared.imageFieldValue, false);
         }
 
-        if ('notePicture' in imagePrepared && imagePrepared.notePicture) {
+        if (imagePrepared.notePicture) {
             params.note['picture'] = imagePrepared.notePicture;
         }
 
@@ -593,69 +565,54 @@ export class Anki {
 
         switch (mode) {
             case 'gui':
-                try {
-                    return (await this._executeAction('guiAddCards', params, ankiConnectUrl)).result;
-                } finally {
-                    const exportElapsedMs = Math.round(now() - exportStartedAt);
-                    this._logTiming(`export total took ${exportElapsedMs}ms`, exportElapsedMs);
-                }
+                return (await this._executeAction('guiAddCards', params, ankiConnectUrl)).result;
             case 'updateLast':
-                try {
-                    const recentNotes = (
-                        await this._executeAction('findNotes', { query: 'added:1' }, ankiConnectUrl)
-                    ).result.sort();
+                const recentNotes = (
+                    await this._executeAction('findNotes', { query: 'added:1' }, ankiConnectUrl)
+                ).result.sort();
 
-                    if (recentNotes.length === 0) {
-                        throw new Error('Could not find note to update');
-                    }
-
-                    const lastNoteId = recentNotes[recentNotes.length - 1];
-                    params.note['id'] = lastNoteId;
-                    const infoResponse = await this._executeAction('notesInfo', { notes: [lastNoteId] });
-
-                    if (infoResponse.result.length > 0 && infoResponse.result[0].noteId === lastNoteId) {
-                        const info = infoResponse.result[0];
-
-                        this._inheritHtmlMarkupFromField('sentenceField', info, params);
-                        this._inheritHtmlMarkupFromField('track1Field', info, params);
-                        this._inheritHtmlMarkupFromField('track2Field', info, params);
-                        this._inheritHtmlMarkupFromField('track3Field', info, params);
-
-                        await this._executeAction('updateNoteFields', params, ankiConnectUrl);
-
-                        if (tags.length > 0) {
-                            await this._executeAction(
-                                'addTags',
-                                { notes: [lastNoteId], tags: tags.join(' ') },
-                                ankiConnectUrl
-                            );
-                        }
-
-                        if (!this.settingsProvider.wordField || !info.fields) {
-                            return info.noteId;
-                        }
-
-                        const wordField = info.fields[this.settingsProvider.wordField];
-
-                        if (!wordField || !wordField.value) {
-                            return info.noteId;
-                        }
-
-                        return wordField.value;
-                    }
-
-                    throw new Error('Could not update last card because the card info could not be fetched');
-                } finally {
-                    const exportElapsedMs = Math.round(now() - exportStartedAt);
-                    this._logTiming(`export total took ${exportElapsedMs}ms`, exportElapsedMs);
+                if (recentNotes.length === 0) {
+                    throw new Error('Could not find note to update');
                 }
+
+                const lastNoteId = recentNotes[recentNotes.length - 1];
+                params.note['id'] = lastNoteId;
+                const infoResponse = await this._executeAction('notesInfo', { notes: [lastNoteId] });
+
+                if (infoResponse.result.length > 0 && infoResponse.result[0].noteId === lastNoteId) {
+                    const info = infoResponse.result[0];
+
+                    this._inheritHtmlMarkupFromField('sentenceField', info, params);
+                    this._inheritHtmlMarkupFromField('track1Field', info, params);
+                    this._inheritHtmlMarkupFromField('track2Field', info, params);
+                    this._inheritHtmlMarkupFromField('track3Field', info, params);
+
+                    await this._executeAction('updateNoteFields', params, ankiConnectUrl);
+
+                    if (tags.length > 0) {
+                        await this._executeAction(
+                            'addTags',
+                            { notes: [lastNoteId], tags: tags.join(' ') },
+                            ankiConnectUrl
+                        );
+                    }
+
+                    if (!this.settingsProvider.wordField || !info.fields) {
+                        return info.noteId;
+                    }
+
+                    const wordField = info.fields[this.settingsProvider.wordField];
+
+                    if (!wordField || !wordField.value) {
+                        return info.noteId;
+                    }
+
+                    return wordField.value;
+                }
+
+                throw new Error('Could not update last card because the card info could not be fetched');
             case 'default':
-                try {
-                    return (await this._executeAction('addNote', params, ankiConnectUrl)).result;
-                } finally {
-                    const exportElapsedMs = Math.round(now() - exportStartedAt);
-                    this._logTiming(`export total took ${exportElapsedMs}ms`, exportElapsedMs);
-                }
+                return (await this._executeAction('addNote', params, ankiConnectUrl)).result;
             default:
                 throw new Error('Unknown export mode: ' + mode);
         }
@@ -695,31 +652,11 @@ export class Anki {
     }
 
     private async _storeMediaFile(name: string, base64: string, ankiConnectUrl?: string) {
-        const filename = makeUniqueFileName(name);
-        const payloadBytes = this._base64ByteSize(base64);
-        const uploadStartedAt = now();
-        const response = await this._executeAction(
+        return this._executeAction(
             'storeMediaFile',
-            { filename, data: base64, deleteExisting: false },
+            { filename: makeUniqueFileName(name), data: base64, deleteExisting: false },
             ankiConnectUrl
         );
-        const uploadElapsedMs = Math.max(1, Math.round(now() - uploadStartedAt));
-        const bytesPerSecond = Math.round((payloadBytes * 1000) / uploadElapsedMs);
-        const mibPerSecond = Math.round((bytesPerSecond / BYTES_PER_MEBIBYTE) * 100) / 100;
-        this._logTiming(
-            `storeMediaFile throughput filename=${filename} elapsedMs=${uploadElapsedMs} bytesPerSec=${bytesPerSecond} mibPerSec=${mibPerSecond}`,
-            uploadElapsedMs
-        );
-        return response;
-    }
-
-    private _base64ByteSize(base64: string) {
-        if (base64.length === 0) {
-            return 0;
-        }
-
-        const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
-        return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
     }
 
     private _inheritHtmlMarkupFromField(fieldKey: AnkiSettingsFieldKey, info: any, params: any) {
@@ -739,7 +676,6 @@ export class Anki {
     }
 
     private async _executeAction(action: string, params: any, ankiConnectUrl?: string) {
-        const startedAt = now();
         const body: any = {
             action: action,
             version: 6,
@@ -749,23 +685,15 @@ export class Anki {
             body['params'] = params;
         }
 
-        try {
-            const json = await this.fetcher.fetch(ankiConnectUrl || this.settingsProvider.ankiConnectUrl, body);
+        const json = await this.fetcher.fetch(ankiConnectUrl || this.settingsProvider.ankiConnectUrl, body);
 
-            if (json.error) {
-                if (json.error.includes('duplicate')) {
-                    throw new DuplicateNoteError(json.error);
-                }
-                throw new Error(json.error);
+        if (json.error) {
+            if (json.error.includes('duplicate')) {
+                throw new DuplicateNoteError(json.error);
             }
-
-            const elapsedMs = Math.round(now() - startedAt);
-            this._logTiming(`action=${action} took ${elapsedMs}ms`, elapsedMs);
-            return json;
-        } catch (e) {
-            const elapsedMs = Math.round(now() - startedAt);
-            this._logTiming(`action=${action} failed after ${elapsedMs}ms`, elapsedMs);
-            throw e;
+            throw new Error(json.error);
         }
+
+        return json;
     }
 }

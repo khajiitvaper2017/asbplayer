@@ -1,14 +1,11 @@
+/// <reference path="./gifenc.d.ts" />
+
 import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 import type {
-    AppliedPaletteFromWorkerMessage,
-    ApplyPaletteInWorkerMessage,
     EncodeGifInWorkerMessage,
     EncodeGifErrorFromWorkerMessage,
-    EncodeIndexedGifInWorkerMessage,
     EncodedGifFromWorkerMessage,
     GifEncoderRequestMessage,
-    QuantizePaletteInWorkerMessage,
-    QuantizedPaletteFromWorkerMessage,
 } from './gif-encoder-message';
 
 const frameFromBuffer = (buffer: ArrayBuffer) => new Uint8Array(buffer);
@@ -76,37 +73,6 @@ const quantizedPalette = (
         format: paletteFormat,
     });
 
-const encodeGifFromIndexes = (
-    width: number,
-    height: number,
-    frameIndexes: Uint8Array[],
-    frameDelayMs: number[],
-    palette: number[][]
-) => {
-    const delays =
-        frameDelayMs.length === frameIndexes.length ? frameDelayMs : frameIndexes.map(() => frameDelayMs[0] ?? 20);
-    const gif = GIFEncoder();
-
-    for (let i = 0; i < frameIndexes.length; ++i) {
-        const delay = Math.max(1, Math.round(delays[i]));
-
-        if (i === 0) {
-            gif.writeFrame(frameIndexes[i], width, height, {
-                palette,
-                delay,
-                repeat: 0,
-            });
-        } else {
-            gif.writeFrame(frameIndexes[i], width, height, {
-                delay,
-            });
-        }
-    }
-
-    gif.finish();
-    return new Uint8Array(gif.bytesView());
-};
-
 const encodeGif = ({
     width,
     height,
@@ -121,93 +87,58 @@ const encodeGif = ({
     const delays = frameDelayMs.length === frames.length ? frameDelayMs : frames.map(() => frameDelayMs[0] ?? 20);
     const palette = quantizedPalette(frames, paletteFrameIndexes, paletteSize, paletteFormat, palettePixelStride);
     const indexes = frames.map((frame) => applyPalette(frame, palette, paletteFormat));
-    return encodeGifFromIndexes(width, height, indexes, delays, palette);
+    const gif = GIFEncoder();
+
+    for (let i = 0; i < indexes.length; ++i) {
+        const delay = Math.max(1, Math.round(delays[i]));
+
+        if (i === 0) {
+            gif.writeFrame(indexes[i], width, height, {
+                palette,
+                delay,
+                repeat: 0,
+            });
+        } else {
+            gif.writeFrame(indexes[i], width, height, {
+                delay,
+            });
+        }
+    }
+
+    gif.finish();
+    return new Uint8Array(gif.bytesView());
 };
 
-const quantizePalette = ({
-    frameBuffers,
-    paletteSize,
-    paletteFormat,
-    palettePixelStride,
-}: QuantizePaletteInWorkerMessage) => {
-    const frames = frameBuffers.map(frameFromBuffer);
-    const paletteFrameIndexes = frames.map((_, index) => index);
-    return quantizedPalette(frames, paletteFrameIndexes, paletteSize, paletteFormat, palettePixelStride);
-};
+const toArrayBuffer = (bytes: Uint8Array) => {
+    if (
+        bytes.byteOffset === 0 &&
+        bytes.byteLength === bytes.buffer.byteLength &&
+        bytes.buffer instanceof ArrayBuffer
+    ) {
+        return bytes.buffer;
+    }
 
-const applyPaletteToFrame = ({ frameIndex, frameBuffer, palette, paletteFormat }: ApplyPaletteInWorkerMessage) => {
-    const frame = frameFromBuffer(frameBuffer);
-    const index = applyPalette(frame, palette, paletteFormat);
-    return {
-        frameIndex,
-        index,
-    };
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    return copy.buffer;
 };
-
-const encodeIndexedGif = ({
-    width,
-    height,
-    frameDelayMs,
-    frameIndexBuffers,
-    palette,
-}: EncodeIndexedGifInWorkerMessage) => {
-    const indexes = frameIndexBuffers.map(frameFromBuffer);
-    return encodeGifFromIndexes(width, height, indexes, frameDelayMs, palette);
-};
-
-const toArrayBuffer = (bytes: Uint8Array) =>
-    bytes.buffer instanceof ArrayBuffer ? bytes.buffer : new Uint8Array(bytes).buffer;
 
 const onMessage = () => {
     onmessage = async (event: MessageEvent<GifEncoderRequestMessage>) => {
         try {
             const message = event.data;
 
-            if (message.command === 'encode') {
-                const bytes = encodeGif(message);
-                const buffer = toArrayBuffer(bytes);
-                const response: EncodedGifFromWorkerMessage = {
-                    command: 'encoded',
-                    buffer,
-                };
-                postMessage(response, { transfer: [buffer] });
-                return;
+            if (message.command !== 'encode') {
+                throw new Error(`Unknown worker command: ${(message as { command: string }).command}`);
             }
 
-            if (message.command === 'quantizePalette') {
-                const palette = quantizePalette(message);
-                const response: QuantizedPaletteFromWorkerMessage = {
-                    command: 'quantizedPalette',
-                    palette,
-                };
-                postMessage(response);
-                return;
-            }
-
-            if (message.command === 'applyPalette') {
-                const { frameIndex, index } = applyPaletteToFrame(message);
-                const buffer = toArrayBuffer(index);
-                const response: AppliedPaletteFromWorkerMessage = {
-                    command: 'appliedPalette',
-                    frameIndex,
-                    buffer,
-                };
-                postMessage(response, { transfer: [buffer] });
-                return;
-            }
-
-            if (message.command === 'encodeIndexedGif') {
-                const bytes = encodeIndexedGif(message);
-                const buffer = toArrayBuffer(bytes);
-                const response: EncodedGifFromWorkerMessage = {
-                    command: 'encoded',
-                    buffer,
-                };
-                postMessage(response, { transfer: [buffer] });
-                return;
-            }
-
-            throw new Error(`Unknown worker command: ${(message as { command: string }).command}`);
+            const bytes = encodeGif(message);
+            const buffer = toArrayBuffer(bytes);
+            const response: EncodedGifFromWorkerMessage = {
+                command: 'encoded',
+                buffer,
+            };
+            postMessage(response, { transfer: [buffer] });
         } catch (error) {
             const response: EncodeGifErrorFromWorkerMessage = {
                 command: 'error',
