@@ -291,6 +291,7 @@
         "settings.miningHistoryStorageLimit": "The maximum number of cards in the user's mining history that will be preserved across asbplayer page reloads.",
         "settings.misc": "Section heading for misc settings.",
         "settings.mp3Preference": "Setting to re-encode the audio-recordings as an mp3 before creating a card in Anki. If this setting is disabled, audio would be sent to Anki in a different format.",
+        "settings.gifPreference": "Setting that enables GIF capture for screenshots. GIF generation is slower and the exported files are usually larger than JPEG screenshots.",
         "settings.noteType": "Anki note type.",
         "settings.postMinePlayback": "Label for setting that controls video playback state following a mining action.",
         "settings.postMiningPlaybackState": "Label for setting that controls video playback state following a mining action.",

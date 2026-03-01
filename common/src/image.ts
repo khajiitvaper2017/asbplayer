@@ -18,7 +18,6 @@ const DEFAULT_GIF_MAX_WIDTH = 480;
 const GIF_OPTION_LIMITS = {
     minDurationMs: 300,
     maxDurationMs: 2500,
-    maxDurationCapMs: 60_000,
     minFps: 1,
     maxFps: 60,
     minFrames: 1,
@@ -54,6 +53,10 @@ const GIF_FRAME_COLLECTION_MAX_SLOW_FRAMES_LOGGED = 5;
 const GIF_APPLY_PALETTE_POOL_MIN_FRAMES = 12;
 const GIF_APPLY_PALETTE_POOL_MIN_WORKERS = 2;
 const GIF_APPLY_PALETTE_POOL_MAX_WORKERS = 4;
+const GIF_LOW_MOTION_MAX_SAMPLED_PIXELS = 12_000;
+const GIF_LOW_MOTION_PER_PIXEL_COLOR_DIFF_THRESHOLD = 18;
+const GIF_LOW_MOTION_MAX_CHANGED_PIXEL_RATIO = 0.01;
+const GIF_LOW_MOTION_MAX_MEAN_CHANNEL_DIFF = 2;
 const IMAGE_TIMING_LOG_THRESHOLD_MS = 2_000;
 type TimingDetails = string | (() => string);
 type GifWorkerSuccessCommand = 'encoded';
@@ -84,13 +87,12 @@ interface GifRenderStats {
     effectiveFps: number;
     outputWidth: number;
     outputHeight: number;
-    outputExtension: 'gif';
+    outputExtension: 'gif' | 'jpeg';
     budgetMs?: number;
     truncatedByBudget?: boolean;
 }
 
 export interface GifOptions {
-    maxDurationMs: number;
     fps: number;
     maxFrames: number;
     startTrimMs: number;
@@ -98,11 +100,10 @@ export interface GifOptions {
 }
 
 const DEFAULT_GIF_OPTIONS: GifOptions = {
-    maxDurationMs: GIF_OPTION_LIMITS.maxDurationMs,
     fps: 12,
-    maxFrames: 24,
-    startTrimMs: 100,
-    endTrimMs: 0,
+    maxFrames: 60,
+    startTrimMs: 150,
+    endTrimMs: 150,
 };
 
 const makeFileName = (prefix: string, timestamp: number) => {
@@ -120,12 +121,6 @@ const normalizeRoundedNumber = (value: number | undefined, fallback: number, min
 
 const normalizeGifOptions = (gifOptions?: Partial<GifOptions>): GifOptions => {
     return {
-        maxDurationMs: normalizeRoundedNumber(
-            gifOptions?.maxDurationMs,
-            DEFAULT_GIF_OPTIONS.maxDurationMs,
-            GIF_OPTION_LIMITS.minDurationMs,
-            GIF_OPTION_LIMITS.maxDurationCapMs
-        ),
         fps: normalizeRoundedNumber(
             gifOptions?.fps,
             DEFAULT_GIF_OPTIONS.fps,
@@ -196,10 +191,10 @@ const yieldToEventLoop = () => new Promise<void>((resolve) => setTimeout(resolve
 
 const uniformFrameDelayMs = (frameCount: number, delayMs: number) => Array.from({ length: frameCount }, () => delayMs);
 
-const durationFromInterval = (startTimestamp: number, endTimestamp: number, gifOptions: GifOptions) => {
+const durationFromInterval = (startTimestamp: number, endTimestamp: number) => {
     const duration = Math.abs(endTimestamp - startTimestamp);
     const resolvedDuration = duration > 0 ? duration : DEFAULT_GIF_DURATION_MS;
-    return clamp(resolvedDuration, GIF_OPTION_LIMITS.minDurationMs, gifOptions.maxDurationMs);
+    return clamp(resolvedDuration, GIF_OPTION_LIMITS.minDurationMs, GIF_OPTION_LIMITS.maxDurationMs);
 };
 
 const trimmedGifInterval = (startTimestamp: number, endTimestamp: number, gifOptions: GifOptions) => {
@@ -546,7 +541,7 @@ class GifFileImageData implements ImageData {
     private _cachedDataUrl?: string;
     private readonly _workerFactory: GifEncoderWorkerFactory;
     private readonly _gifOptions: GifOptions;
-    private _outputExtension: 'gif' = 'gif';
+    private _outputExtension: 'gif' | 'jpeg' = 'gif';
     private _lastRenderStats?: GifRenderStats;
     private _motionCollectionBudgetOverrideMs?: number;
 
@@ -563,7 +558,7 @@ class GifFileImageData implements ImageData {
     ) {
         this._file = file;
         this._startTimestamp = Math.max(0, startTimestamp);
-        this._durationMs = durationFromInterval(startTimestamp, endTimestamp, gifOptions);
+        this._durationMs = durationFromInterval(startTimestamp, endTimestamp);
         this._maxWidth = maxWidth;
         this._maxHeight = maxHeight;
         this._baseName = makeFileName(file.name, this._startTimestamp);
@@ -720,6 +715,30 @@ class GifFileImageData implements ImageData {
             truncatedByBudget,
         };
 
+        if (this._shouldUseStandardJpeg(frameBuffers)) {
+            const { width: jpegWidth, height: jpegHeight } = this._dimensions(video, false);
+            this._outputExtension = 'jpeg';
+            this._lastRenderStats = {
+                ...this._lastRenderStats,
+                outputFrameCount: 1,
+                outputWidth: jpegWidth,
+                outputHeight: jpegHeight,
+                outputExtension: 'jpeg',
+            };
+
+            if (jpegWidth === width && jpegHeight === height) {
+                return await this._jpegBlobFromFrameBuffer(frameBuffers[0], ctx, width, height);
+            }
+
+            return await this._jpegBlobFromVideo(
+                video,
+                ctx,
+                frameTimestamps[0] ?? this._startTimestamp,
+                jpegWidth,
+                jpegHeight
+            );
+        }
+
         const paletteFrameIndexes = this._paletteFrameIndexes(frameBuffers.length);
         const applyPaletteWorkerCount = this._applyPaletteWorkerCount(frameBuffers.length);
 
@@ -763,6 +782,98 @@ class GifFileImageData implements ImageData {
         const encodeElapsedMs = Math.round(now() - encodeStartedAtMs);
         this._logGifPhaseTimings(collectFramesElapsedMs, encodeElapsedMs, applyPaletteWorkerCount, frameBuffers.length);
         return new Blob([encodedBytes], { type: 'image/gif' });
+    }
+
+    private _shouldUseStandardJpeg(frameBuffers: ArrayBuffer[]) {
+        if (frameBuffers.length <= 1) {
+            return true;
+        }
+
+        const firstFrame = new Uint8ClampedArray(frameBuffers[0]);
+        const lastFrame = new Uint8ClampedArray(frameBuffers[frameBuffers.length - 1]);
+        const channelCount = Math.min(firstFrame.length, lastFrame.length);
+        const pixelCount = Math.floor(channelCount / 4);
+
+        if (pixelCount <= 0) {
+            return true;
+        }
+
+        const sampleStride = Math.max(1, Math.floor(pixelCount / GIF_LOW_MOTION_MAX_SAMPLED_PIXELS));
+        let sampledPixelCount = 0;
+        let changedPixelCount = 0;
+        let totalColorDiff = 0;
+
+        for (let pixelIndex = 0; pixelIndex < pixelCount; pixelIndex += sampleStride) {
+            const offset = pixelIndex * 4;
+            const diffR = Math.abs(firstFrame[offset] - lastFrame[offset]);
+            const diffG = Math.abs(firstFrame[offset + 1] - lastFrame[offset + 1]);
+            const diffB = Math.abs(firstFrame[offset + 2] - lastFrame[offset + 2]);
+            const colorDiff = diffR + diffG + diffB;
+
+            totalColorDiff += colorDiff;
+            sampledPixelCount++;
+
+            if (colorDiff >= GIF_LOW_MOTION_PER_PIXEL_COLOR_DIFF_THRESHOLD) {
+                changedPixelCount++;
+            }
+        }
+
+        if (sampledPixelCount === 0) {
+            return true;
+        }
+
+        const changedPixelRatio = changedPixelCount / sampledPixelCount;
+        const meanChannelDiff = totalColorDiff / (sampledPixelCount * 3);
+        return (
+            changedPixelRatio <= GIF_LOW_MOTION_MAX_CHANGED_PIXEL_RATIO &&
+            meanChannelDiff <= GIF_LOW_MOTION_MAX_MEAN_CHANNEL_DIFF
+        );
+    }
+
+    private async _jpegBlobFromFrameBuffer(
+        frameBuffer: ArrayBuffer,
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number
+    ) {
+        const rgba = new Uint8ClampedArray(frameBuffer);
+        const expectedLength = width * height * 4;
+        if (rgba.length < expectedLength) {
+            throw new Error('Could not encode JPEG from GIF frame: insufficient frame buffer data');
+        }
+
+        const imageData = ctx.createImageData(width, height);
+        imageData.data.set(rgba.subarray(0, expectedLength));
+        ctx.putImageData(imageData, 0, 0);
+        return await this._jpegBlobFromCanvas(ctx.canvas);
+    }
+
+    private async _jpegBlobFromVideo(
+        video: HTMLVideoElement,
+        ctx: CanvasRenderingContext2D,
+        timestampMs: number,
+        width: number,
+        height: number
+    ) {
+        await this._seekVideo(video, timestampMs / 1000);
+        const canvas = ctx.canvas;
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(video, 0, 0, width, height);
+        return await this._jpegBlobFromCanvas(canvas);
+    }
+
+    private async _jpegBlobFromCanvas(canvas: HTMLCanvasElement) {
+        return await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    reject(new Error('Could not encode JPEG from GIF frame'));
+                    return;
+                }
+
+                resolve(blob);
+            }, 'image/jpeg');
+        });
     }
 
     private _logGifPhaseTimings(
@@ -1294,9 +1405,7 @@ class GifFileImageData implements ImageData {
     }
 
     private _timingSettingsSummary() {
-        return `settings={maxWidth:${this._maxWidth},maxHeight:${this._maxHeight},gifMaxDuration:${
-            this._gifOptions.maxDurationMs
-        },gifFps:${this._gifOptions.fps},gifMaxFrames:${
+        return `settings={maxWidth:${this._maxWidth},maxHeight:${this._maxHeight},gifFps:${this._gifOptions.fps},gifMaxFrames:${
             this._gifOptions.maxFrames
         },gifStartTrim:${this._gifOptions.startTrimMs},gifEndTrim:${this._gifOptions.endTrimMs}}`;
     }
@@ -1674,8 +1783,15 @@ class GifFileImageData implements ImageData {
         return timestamps;
     }
 
-    private _dimensions(video: HTMLVideoElement) {
-        const effectiveMaxWidth = this._maxWidth > 0 ? this._maxWidth : this._maxHeight > 0 ? 0 : DEFAULT_GIF_MAX_WIDTH;
+    private _dimensions(video: HTMLVideoElement, applyDefaultGifMaxWidth = true) {
+        const effectiveMaxWidth =
+            this._maxWidth > 0
+                ? this._maxWidth
+                : this._maxHeight > 0
+                  ? 0
+                  : applyDefaultGifMaxWidth
+                    ? DEFAULT_GIF_MAX_WIDTH
+                    : 0;
         const widthRatio = effectiveMaxWidth <= 0 ? 1 : effectiveMaxWidth / video.videoWidth;
         const heightRatio = this._maxHeight <= 0 ? 1 : this._maxHeight / video.videoHeight;
         const ratio = Math.min(1, Math.min(widthRatio, heightRatio));

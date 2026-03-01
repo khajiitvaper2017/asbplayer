@@ -33,7 +33,6 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         recordWithAudioPlayback,
         preferMp3,
         preferGif,
-        gifMaxDuration,
         gifFps,
         gifMaxFrames,
         gifStartTrim,
@@ -224,23 +223,6 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
             />
             {preferGif && (
                 <>
-                    <TextField
-                        type="number"
-                        label={t('settings.gifMaxDuration')}
-                        fullWidth
-                        value={gifMaxDuration}
-                        color="primary"
-                        onChange={(event) => onSettingChanged('gifMaxDuration', Number(event.target.value))}
-                        slotProps={{
-                            htmlInput: {
-                                min: 300,
-                                step: 100,
-                            },
-                            input: {
-                                endAdornment: <InputAdornment position="end">ms</InputAdornment>,
-                            },
-                        }}
-                    />
                     <SwitchLabelWithHoverEffect
                         control={
                             <Switch

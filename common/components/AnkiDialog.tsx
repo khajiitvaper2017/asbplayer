@@ -459,7 +459,6 @@ const AnkiDialog = ({
                 settings.preferGif,
                 gifWorkerFactory,
                 {
-                    maxDurationMs: settings.gifMaxDuration,
                     fps: settings.gifFps,
                     maxFrames: settings.gifMaxFrames,
                     startTrimMs: settings.gifStartTrim,
@@ -474,7 +473,6 @@ const AnkiDialog = ({
         settings.maxImageWidth,
         settings.maxImageHeight,
         settings.preferGif,
-        settings.gifMaxDuration,
         settings.gifFps,
         settings.gifMaxFrames,
         settings.gifStartTrim,

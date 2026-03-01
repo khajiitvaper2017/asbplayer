@@ -370,9 +370,6 @@ const settingsSchema = {
         preferGif: {
             type: 'boolean',
         },
-        gifMaxDuration: {
-            type: 'number',
-        },
         gifFps: {
             type: 'number',
         },
@@ -540,14 +537,10 @@ const settingsSchema = {
 const ignoreKeys: (keyof AsbplayerSettings)[] = [
     'streamingPages', // Ignored due to security risk (e.g. disable CSP)
 ];
-const legacyIgnoredKeys = ['gifDetectMotion', 'gifCreateJpegIfLowMotion'];
 
 const withIgnoredKeysRemoved = (settings: any) => {
     const copy = { ...settings };
     for (const ignoreKey of ignoreKeys) {
-        delete copy[ignoreKey];
-    }
-    for (const ignoreKey of legacyIgnoredKeys) {
         delete copy[ignoreKey];
     }
     return copy;

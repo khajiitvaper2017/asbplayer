@@ -426,7 +426,6 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     settings.preferGif,
                     gifEncoderWorkerFactory,
                     {
-                        maxDurationMs: settings.gifMaxDuration,
                         fps: settings.gifFps,
                         maxFrames: settings.gifMaxFrames,
                         startTrimMs: settings.gifStartTrim,
