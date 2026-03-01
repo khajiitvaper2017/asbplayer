@@ -656,7 +656,7 @@ class Mp3AudioData implements AudioData {
     }
 
     onEvent(name: AudioClipEvent, callback: () => void): () => void {
-        return this.onEvent(name, callback);
+        return this.data.onEvent(name, callback);
     }
 
     stop() {

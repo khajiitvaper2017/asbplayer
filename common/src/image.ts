@@ -681,7 +681,62 @@ class GifFileImageData implements ImageData {
             throw new Error('Could not create image context');
         }
 
+        const lowMotionJpegBlob = await this._renderLowMotionJpegIfPossible(
+            video,
+            ctx,
+            width,
+            height,
+            frameTimestamps,
+            baseFrameDelayMs
+        );
+        if (lowMotionJpegBlob) {
+            return lowMotionJpegBlob;
+        }
+
         return await this._renderGifInWorker(video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
+    }
+
+    private async _renderLowMotionJpegIfPossible(
+        video: HTMLVideoElement,
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        frameTimestamps: number[],
+        baseFrameDelayMs: number
+    ) {
+        const { shouldUseJpeg, firstFrameBuffer } = await this._shouldUseStandardJpegFromProbe(
+            video,
+            ctx,
+            width,
+            height,
+            frameTimestamps
+        );
+        if (!shouldUseJpeg) {
+            return undefined;
+        }
+
+        const { width: jpegWidth, height: jpegHeight } = this._dimensions(video, false);
+        this._outputExtension = 'jpeg';
+        this._lastRenderStats = {
+            sourceFrameCount: frameTimestamps.length,
+            outputFrameCount: 1,
+            effectiveFps: Math.round((1000 / Math.max(1, baseFrameDelayMs)) * 10) / 10,
+            outputWidth: jpegWidth,
+            outputHeight: jpegHeight,
+            outputExtension: 'jpeg',
+        };
+
+        if (firstFrameBuffer && jpegWidth === width && jpegHeight === height) {
+            return await this._jpegBlobFromFrameBuffer(firstFrameBuffer, ctx, width, height);
+        }
+
+        return await this._jpegBlobFromVideo(
+            video,
+            ctx,
+            frameTimestamps[0] ?? this._startTimestamp,
+            jpegWidth,
+            jpegHeight
+        );
     }
 
     private async _renderGifInWorker(
@@ -828,6 +883,41 @@ class GifFileImageData implements ImageData {
             changedPixelRatio <= GIF_LOW_MOTION_MAX_CHANGED_PIXEL_RATIO &&
             meanChannelDiff <= GIF_LOW_MOTION_MAX_MEAN_CHANNEL_DIFF
         );
+    }
+
+    private async _shouldUseStandardJpegFromProbe(
+        video: HTMLVideoElement,
+        ctx: CanvasRenderingContext2D,
+        width: number,
+        height: number,
+        frameTimestamps: number[]
+    ): Promise<{ shouldUseJpeg: boolean; firstFrameBuffer?: ArrayBuffer }> {
+        if (frameTimestamps.length === 0) {
+            return { shouldUseJpeg: true };
+        }
+
+        const firstTimestampMs = frameTimestamps[0];
+        const lastTimestampMs = frameTimestamps[frameTimestamps.length - 1];
+
+        try {
+            const firstFrameBuffer = await this._captureFrameBuffer(video, ctx, width, height, firstTimestampMs);
+            if (Math.abs(lastTimestampMs - firstTimestampMs) < 1) {
+                return { shouldUseJpeg: true, firstFrameBuffer };
+            }
+
+            const lastFrameBuffer = await this._captureFrameBuffer(video, ctx, width, height, lastTimestampMs);
+            return {
+                shouldUseJpeg: this._shouldUseStandardJpeg([firstFrameBuffer, lastFrameBuffer]),
+                firstFrameBuffer,
+            };
+        } catch (error) {
+            console.debug(
+                `[Image] low-motion probe failed falling back to GIF collection error=${
+                    error instanceof Error ? error.message : String(error)
+                }`
+            );
+            return { shouldUseJpeg: false };
+        }
     }
 
     private async _jpegBlobFromFrameBuffer(
