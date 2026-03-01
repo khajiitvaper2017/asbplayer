@@ -221,39 +221,25 @@ const Player = React.memo(function Player({
     useEffect(() => {
         setVideoAspectRatio(undefined);
 
-        if (!videoFile) {
+        if (!videoFileUrl) {
             return;
         }
 
-        const blobUrl = URL.createObjectURL(videoFile);
         const video = document.createElement('video');
-        let released = false;
-        const release = () => {
-            if (released) {
-                return;
-            }
-
-            released = true;
-            video.onloadedmetadata = null;
-            video.onerror = null;
-            video.removeAttribute('src');
-            video.load();
-            URL.revokeObjectURL(blobUrl);
-        };
-
         video.preload = 'metadata';
         video.onloadedmetadata = () => {
             if (video.videoWidth > 0 && video.videoHeight > 0) {
                 setVideoAspectRatio(video.videoWidth / video.videoHeight);
             }
-
-            release();
         };
-        video.onerror = () => release();
-        video.src = blobUrl;
+        video.src = videoFileUrl;
 
-        return release;
-    }, [videoFile]);
+        return () => {
+            video.onloadedmetadata = null;
+            video.removeAttribute('src');
+            video.load();
+        };
+    }, [videoFileUrl]);
 
     const seek = useCallback(
         async (time: number, clock: Clock, forwardToMedia: boolean) => {
@@ -1221,7 +1207,7 @@ const Player = React.memo(function Player({
     const videoInWindow = Boolean(loaded && videoFileUrl && !videoPopOut);
     const playerHeight = appBarHidden ? windowHeight : Math.max(0, windowHeight - appBarHeight);
     const aspectFitVideoWidth =
-        videoAspectRatio && Number.isFinite(videoAspectRatio) && videoAspectRatio > 0
+        videoAspectRatio && videoAspectRatio > 0
             ? Math.max(minVideoPlayerWidth, Math.round(playerHeight * videoAspectRatio))
             : undefined;
     const subtitlePlayerInitialWidth =
@@ -1332,7 +1318,7 @@ const Player = React.memo(function Player({
                         initialWidth={subtitlePlayerInitialWidth}
                         initialWidthKey={
                             videoInWindow && videoFileUrl
-                                ? `${videoFileUrl}|theater:${appBarHidden ? '1' : '0'}|appbar:${appBarHeight}`
+                                ? `${videoFileUrl}|${appBarHidden}|${appBarHeight}`
                                 : undefined
                         }
                     />
