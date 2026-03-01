@@ -184,6 +184,7 @@ const Player = React.memo(function Player({
     const flattenSubtitleFiles = sources?.flattenSubtitleFiles;
     const videoFile = sources?.videoFile;
     const videoFileUrl = sources?.videoFileUrl;
+    const [videoAspectRatio, setVideoAspectRatio] = useState<number>();
     const playModeEnabled = subtitles && subtitles.length > 0 && Boolean(videoFileUrl);
     const [subtitlePlayerResizing, setSubtitlePlayerResizing] = useState<boolean>(false);
     const [loadingSubtitles, setLoadingSubtitles] = useState<boolean>(false);
@@ -216,6 +217,43 @@ const Player = React.memo(function Player({
     const appBarHeight = useAppBarHeight();
     const classes = useStyles({ appBarHidden, appBarHeight });
     const calculateLength = () => trackLength(channelRef.current, subtitlesRef.current);
+
+    useEffect(() => {
+        setVideoAspectRatio(undefined);
+
+        if (!videoFile) {
+            return;
+        }
+
+        const blobUrl = URL.createObjectURL(videoFile);
+        const video = document.createElement('video');
+        let released = false;
+        const release = () => {
+            if (released) {
+                return;
+            }
+
+            released = true;
+            video.onloadedmetadata = null;
+            video.onerror = null;
+            video.removeAttribute('src');
+            video.load();
+            URL.revokeObjectURL(blobUrl);
+        };
+
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+                setVideoAspectRatio(video.videoWidth / video.videoHeight);
+            }
+
+            release();
+        };
+        video.onerror = () => release();
+        video.src = blobUrl;
+
+        return release;
+    }, [videoFile]);
 
     const seek = useCallback(
         async (time: number, clock: Clock, forwardToMedia: boolean) => {
@@ -1177,21 +1215,41 @@ const Player = React.memo(function Player({
         };
     }, [webSocketClient, extension, seek, clock]);
 
-    const [windowWidth] = useWindowSize(true);
+    const [windowWidth, windowHeight] = useWindowSize(true);
 
     const loaded = videoFileUrl || subtitles;
     const videoInWindow = Boolean(loaded && videoFileUrl && !videoPopOut);
-    const subtitlePlayerMaxResizeWidth = Math.max(0, windowWidth - minVideoPlayerWidth);
+    const playerHeight = appBarHidden ? windowHeight : Math.max(0, windowHeight - appBarHeight);
+    const aspectFitVideoWidth =
+        videoAspectRatio && Number.isFinite(videoAspectRatio) && videoAspectRatio > 0
+            ? Math.max(minVideoPlayerWidth, Math.round(playerHeight * videoAspectRatio))
+            : undefined;
+    const subtitlePlayerMaxResizeWidth =
+        videoInWindow && aspectFitVideoWidth !== undefined
+            ? Math.max(0, windowWidth - aspectFitVideoWidth)
+            : Math.max(0, windowWidth - minVideoPlayerWidth);
     const notEnoughSpaceForSubtitlePlayer = subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
     const actuallyHideSubtitlePlayer =
         videoInWindow &&
         (hideSubtitlePlayer || !subtitles || subtitles?.length === 0 || notEnoughSpaceForSubtitlePlayer);
+    const fixedVideoPaneWidth =
+        videoInWindow && !actuallyHideSubtitlePlayer && aspectFitVideoWidth !== undefined
+            ? aspectFitVideoWidth
+            : undefined;
 
     return (
         <div onMouseMove={handleMouseMove} className={classes.root}>
             <Grid container direction="row" wrap="nowrap" className={classes.container}>
                 {videoInWindow && (
-                    <Grid item style={{ flexGrow: 1, minWidth: minVideoPlayerWidth }}>
+                    <Grid
+                        item
+                        style={{
+                            flexGrow: fixedVideoPaneWidth === undefined ? 1 : 0,
+                            flexShrink: 0,
+                            minWidth: minVideoPlayerWidth,
+                            width: fixedVideoPaneWidth,
+                        }}
+                    >
                         <iframe
                             ref={videoFrameRef}
                             className={classes.videoFrame}
