@@ -85,12 +85,27 @@ export default function ImageField({ image, onViewImage, onCopyImageToClipboard,
                 slotProps={{
                     input: {
                         startAdornment: dataUrl && width > 0 && height > 0 && (
-                            <img
-                                src={dataUrl}
-                                width={width * resizeRatio}
-                                height={height * resizeRatio}
-                                className={classes.imagePreview}
-                            />
+                            <>
+                                {image.extension === 'webm' ? (
+                                    <video
+                                        src={dataUrl}
+                                        width={width * resizeRatio}
+                                        height={height * resizeRatio}
+                                        className={classes.imagePreview}
+                                        muted
+                                        autoPlay
+                                        loop
+                                        playsInline
+                                    />
+                                ) : (
+                                    <img
+                                        src={dataUrl}
+                                        width={width * resizeRatio}
+                                        height={height * resizeRatio}
+                                        className={classes.imagePreview}
+                                    />
+                                )}
+                            </>
                         ),
                         endAdornment: (
                             <InputAdornment position="end">
@@ -105,7 +120,7 @@ export default function ImageField({ image, onViewImage, onCopyImageToClipboard,
                                             </IconButton>
                                         </span>
                                     </Tooltip>
-                                    {copyEnabled && (
+                                    {copyEnabled && image.extension !== 'webm' && (
                                         <Tooltip disabled={!imageAvailable} title={t('ankiDialog.copyToClipboard')!}>
                                             <span>
                                                 <IconButton

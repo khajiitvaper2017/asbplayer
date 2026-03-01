@@ -122,7 +122,7 @@ it('validates exported settings', () => {
         },
         recordWithAudioPlayback: true,
         preferMp3: true,
-        preferGif: false,
+        imageFormat: 'jpeg',
         tabName: 'asbplayer',
         miningHistoryStorageLimit: 25,
         preCacheSubtitleDom: true,

@@ -102,7 +102,7 @@ export enum ImageErrorCode {
 
 export interface ImageModel {
     readonly base64: string;
-    readonly extension: 'jpeg' | 'gif';
+    readonly extension: 'jpeg' | 'gif' | 'webm';
     readonly error?: ImageErrorCode;
 }
 

@@ -18,6 +18,7 @@ export const useImageData = ({ image, smoothTransition }: { image?: CommonImage;
         }
 
         let img: HTMLImageElement | undefined;
+        let video: HTMLVideoElement | undefined;
 
         function fetchImage() {
             if (!image) {
@@ -27,6 +28,22 @@ export const useImageData = ({ image, smoothTransition }: { image?: CommonImage;
             image
                 .dataUrl()
                 .then((dataUrl) => {
+                    if (image.extension === 'webm') {
+                        video = document.createElement('video');
+                        video.preload = 'metadata';
+                        video.onloadedmetadata = () => {
+                            if (!video) {
+                                return;
+                            }
+
+                            setWidth(video.videoWidth);
+                            setHeight(video.videoHeight);
+                            setDataUrl(dataUrl);
+                        };
+                        video.src = dataUrl;
+                        return;
+                    }
+
                     img = new Image();
                     img.onload = () => {
                         if (!img) {
@@ -51,6 +68,12 @@ export const useImageData = ({ image, smoothTransition }: { image?: CommonImage;
         return () => {
             if (img) {
                 img.onload = null;
+            }
+
+            if (video) {
+                video.onloadedmetadata = null;
+                video.removeAttribute('src');
+                video.load();
             }
         };
     }, [image, smoothTransition]);

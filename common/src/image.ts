@@ -58,9 +58,13 @@ const GIF_LOW_MOTION_PER_PIXEL_COLOR_DIFF_THRESHOLD = 18;
 const GIF_LOW_MOTION_MAX_CHANGED_PIXEL_RATIO = 0.01;
 const GIF_LOW_MOTION_MAX_MEAN_CHANNEL_DIFF = 2;
 const IMAGE_TIMING_LOG_THRESHOLD_MS = 2_000;
+const WEBM_VIDEO_BITS_PER_SECOND = 2_500_000;
+const WEBM_MIME_TYPE_CANDIDATES = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'] as const;
 type TimingDetails = string | (() => string);
 type GifWorkerSuccessCommand = 'encoded';
 type GifPalette = number[][];
+type ImageFormat = 'jpeg' | 'gif' | 'webm';
+type GeneratedImageExtension = 'gif' | 'jpeg' | 'webm';
 const sourceFpsByVideo = new WeakMap<HTMLVideoElement, number>();
 
 type GifEncoderWorkerFactory = () => Worker | Promise<Worker>;
@@ -87,7 +91,7 @@ interface GifRenderStats {
     effectiveFps: number;
     outputWidth: number;
     outputHeight: number;
-    outputExtension: 'gif' | 'jpeg';
+    outputExtension: GeneratedImageExtension;
     budgetMs?: number;
     truncatedByBudget?: boolean;
 }
@@ -104,6 +108,32 @@ const DEFAULT_GIF_OPTIONS: GifOptions = {
     maxFrames: 60,
     startTrimMs: 150,
     endTrimMs: 150,
+};
+
+const mimeTypeForImageExtension = (extension: string) => {
+    if (extension === 'webm') {
+        return 'video/webm';
+    }
+
+    return `image/${extension}`;
+};
+
+const preferredWebmMimeType = () => {
+    if (typeof MediaRecorder === 'undefined') {
+        return undefined;
+    }
+
+    if (typeof MediaRecorder.isTypeSupported !== 'function') {
+        return WEBM_MIME_TYPE_CANDIDATES[WEBM_MIME_TYPE_CANDIDATES.length - 1];
+    }
+
+    for (const mimeType of WEBM_MIME_TYPE_CANDIDATES) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+            return mimeType;
+        }
+    }
+
+    return undefined;
 };
 
 const makeFileName = (prefix: string, timestamp: number) => {
@@ -355,7 +385,7 @@ class Base64ImageData implements ImageData {
     }
 
     private _dataUrl() {
-        return 'data:image/' + this.extension + ';base64,' + this._base64;
+        return `data:${mimeTypeForImageExtension(this.extension)};base64,${this._base64}`;
     }
 
     dispose() {}
@@ -541,7 +571,8 @@ class GifFileImageData implements ImageData {
     private _cachedDataUrl?: string;
     private readonly _workerFactory: GifEncoderWorkerFactory;
     private readonly _gifOptions: GifOptions;
-    private _outputExtension: 'gif' | 'jpeg' = 'gif';
+    private readonly _animatedFormat: 'gif' | 'webm';
+    private _outputExtension: GeneratedImageExtension;
     private _lastRenderStats?: GifRenderStats;
     private _motionCollectionBudgetOverrideMs?: number;
 
@@ -554,7 +585,8 @@ class GifFileImageData implements ImageData {
         video: HTMLVideoElement | undefined,
         canvas: HTMLCanvasElement | undefined,
         workerFactory: GifEncoderWorkerFactory,
-        gifOptions: GifOptions
+        gifOptions: GifOptions,
+        animatedFormat: 'gif' | 'webm'
     ) {
         this._file = file;
         this._startTimestamp = Math.max(0, startTimestamp);
@@ -566,6 +598,8 @@ class GifFileImageData implements ImageData {
         this._canvas = canvas;
         this._workerFactory = workerFactory;
         this._gifOptions = gifOptions;
+        this._animatedFormat = animatedFormat;
+        this._outputExtension = animatedFormat;
     }
 
     get name() {
@@ -599,7 +633,8 @@ class GifFileImageData implements ImageData {
             this._video,
             this._canvas,
             this._workerFactory,
-            this._gifOptions
+            this._gifOptions,
+            this._animatedFormat
         );
     }
 
@@ -668,6 +703,13 @@ class GifFileImageData implements ImageData {
                 ? this._durationMs
                 : Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs / (frameTimestamps.length - 1)));
 
+        if (this._animatedFormat === 'webm') {
+            const webmBlob = await this._renderWebmIfPossible(video, width, height, frameTimestamps, baseFrameDelayMs);
+            if (webmBlob) {
+                return webmBlob;
+            }
+        }
+
         if (!this._canvas) {
             this._canvas = document.createElement('canvas');
         }
@@ -681,19 +723,224 @@ class GifFileImageData implements ImageData {
             throw new Error('Could not create image context');
         }
 
-        const lowMotionJpegBlob = await this._renderLowMotionJpegIfPossible(
-            video,
-            ctx,
-            width,
-            height,
-            frameTimestamps,
-            baseFrameDelayMs
-        );
-        if (lowMotionJpegBlob) {
-            return lowMotionJpegBlob;
+        if (this._animatedFormat === 'gif') {
+            const lowMotionJpegBlob = await this._renderLowMotionJpegIfPossible(
+                video,
+                ctx,
+                width,
+                height,
+                frameTimestamps,
+                baseFrameDelayMs
+            );
+            if (lowMotionJpegBlob) {
+                return lowMotionJpegBlob;
+            }
         }
 
         return await this._renderGifInWorker(video, ctx, width, height, frameTimestamps, baseFrameDelayMs);
+    }
+
+    private async _renderWebmIfPossible(
+        video: HTMLVideoElement,
+        width: number,
+        height: number,
+        frameTimestamps: number[],
+        baseFrameDelayMs: number
+    ) {
+        const mimeType = preferredWebmMimeType();
+
+        if (!mimeType || typeof MediaRecorder === 'undefined' || frameTimestamps.length === 0) {
+            return undefined;
+        }
+
+        if (!this._canvas) {
+            this._canvas = document.createElement('canvas');
+        }
+
+        const canvas = this._canvas;
+        if (typeof canvas.captureStream !== 'function') {
+            return undefined;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+            throw new Error('Could not create image context');
+        }
+
+        const startTimestampMs = frameTimestamps[0] ?? this._startTimestamp;
+        const endTimestampMs = frameTimestamps[frameTimestamps.length - 1] ?? startTimestampMs;
+        const targetEndTimestampMs = Math.max(startTimestampMs, endTimestampMs);
+        const targetFps = Math.max(1, Math.round(1000 / Math.max(1, baseFrameDelayMs)));
+        const chunks: BlobPart[] = [];
+        let stream: MediaStream | undefined;
+        let mediaRecorder: MediaRecorder | undefined;
+        let stopRecorder: Promise<Blob> | undefined;
+
+        const originalPlaybackRate = video.playbackRate;
+        const originalMuted = video.muted;
+        const originalVolume = video.volume;
+        const originalOnError = video.onerror;
+        const originalOnEnded = video.onended;
+        const videoWithPreservesPitch = video as HTMLVideoElement & { preservesPitch?: boolean };
+        const originalPreservesPitch = videoWithPreservesPitch.preservesPitch;
+        let callbackHandle: number | undefined;
+        let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+
+        try {
+            stream = canvas.captureStream(targetFps);
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType,
+                videoBitsPerSecond: WEBM_VIDEO_BITS_PER_SECOND,
+            });
+            const recorder = mediaRecorder;
+            stopRecorder = new Promise<Blob>((resolve, reject) => {
+                recorder.onerror = (event) => {
+                    const error = event.error;
+                    reject(error instanceof Error ? error : new Error('Could not encode WebM'));
+                };
+                recorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        chunks.push(event.data);
+                    }
+                };
+                recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+            });
+
+            await this._seekVideo(video, startTimestampMs / 1000);
+
+            const drawFrame = () => {
+                ctx.drawImage(video, 0, 0, width, height);
+            };
+            const done = () => video.currentTime * 1000 >= targetEndTimestampMs;
+            const schedule = (onFrame: () => void) => {
+                if (typeof video.requestVideoFrameCallback === 'function') {
+                    callbackHandle = video.requestVideoFrameCallback(() => onFrame());
+                } else {
+                    const fallbackDelay = Math.max(16, Math.round(1000 / Math.max(1, targetFps)));
+                    fallbackTimer = setTimeout(onFrame, fallbackDelay);
+                }
+            };
+
+            drawFrame();
+            video.muted = true;
+            video.volume = 0;
+            video.playbackRate = 1;
+
+            if (typeof originalPreservesPitch === 'boolean') {
+                videoWithPreservesPitch.preservesPitch = false;
+            }
+
+            await video.play();
+            mediaRecorder.start();
+
+            await new Promise<void>((resolve, reject) => {
+                const finish = () => {
+                    if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                        video.cancelVideoFrameCallback(callbackHandle);
+                        callbackHandle = undefined;
+                    }
+
+                    if (fallbackTimer !== undefined) {
+                        clearTimeout(fallbackTimer);
+                        fallbackTimer = undefined;
+                    }
+
+                    resolve();
+                };
+                const fail = (error: Error) => {
+                    if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                        video.cancelVideoFrameCallback(callbackHandle);
+                        callbackHandle = undefined;
+                    }
+
+                    if (fallbackTimer !== undefined) {
+                        clearTimeout(fallbackTimer);
+                        fallbackTimer = undefined;
+                    }
+
+                    reject(error);
+                };
+
+                const onFrame = () => {
+                    try {
+                        drawFrame();
+                        if (done()) {
+                            finish();
+                            return;
+                        }
+
+                        schedule(onFrame);
+                    } catch (error) {
+                        fail(error instanceof Error ? error : new Error(String(error)));
+                    }
+                };
+
+                video.onerror = () => fail(new Error(video.error?.message ?? 'Could not play video to capture WebM'));
+                video.onended = () => finish();
+                schedule(onFrame);
+            });
+
+            video.pause();
+
+            if (mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+
+            const blob = await stopRecorder!;
+            if (blob.size <= 0) {
+                throw new Error('Could not encode WebM from local video');
+            }
+
+            this._outputExtension = 'webm';
+            this._lastRenderStats = {
+                sourceFrameCount: frameTimestamps.length,
+                outputFrameCount: frameTimestamps.length,
+                effectiveFps: Math.round((1000 / Math.max(1, baseFrameDelayMs)) * 10) / 10,
+                outputWidth: width,
+                outputHeight: height,
+                outputExtension: 'webm',
+            };
+            return blob;
+        } catch (error) {
+            console.debug(
+                `[Image] webm capture unavailable falling back to GIF error=${
+                    error instanceof Error ? error.message : String(error)
+                }`
+            );
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                await stopRecorder?.catch(() => undefined);
+            }
+
+            return undefined;
+        } finally {
+            if (callbackHandle !== undefined && typeof video.cancelVideoFrameCallback === 'function') {
+                video.cancelVideoFrameCallback(callbackHandle);
+            }
+
+            if (fallbackTimer !== undefined) {
+                clearTimeout(fallbackTimer);
+            }
+
+            video.pause();
+            video.playbackRate = originalPlaybackRate;
+            video.muted = originalMuted;
+            video.volume = originalVolume;
+            video.onerror = originalOnError;
+            video.onended = originalOnEnded;
+
+            if (typeof originalPreservesPitch === 'boolean') {
+                videoWithPreservesPitch.preservesPitch = originalPreservesPitch;
+            }
+
+            if (stream) {
+                for (const track of stream.getTracks()) {
+                    track.stop();
+                }
+            }
+        }
     }
 
     private async _renderLowMotionJpegIfPossible(
@@ -1955,7 +2202,7 @@ export default class Image {
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
-        preferGif: false,
+        imageFormat: 'jpeg',
         gifWorkerFactory?: GifEncoderWorkerFactory,
         gifOptions?: Partial<GifOptions>
     ): Image | undefined;
@@ -1963,7 +2210,7 @@ export default class Image {
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
-        preferGif: true,
+        imageFormat: 'gif' | 'webm',
         gifWorkerFactory: GifEncoderWorkerFactory,
         gifOptions?: Partial<GifOptions>
     ): Image | undefined;
@@ -1971,7 +2218,7 @@ export default class Image {
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
-        preferGif: boolean,
+        imageFormat: ImageFormat,
         gifWorkerFactory: GifEncoderWorkerFactory,
         gifOptions?: Partial<GifOptions>
     ): Image | undefined;
@@ -1979,7 +2226,7 @@ export default class Image {
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
-        preferGif = false,
+        imageFormat: ImageFormat = 'jpeg',
         gifWorkerFactory?: GifEncoderWorkerFactory,
         gifOptions?: Partial<GifOptions>
     ) {
@@ -1994,9 +2241,9 @@ export default class Image {
         }
 
         if (card.file) {
-            if (preferGif) {
+            if (imageFormat === 'gif' || imageFormat === 'webm') {
                 if (!gifWorkerFactory) {
-                    throw new Error('GIF worker factory is required when preferGif is true');
+                    throw new Error(`Animated image worker factory is required when image format is ${imageFormat}`);
                 }
 
                 const resolvedGifOptions = normalizeGifOptions(gifOptions);
@@ -2012,7 +2259,8 @@ export default class Image {
                     maxWidth,
                     maxHeight,
                     gifWorkerFactory,
-                    resolvedGifOptions
+                    resolvedGifOptions,
+                    imageFormat
                 );
             }
 
@@ -2055,7 +2303,8 @@ export default class Image {
             maxWidth,
             maxHeight,
             gifWorkerFactory,
-            resolvedGifOptions
+            resolvedGifOptions,
+            'gif'
         );
     }
 
@@ -2066,7 +2315,8 @@ export default class Image {
         maxWidth: number,
         maxHeight: number,
         gifWorkerFactory: GifEncoderWorkerFactory,
-        gifOptions: GifOptions
+        gifOptions: GifOptions,
+        imageFormat: 'gif' | 'webm'
     ) {
         return new Image(
             new GifFileImageData(
@@ -2078,7 +2328,8 @@ export default class Image {
                 undefined,
                 undefined,
                 gifWorkerFactory,
-                gifOptions
+                gifOptions,
+                imageFormat
             )
         );
     }
@@ -2118,6 +2369,10 @@ export default class Image {
     }
 
     async pngBlob() {
+        if (this.extension === 'webm') {
+            throw new Error('Cannot convert WebM image media to PNG');
+        }
+
         return new Promise<Blob>(async (resolve, reject) => {
             try {
                 createImageBitmap(await this.blob()).then((bitMap) => {

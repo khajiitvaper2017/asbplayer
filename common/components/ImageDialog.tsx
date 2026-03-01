@@ -94,7 +94,19 @@ export default function ImageDialog({ open, image, interval, onClose, onTimestam
                     }}
                 >
                     <Card>
-                        <CardMedia className={classes.image} image={dataUrl} title={image.name} style={{}} />
+                        {image.extension === 'webm' ? (
+                            <video
+                                src={dataUrl}
+                                width={width * resizeRatio}
+                                height={height * resizeRatio}
+                                autoPlay
+                                loop
+                                playsInline
+                                muted
+                            />
+                        ) : (
+                            <CardMedia className={classes.image} image={dataUrl} title={image.name} style={{}} />
+                        )}
                     </Card>
                     {interval && image.canChangeTimestamp && (
                         <Slider

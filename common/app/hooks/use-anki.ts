@@ -67,8 +67,8 @@ class SettingsAccessor {
     get preferMp3() {
         return this.settings.preferMp3;
     }
-    get preferGif() {
-        return this.settings.preferGif;
+    get imageFormat() {
+        return this.settings.imageFormat;
     }
     get gifFps() {
         return this.settings.gifFps;

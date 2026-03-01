@@ -518,7 +518,7 @@ function App({
                             newCard,
                             settingsRef.current.maxImageWidth,
                             settingsRef.current.maxImageHeight,
-                            settingsRef.current.preferGif,
+                            settingsRef.current.imageFormat,
                             gifWorkerFactory,
                             {
                                 fps: settingsRef.current.gifFps,
@@ -654,7 +654,7 @@ function App({
                     item,
                     settings.maxImageWidth,
                     settings.maxImageHeight,
-                    settings.preferGif,
+                    settings.imageFormat,
                     gifWorkerFactory,
                     {
                         fps: settings.gifFps,
@@ -680,7 +680,7 @@ function App({
             handleError,
             settings.maxImageWidth,
             settings.maxImageHeight,
-            settings.preferGif,
+            settings.imageFormat,
             settings.gifFps,
             settings.gifMaxFrames,
             settings.gifStartTrim,

@@ -423,7 +423,7 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     item,
                     settings.maxImageWidth,
                     settings.maxImageHeight,
-                    settings.preferGif,
+                    settings.imageFormat,
                     gifEncoderWorkerFactory,
                     {
                         fps: settings.gifFps,

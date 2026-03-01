@@ -518,17 +518,21 @@ export class Anki {
 
             const gifMotionCollectionBudgetMs = this._gifMotionCollectionBudgetFromAudio(audioClip);
             image.setGifMotionCollectionBudgetMs(gifMotionCollectionBudgetMs);
-            const sanitizedName = this._sanitizeFileName(image.name);
             const data = await image.base64();
 
             if (!data) {
                 return { imageFieldValue: undefined, notePicture: undefined };
             }
 
-            if (gui || updateLast) {
+            const sanitizedName = this._sanitizeFileName(image.name);
+
+            if (gui || updateLast || image.extension === 'webm') {
                 const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
                 return {
-                    imageFieldValue: `<img src="${fileName}">`,
+                    imageFieldValue:
+                        image.extension === 'webm'
+                            ? `<video src="${fileName}" autoplay loop muted playsinline></video>`
+                            : `<img src="${fileName}">`,
                     notePicture: undefined,
                 };
             }

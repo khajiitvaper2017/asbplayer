@@ -367,8 +367,9 @@ const settingsSchema = {
         preferMp3: {
             type: 'boolean',
         },
-        preferGif: {
-            type: 'boolean',
+        imageFormat: {
+            type: 'string',
+            enum: ['jpeg', 'gif', 'webm'],
         },
         gifFps: {
             type: 'number',

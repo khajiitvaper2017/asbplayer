@@ -428,8 +428,12 @@ const AnkiDialog = ({
             e.stopPropagation();
             audioClip!.play().catch(console.info);
 
-            if (settings.recordWithAudioPlayback && image?.error === undefined && image?.extension === 'gif') {
-                // Precompute GIF while audio is playing to reduce export-time waiting.
+            if (
+                settings.recordWithAudioPlayback &&
+                image?.error === undefined &&
+                (image.extension === 'gif' || image.extension === 'webm')
+            ) {
+                // Precompute animated media while audio is playing to reduce export-time waiting.
                 image.blob().catch(console.error);
             }
         },
@@ -456,7 +460,7 @@ const AnkiDialog = ({
                 card,
                 settings.maxImageWidth,
                 settings.maxImageHeight,
-                settings.preferGif,
+                settings.imageFormat,
                 gifWorkerFactory,
                 {
                     fps: settings.gifFps,
@@ -472,7 +476,7 @@ const AnkiDialog = ({
         open,
         settings.maxImageWidth,
         settings.maxImageHeight,
-        settings.preferGif,
+        settings.imageFormat,
         settings.gifFps,
         settings.gifMaxFrames,
         settings.gifStartTrim,
@@ -634,6 +638,10 @@ const AnkiDialog = ({
             e.stopPropagation();
 
             if (!image) {
+                return;
+            }
+
+            if (image.extension === 'webm') {
                 return;
             }
 

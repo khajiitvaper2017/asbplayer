@@ -153,7 +153,7 @@ export const defaultSettings: AsbplayerSettings = {
     },
     recordWithAudioPlayback: true,
     preferMp3: true,
-    preferGif: false,
+    imageFormat: 'jpeg',
     gifFps: 16,
     gifMaxFrames: 60,
     gifStartTrim: 150,

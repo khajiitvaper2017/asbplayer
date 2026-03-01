@@ -220,6 +220,8 @@ export type AnkiSettingsFieldKey =
     | 'track2Field'
     | 'track3Field';
 
+export type ImageFormat = 'jpeg' | 'gif' | 'webm';
+
 export interface AnkiSettings {
     readonly ankiConnectUrl: string;
     readonly deck: string;
@@ -238,7 +240,7 @@ export interface AnkiSettings {
     readonly tags: string[];
     readonly recordWithAudioPlayback: boolean;
     readonly preferMp3: boolean;
-    readonly preferGif: boolean;
+    readonly imageFormat: ImageFormat;
     readonly gifFps: number;
     readonly gifMaxFrames: number;
     readonly gifStartTrim: number;
@@ -292,7 +294,7 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     tags: true,
     recordWithAudioPlayback: true,
     preferMp3: true,
-    preferGif: true,
+    imageFormat: true,
     gifFps: true,
     gifMaxFrames: true,
     gifStartTrim: true,
