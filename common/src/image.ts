@@ -557,13 +557,7 @@ class GifFileImageData implements ImageData {
             throw new Error('Could not create image context');
         }
 
-        const lowMotionJpegBlob = await this._renderLowMotionJpegIfPossible(
-            video,
-            ctx,
-            width,
-            height,
-            frameTimestamps
-        );
+        const lowMotionJpegBlob = await this._renderLowMotionJpegIfPossible(video, ctx, width, height, frameTimestamps);
         if (lowMotionJpegBlob) {
             return lowMotionJpegBlob;
         }
@@ -582,7 +576,7 @@ class GifFileImageData implements ImageData {
                 command: 'encode',
                 width,
                 height,
-                frameDelayMs: this._frameDelayMs(frameBuffers.length),
+                frameDelayMs: this._frameDelayMs(frameBuffers.length, frameTimestamps.length),
                 frameBuffers,
                 paletteFrameIndexes: this._paletteFrameIndexes(frameBuffers.length),
                 paletteSize: GIF_PALETTE_OPTIONS.size,
@@ -804,8 +798,16 @@ class GifFileImageData implements ImageData {
         });
     }
 
-    private _frameDelayMs(frameCount: number) {
-        const delayMs = Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs / Math.max(1, frameCount)));
+    private _frameDelayMs(frameCount: number, sampledFrameCount = frameCount) {
+        if (frameCount <= 0) {
+            return [];
+        }
+
+        const delayMs =
+            sampledFrameCount <= 1
+                ? Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs))
+                : Math.max(MIN_GIF_FRAME_DELAY_MS, Math.round(this._durationMs / (sampledFrameCount - 1)));
+
         return Array.from({ length: frameCount }, () => delayMs);
     }
 
