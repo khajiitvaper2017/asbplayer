@@ -1330,7 +1330,11 @@ const Player = React.memo(function Player({
                         keyBinder={keyBinder}
                         webSocketClient={webSocketClient}
                         initialWidth={subtitlePlayerInitialWidth}
-                        initialWidthKey={videoInWindow ? videoFileUrl : undefined}
+                        initialWidthKey={
+                            videoInWindow && videoFileUrl
+                                ? `${videoFileUrl}|theater:${appBarHidden ? '1' : '0'}|appbar:${appBarHeight}`
+                                : undefined
+                        }
                     />
                 </Grid>
             </Grid>
