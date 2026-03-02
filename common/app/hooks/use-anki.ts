@@ -70,6 +70,12 @@ class SettingsAccessor {
     get mediaFragmentFormat() {
         return this.settings.mediaFragmentFormat;
     }
+    get mediaFragmentTrimStart() {
+        return this.settings.mediaFragmentTrimStart;
+    }
+    get mediaFragmentTrimEnd() {
+        return this.settings.mediaFragmentTrimEnd;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }

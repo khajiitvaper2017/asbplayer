@@ -455,9 +455,24 @@ const AnkiDialog = ({
         }
 
         setMediaFragment(
-            MediaFragment.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat)
+            MediaFragment.fromCard(
+                card,
+                settings.maxImageWidth,
+                settings.maxImageHeight,
+                settings.mediaFragmentFormat,
+                settings.mediaFragmentTrimStart,
+                settings.mediaFragmentTrimEnd
+            )
         );
-    }, [card, open, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat]);
+    }, [
+        card,
+        open,
+        settings.maxImageWidth,
+        settings.maxImageHeight,
+        settings.mediaFragmentFormat,
+        settings.mediaFragmentTrimStart,
+        settings.mediaFragmentTrimEnd,
+    ]);
 
     useEffect(() => {
         if (!open && mediaFragment) {

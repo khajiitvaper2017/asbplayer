@@ -371,6 +371,12 @@ const settingsSchema = {
             type: 'string',
             enum: ['jpeg', 'webm'],
         },
+        mediaFragmentTrimStart: {
+            type: 'number',
+        },
+        mediaFragmentTrimEnd: {
+            type: 'number',
+        },
         tabName: {
             type: 'string',
         },

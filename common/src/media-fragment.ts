@@ -28,7 +28,17 @@ export default class MediaFragment {
         card: CardModel,
         maxWidth: number,
         maxHeight: number,
-        mediaFragmentFormat: MediaFragmentFormat = 'jpeg'
+        mediaFragmentFormat: MediaFragmentFormat,
+        mediaFragmentTrimStart: number,
+        mediaFragmentTrimEnd: number
+    ): MediaFragment | undefined;
+    static fromCard(
+        card: CardModel,
+        maxWidth: number,
+        maxHeight: number,
+        mediaFragmentFormat: MediaFragmentFormat = 'jpeg',
+        mediaFragmentTrimStart: number = 0,
+        mediaFragmentTrimEnd: number = 0
     ) {
         if (card.mediaFragment) {
             return MediaFragment.fromBase64(
@@ -42,10 +52,15 @@ export default class MediaFragment {
 
         if (card.file) {
             if (mediaFragmentFormat === 'webm') {
+                const resolvedTrimStart = Number.isFinite(mediaFragmentTrimStart) ? mediaFragmentTrimStart : 0;
+                const resolvedTrimEnd = Number.isFinite(mediaFragmentTrimEnd) ? mediaFragmentTrimEnd : 0;
+                const startTimestamp = Math.max(0, card.subtitle.start + resolvedTrimStart);
+                const endTimestamp = Math.max(startTimestamp, card.subtitle.end - resolvedTrimEnd);
+
                 return MediaFragment.fromWebmFile(
                     card.file,
-                    card.subtitle.start,
-                    card.subtitle.end,
+                    startTimestamp,
+                    endTimestamp,
                     maxWidth,
                     maxHeight
                 );

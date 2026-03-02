@@ -510,7 +510,9 @@ function App({
                             newCard,
                             settingsRef.current.maxImageWidth,
                             settingsRef.current.maxImageHeight,
-                            settingsRef.current.mediaFragmentFormat
+                            settingsRef.current.mediaFragmentFormat,
+                            settingsRef.current.mediaFragmentTrimStart,
+                            settingsRef.current.mediaFragmentTrimEnd
                         ),
                         word: newCard.word ?? '',
                         source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
@@ -631,7 +633,9 @@ function App({
                     item,
                     settings.maxImageWidth,
                     settings.maxImageHeight,
-                    settings.mediaFragmentFormat
+                    settings.mediaFragmentFormat,
+                    settings.mediaFragmentTrimStart,
+                    settings.mediaFragmentTrimEnd
                 )!;
 
                 if (mediaFragment.error === undefined) {
@@ -645,7 +649,15 @@ function App({
                 handleError(e);
             }
         },
-        [handleError, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat, t]
+        [
+            handleError,
+            settings.maxImageWidth,
+            settings.maxImageHeight,
+            settings.mediaFragmentFormat,
+            settings.mediaFragmentTrimStart,
+            settings.mediaFragmentTrimEnd,
+            t,
+        ]
     );
 
     const handleDownloadCopyHistorySectionAsSrt = useCallback(

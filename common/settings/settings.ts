@@ -241,6 +241,8 @@ export interface AnkiSettings {
     readonly recordWithAudioPlayback: boolean;
     readonly preferMp3: boolean;
     readonly mediaFragmentFormat: MediaFragmentFormat;
+    readonly mediaFragmentTrimStart: number;
+    readonly mediaFragmentTrimEnd: number;
     readonly audioPaddingStart: number;
     readonly audioPaddingEnd: number;
     readonly maxImageWidth: number;
@@ -290,6 +292,8 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     recordWithAudioPlayback: true,
     preferMp3: true,
     mediaFragmentFormat: true,
+    mediaFragmentTrimStart: true,
+    mediaFragmentTrimEnd: true,
     audioPaddingStart: true,
     audioPaddingEnd: true,
     maxImageWidth: true,

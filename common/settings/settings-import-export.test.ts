@@ -123,6 +123,8 @@ it('validates exported settings', () => {
         recordWithAudioPlayback: true,
         preferMp3: true,
         mediaFragmentFormat: 'jpeg',
+        mediaFragmentTrimStart: 200,
+        mediaFragmentTrimEnd: 200,
         tabName: 'asbplayer',
         miningHistoryStorageLimit: 25,
         preCacheSubtitleDom: true,

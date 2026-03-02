@@ -34,6 +34,8 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         recordWithAudioPlayback,
         preferMp3,
         mediaFragmentFormat,
+        mediaFragmentTrimStart,
+        mediaFragmentTrimEnd,
         copyToClipboardOnMine,
     } = settings;
     return (
@@ -218,6 +220,42 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 <MenuItem value="jpeg">JPEG</MenuItem>
                 <MenuItem value="webm">WebM</MenuItem>
             </TextField>
+            {mediaFragmentFormat === 'webm' && (
+                <>
+                    <TextField
+                        type="number"
+                        label={t('settings.mediaFragmentTrimStart')}
+                        fullWidth
+                        value={mediaFragmentTrimStart}
+                        color="primary"
+                        onChange={(event) => onSettingChanged('mediaFragmentTrimStart', Number(event.target.value))}
+                        slotProps={{
+                            htmlInput: {
+                                step: 100,
+                            },
+                            input: {
+                                endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                            },
+                        }}
+                    />
+                    <TextField
+                        type="number"
+                        label={t('settings.mediaFragmentTrimEnd')}
+                        fullWidth
+                        value={mediaFragmentTrimEnd}
+                        color="primary"
+                        onChange={(event) => onSettingChanged('mediaFragmentTrimEnd', Number(event.target.value))}
+                        slotProps={{
+                            htmlInput: {
+                                step: 100,
+                            },
+                            input: {
+                                endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                            },
+                        }}
+                    />
+                </>
+            )}
             <TextField
                 type="number"
                 label={t('settings.maxImageWidth')}
