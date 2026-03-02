@@ -2,43 +2,24 @@ import {
     CancelledMediaFragmentDataRenderingError,
     createVideoElement,
     disposeVideoElement,
+    maxWebmMediaFragmentDurationMs,
     makeMediaFragmentFileName,
+    minWebmMediaFragmentDurationMs,
     type MediaFragmentData,
+    preferredWebmMediaFragmentMimeType,
     mediaFragmentErrorForFile,
 } from './media-fragment';
 import { FileModel, MediaFragmentErrorCode } from './model';
 
-const defaultWebmDurationMs = 1500;
-const minWebmDurationMs = 300;
-const maxWebmDurationMs = 2500;
 const videoSeekEpsilonSeconds = 0.001;
 const webmVideoBitsPerSecond = 2_500_000;
-const webmMimeTypeCandidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'] as const;
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 const durationFromInterval = (startTimestamp: number, endTimestamp: number) => {
     const duration = Math.abs(endTimestamp - startTimestamp);
-    const resolvedDuration = duration > 0 ? duration : defaultWebmDurationMs;
-    return clamp(resolvedDuration, minWebmDurationMs, maxWebmDurationMs);
-};
-
-const preferredWebmMimeType = () => {
-    if (typeof MediaRecorder === 'undefined') {
-        return undefined;
-    }
-
-    if (typeof MediaRecorder.isTypeSupported !== 'function') {
-        return webmMimeTypeCandidates[webmMimeTypeCandidates.length - 1];
-    }
-
-    for (const mimeType of webmMimeTypeCandidates) {
-        if (MediaRecorder.isTypeSupported(mimeType)) {
-            return mimeType;
-        }
-    }
-
-    return undefined;
+    const resolvedDuration = duration > 0 ? duration : minWebmMediaFragmentDurationMs;
+    return clamp(resolvedDuration, minWebmMediaFragmentDurationMs, maxWebmMediaFragmentDurationMs);
 };
 
 const blobToDataUrl = async (blob: Blob): Promise<string> =>
@@ -159,7 +140,7 @@ export class WebmFileMediaFragmentData implements MediaFragmentData {
     }
 
     private async _renderWebm() {
-        const mimeType = preferredWebmMimeType();
+        const mimeType = preferredWebmMediaFragmentMimeType();
         if (!mimeType || typeof MediaRecorder === 'undefined') {
             throw new Error('WebM capture is not supported in this browser');
         }

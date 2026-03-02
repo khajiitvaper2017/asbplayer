@@ -6,6 +6,10 @@ import { WebmFileMediaFragmentData } from './webm-file-media-fragment-data';
 
 const maxPrefixLength = 24;
 const videoReadyTimeoutMs = 5_000;
+const webmMimeTypeCandidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'] as const;
+
+export const minWebmMediaFragmentDurationMs = 300;
+export const maxWebmMediaFragmentDurationMs = 2_500;
 
 export type MediaFragmentFormat = 'jpeg' | 'webm';
 
@@ -29,6 +33,54 @@ export const mediaFragmentErrorForFile = (file: FileModel): MediaFragmentErrorCo
     }
 
     return undefined;
+};
+
+export const preferredWebmMediaFragmentMimeType = () => {
+    if (typeof MediaRecorder === 'undefined') {
+        return undefined;
+    }
+
+    if (typeof MediaRecorder.isTypeSupported !== 'function') {
+        return webmMimeTypeCandidates[webmMimeTypeCandidates.length - 1];
+    }
+
+    for (const mimeType of webmMimeTypeCandidates) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+            return mimeType;
+        }
+    }
+
+    return undefined;
+};
+
+export const isWebmMediaFragmentSupported = () => {
+    if (typeof HTMLCanvasElement === 'undefined') {
+        return false;
+    }
+
+    if (typeof HTMLCanvasElement.prototype.captureStream !== 'function') {
+        return false;
+    }
+
+    return preferredWebmMediaFragmentMimeType() !== undefined;
+};
+
+export const resolveWebmMediaFragmentRange = (
+    subtitleStart: number,
+    subtitleEnd: number,
+    mediaFragmentTrimStart: number,
+    mediaFragmentTrimEnd: number
+) => {
+    const resolvedTrimStart = Number.isFinite(mediaFragmentTrimStart) ? mediaFragmentTrimStart : 0;
+    const resolvedTrimEnd = Number.isFinite(mediaFragmentTrimEnd) ? mediaFragmentTrimEnd : 0;
+    const startTimestamp = Math.max(0, subtitleStart + resolvedTrimStart);
+    const desiredEndTimestamp = subtitleEnd - resolvedTrimEnd;
+    const endTimestamp = Math.max(startTimestamp + minWebmMediaFragmentDurationMs, desiredEndTimestamp);
+
+    return {
+        startTimestamp,
+        endTimestamp,
+    };
 };
 
 export const createVideoElement = async (blobUrl: string): Promise<HTMLVideoElement> =>
@@ -208,11 +260,13 @@ export default class MediaFragment {
         }
 
         if (card.file) {
-            if (mediaFragmentFormat === 'webm') {
-                const resolvedTrimStart = Number.isFinite(mediaFragmentTrimStart) ? mediaFragmentTrimStart : 0;
-                const resolvedTrimEnd = Number.isFinite(mediaFragmentTrimEnd) ? mediaFragmentTrimEnd : 0;
-                const startTimestamp = Math.max(0, card.subtitle.start + resolvedTrimStart);
-                const endTimestamp = Math.max(startTimestamp, card.subtitle.end - resolvedTrimEnd);
+            if (mediaFragmentFormat === 'webm' && isWebmMediaFragmentSupported()) {
+                const { startTimestamp, endTimestamp } = resolveWebmMediaFragmentRange(
+                    card.subtitle.start,
+                    card.subtitle.end,
+                    mediaFragmentTrimStart,
+                    mediaFragmentTrimEnd
+                );
 
                 return MediaFragment.fromWebmFile(
                     card.file,
@@ -290,25 +344,48 @@ export default class MediaFragment {
             throw new Error('Cannot convert WebM media fragment to PNG');
         }
 
-        return new Promise<Blob>(async (resolve, reject) => {
+        const sourceBlob = await this.blob();
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            throw new Error('Failed to create canvas context for PNG conversion');
+        }
+
+        if (typeof createImageBitmap === 'function') {
+            const imageBitmap = await createImageBitmap(sourceBlob);
             try {
-                createImageBitmap(await this.blob()).then((bitMap) => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = bitMap.width;
-                    canvas.height = bitMap.height;
-                    canvas.getContext('2d')!.drawImage(bitMap, 0, 0);
-                    canvas.toBlob((blob) => {
-                        if (blob) {
-                            resolve(blob);
-                        } else {
-                            reject('Failed to convert to PNG');
-                        }
-                    }, 'image/png');
-                });
-            } catch (e) {
-                reject(e);
+                canvas.width = imageBitmap.width;
+                canvas.height = imageBitmap.height;
+                ctx.drawImage(imageBitmap, 0, 0);
+            } finally {
+                imageBitmap.close();
             }
-        });
+        } else {
+            const objectUrl = URL.createObjectURL(sourceBlob);
+            try {
+                const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        img.onload = null;
+                        img.onerror = null;
+                        resolve(img);
+                    };
+                    img.onerror = () => {
+                        img.onload = null;
+                        img.onerror = null;
+                        reject(new Error('Failed to load image for PNG conversion'));
+                    };
+                    img.src = objectUrl;
+                });
+                canvas.width = image.naturalWidth || image.width;
+                canvas.height = image.naturalHeight || image.height;
+                ctx.drawImage(image, 0, 0);
+            } finally {
+                URL.revokeObjectURL(objectUrl);
+            }
+        }
+
+        return await this._canvasToBlob(canvas, 'image/png');
     }
 
     atTimestamp(timestamp: number) {
@@ -326,5 +403,17 @@ export default class MediaFragment {
     async download() {
         const blob = await this.data.blob();
         download(blob, this.data.name);
+    }
+
+    private async _canvasToBlob(canvas: HTMLCanvasElement, type: string) {
+        return await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(new Error(`Failed to convert media fragment to ${type}`));
+                }
+            }, type);
+        });
     }
 }

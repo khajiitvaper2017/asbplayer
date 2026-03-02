@@ -1,6 +1,7 @@
 import 'core-js/stable/structured-clone'; // fake-indexeddb requires structured clone polyfill
 import 'fake-indexeddb/auto';
 import { IndexedDBCopyHistoryRepository } from './copy-history-repository';
+import Dexie from 'dexie';
 
 beforeEach(async () => {
     const repository = new IndexedDBCopyHistoryRepository(1);
@@ -75,4 +76,48 @@ it('respects fetch limit', async () => {
     expect(records.length).toEqual(2);
     expect(records[0]).toMatchObject({ ...item, id: 'id2' });
     expect(records[1]).toMatchObject({ ...item, id: 'id3' });
+});
+
+it('migrates legacy image records to media fragments', async () => {
+    await Dexie.delete('CopyHistoryDatabase');
+
+    class LegacyCopyHistoryDatabase extends Dexie {
+        copyHistoryItems!: Dexie.Table<any, number>;
+
+        constructor() {
+            super('CopyHistoryDatabase');
+            this.version(2).stores({
+                copyHistoryItems: '++index,id,timestamp',
+            });
+        }
+    }
+
+    const legacyDb = new LegacyCopyHistoryDatabase();
+    await legacyDb.open();
+    await legacyDb.table('copyHistoryItems').add({
+        subtitle: { text: 'text', start: 0, end: 1, originalStart: 0, originalEnd: 1, track: 0 },
+        id: 'legacy-id',
+        timestamp: 1234,
+        surroundingSubtitles: [],
+        subtitleFileName: 'subtitle-file',
+        mediaTimestamp: 5678,
+        image: {
+            base64: 'legacy-image-base64',
+            extension: 'jpeg',
+        },
+    });
+    legacyDb.close();
+
+    const repository = new IndexedDBCopyHistoryRepository(10);
+    const records = await repository.fetch(10);
+
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+        id: 'legacy-id',
+        mediaFragment: {
+            base64: 'legacy-image-base64',
+            extension: 'jpeg',
+        },
+    });
+    expect((records[0] as any).image).toBeUndefined();
 });

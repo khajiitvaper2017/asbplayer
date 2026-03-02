@@ -54,6 +54,22 @@ class CopyHistoryDatabase extends Dexie {
                         }
                     });
             });
+        this.version(3)
+            .stores({
+                copyHistoryItems: '++index,id,timestamp',
+            })
+            .upgrade((trans) => {
+                return trans
+                    .table('copyHistoryItems')
+                    .toCollection()
+                    .modify((item) => {
+                        if (item.mediaFragment === undefined && item.image !== undefined) {
+                            item.mediaFragment = item.image;
+                        }
+
+                        delete item.image;
+                    });
+            });
     }
 }
 

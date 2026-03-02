@@ -6,7 +6,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import LabelWithHoverEffect from './LabelWithHoverEffect';
 import SwitchLabelWithHoverEffect from './SwitchLabelWithHoverEffect';
 import Radio from '@mui/material/Radio';
-import { PostMineAction, PostMinePlayback } from '@project/common';
+import { isWebmMediaFragmentSupported, PostMineAction, PostMinePlayback } from '@project/common';
 import { AsbplayerSettings } from '@project/common/settings';
 import Switch from '@mui/material/Switch';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -38,6 +38,8 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         mediaFragmentTrimEnd,
         copyToClipboardOnMine,
     } = settings;
+    const webmSupported = isWebmMediaFragmentSupported();
+
     return (
         <Stack spacing={1}>
             <FormControl>
@@ -218,7 +220,9 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 onChange={(event) => onSettingChanged('mediaFragmentFormat', event.target.value as 'jpeg' | 'webm')}
             >
                 <MenuItem value="jpeg">JPEG</MenuItem>
-                <MenuItem value="webm">WebM</MenuItem>
+                <MenuItem value="webm" disabled={!webmSupported}>
+                    {webmSupported ? 'WebM' : 'WebM (Unsupported)'}
+                </MenuItem>
             </TextField>
             {mediaFragmentFormat === 'webm' && (
                 <>
