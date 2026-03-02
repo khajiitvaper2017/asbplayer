@@ -1,5 +1,5 @@
 import { AudioClip } from '@project/common/audio-clip';
-import { AnkiExportMode, CardModel, Image } from '@project/common';
+import { AnkiExportMode, CardModel, MediaFragment } from '@project/common';
 import { HttpFetcher, Fetcher } from '@project/common';
 import { AnkiSettings, AnkiSettingsFieldKey } from '@project/common/settings';
 import sanitize from 'sanitize-filename';
@@ -14,6 +14,22 @@ const ankiQueryDeckSpecialCharacters = ['"', '*', '_', '\\'];
 const alphaNumericCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const unsafeURLChars = /[:\/\?#\[\]@!$&'()*+,;= "<>%{}|\\^`]/g;
 const replacement = '_';
+
+const logMediaCreationTime = (type: string, extension: string, durationMs: number, fileName: string) => {
+    console.info(`[asbplayer] ${type} creation took ${durationMs}ms (${fileName}, .${extension})`);
+};
+
+const timedMediaBase64 = async (
+    type: string,
+    extension: string,
+    fileName: string,
+    getBase64: () => Promise<string>
+) => {
+    const startedAt = Date.now();
+    const data = await getBase64();
+    logMediaCreationTime(type, extension, Date.now() - startedAt, fileName);
+    return data;
+};
 
 export function escapeAnkiQuery(query: string) {
     let escaped = '';
@@ -136,7 +152,7 @@ export interface ExportParams {
     track3: string | undefined;
     definition: string | undefined;
     audioClip: AudioClip | undefined;
-    image: Image | undefined;
+    image: MediaFragment | undefined;
     word: string | undefined;
     source: string | undefined;
     url: string | undefined;
@@ -166,6 +182,8 @@ export async function exportCard(
                   card.audio.error
               );
 
+    const serializedMediaFragment = card.mediaFragment ?? card.image;
+
     return await anki.export({
         text: card.text ?? extractText(card.subtitle, card.surroundingSubtitles),
         track1: extractText(card.subtitle, card.surroundingSubtitles, 0),
@@ -174,14 +192,14 @@ export async function exportCard(
         definition: card.definition,
         audioClip,
         image:
-            card.image === undefined
+            serializedMediaFragment === undefined
                 ? undefined
-                : Image.fromBase64(
+                : MediaFragment.fromBase64(
                       source,
                       card.subtitle.start,
-                      card.image.base64,
-                      card.image.extension,
-                      card.image.error
+                      serializedMediaFragment.base64,
+                      serializedMediaFragment.extension,
+                      serializedMediaFragment.error
                   ),
         word: card.word,
         source: source,
@@ -460,40 +478,65 @@ export class Anki {
 
         const gui = mode === 'gui';
         const updateLast = mode === 'updateLast';
+        let sanitizedAudioName: string | undefined = undefined;
+        let sanitizedImageName: string | undefined = undefined;
+        let audioDataPromise: Promise<string | undefined> = Promise.resolve(undefined);
+        let imageDataPromise: Promise<string | undefined> = Promise.resolve(undefined);
 
         if (this.settingsProvider.audioField && audioClip && audioClip.error === undefined) {
             const sanitizedName = this._sanitizeFileName(audioClip.name);
-            const data = await audioClip.base64();
-
-            if (data) {
-                if (gui || updateLast) {
-                    const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
-                    this._appendField(fields, this.settingsProvider.audioField, `[sound:${fileName}]`, false);
-                } else {
-                    params.note['audio'] = {
-                        filename: sanitizedName,
-                        data,
-                        fields: [this.settingsProvider.audioField],
-                    };
-                }
-            }
+            sanitizedAudioName = sanitizedName;
+            audioDataPromise = timedMediaBase64('audio', audioClip.extension, sanitizedName, () =>
+                audioClip.base64()
+            );
         }
 
         if (this.settingsProvider.imageField && image && image.error === undefined) {
             const sanitizedName = this._sanitizeFileName(image.name);
-            const data = await image.base64();
+            sanitizedImageName = sanitizedName;
+            imageDataPromise = timedMediaBase64(image.extension, image.extension, sanitizedName, () =>
+                image.base64()
+            );
+        }
 
-            if (data) {
-                if (gui || updateLast) {
-                    const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
-                    this._appendField(fields, this.settingsProvider.imageField, `<img src="${fileName}">`, false);
-                } else {
-                    params.note['picture'] = {
-                        filename: sanitizedName,
-                        data,
-                        fields: [this.settingsProvider.imageField],
-                    };
-                }
+        const [audioData, imageData] = await Promise.all([audioDataPromise, imageDataPromise]);
+
+        if (sanitizedAudioName !== undefined && audioData) {
+            if (gui || updateLast) {
+                const fileName = (await this._storeMediaFile(sanitizedAudioName, audioData, ankiConnectUrl)).result;
+                this._appendField(fields, this.settingsProvider.audioField, `[sound:${fileName}]`, false);
+            } else {
+                params.note['audio'] = {
+                    filename: sanitizedAudioName,
+                    data: audioData,
+                    fields: [this.settingsProvider.audioField],
+                };
+            }
+        }
+
+        if (sanitizedImageName !== undefined && imageData && image) {
+            if (image.extension === 'webm') {
+                const fileName = (await this._storeMediaFile(sanitizedImageName, imageData, ankiConnectUrl)).result;
+                this._appendField(
+                    fields,
+                    this.settingsProvider.imageField,
+                    this._mediaFragmentFieldHtml(fileName, image.extension),
+                    false
+                );
+            } else if (gui || updateLast) {
+                const fileName = (await this._storeMediaFile(sanitizedImageName, imageData, ankiConnectUrl)).result;
+                this._appendField(
+                    fields,
+                    this.settingsProvider.imageField,
+                    this._mediaFragmentFieldHtml(fileName, image.extension),
+                    false
+                );
+            } else {
+                params.note['picture'] = {
+                    filename: sanitizedImageName,
+                    data: imageData,
+                    fields: [this.settingsProvider.imageField],
+                };
             }
         }
 
@@ -570,6 +613,14 @@ export class Anki {
         }
 
         fields[fieldName] = newValue;
+    }
+
+    private _mediaFragmentFieldHtml(fileName: string, extension: string) {
+        if (extension === 'webm') {
+            return `<video autoplay loop muted playsinline src="${fileName}"></video>`;
+        }
+
+        return `<img src="${fileName}">`;
     }
 
     private _sanitizeUnsafeURLChars(name: string) {

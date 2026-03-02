@@ -1,7 +1,7 @@
 import React, { MutableRefObject, useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import makeStyles from '@mui/styles/makeStyles';
-import { Image, SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
+import { MediaFragment, SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
 import { AnkiSettings, Profile, sortedAnkiFieldModels } from '@project/common/settings';
 import {
     humanReadableTime,
@@ -259,7 +259,7 @@ const AnkiDialog = ({
     const [audioClip, setAudioClip] = useState<AudioClip>();
     const [ankiIsAvailable, setAnkiIsAvailable] = useState<boolean>(true);
     const [imageDialogOpen, setImageDialogOpen] = useState<boolean>(false);
-    const [image, setImage] = useState<Image>();
+    const [image, setImage] = useState<MediaFragment>();
     const dialogRef = useRef<HTMLDivElement>(undefined);
     const dialogRefCallback = useCallback((element: HTMLDivElement) => {
         dialogRef.current = element;
@@ -444,8 +444,25 @@ const AnkiDialog = ({
             return;
         }
 
-        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight));
-    }, [card, open, settings.maxImageWidth, settings.maxImageHeight]);
+        setImage(
+            MediaFragment.fromCard(
+                card,
+                settings.maxImageWidth,
+                settings.maxImageHeight,
+                settings.mediaFragmentFormat,
+                settings.mediaFragmentTrimStart,
+                settings.mediaFragmentTrimEnd
+            )
+        );
+    }, [
+        card,
+        open,
+        settings.maxImageWidth,
+        settings.maxImageHeight,
+        settings.mediaFragmentFormat,
+        settings.mediaFragmentTrimStart,
+        settings.mediaFragmentTrimEnd,
+    ]);
 
     useEffect(() => {
         if (!open && image) {
@@ -602,6 +619,10 @@ const AnkiDialog = ({
             e.stopPropagation();
 
             if (!image) {
+                return;
+            }
+
+            if (image.extension === 'webm') {
                 return;
             }
 

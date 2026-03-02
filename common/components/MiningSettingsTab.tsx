@@ -3,10 +3,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import FormLabel from '@mui/material/FormLabel';
 import InputAdornment from '@mui/material/InputAdornment';
+import MenuItem from '@mui/material/MenuItem';
 import LabelWithHoverEffect from './LabelWithHoverEffect';
 import SwitchLabelWithHoverEffect from './SwitchLabelWithHoverEffect';
 import Radio from '@mui/material/Radio';
-import { PostMineAction, PostMinePlayback } from '@project/common';
+import { isWebmMediaFragmentSupported, PostMineAction, PostMinePlayback } from '@project/common';
 import { AsbplayerSettings } from '@project/common/settings';
 import Switch from '@mui/material/Switch';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -21,11 +22,15 @@ interface Props {
 
 const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
     const { t } = useTranslation();
+    const webmCaptureSupported = isWebmMediaFragmentSupported();
     const {
         audioPaddingStart,
         audioPaddingEnd,
         maxImageWidth,
         maxImageHeight,
+        mediaFragmentFormat,
+        mediaFragmentTrimStart,
+        mediaFragmentTrimEnd,
         surroundingSubtitlesCountRadius,
         surroundingSubtitlesTimeRadius,
         clickToMineDefaultAction,
@@ -206,6 +211,23 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
             />
             <SettingsSection>{t('settings.screenshots')}</SettingsSection>
             <TextField
+                select
+                fullWidth
+                label="Capture format"
+                value={mediaFragmentFormat}
+                onChange={(event) =>
+                    onSettingChanged(
+                        'mediaFragmentFormat',
+                        event.target.value as AsbplayerSettings['mediaFragmentFormat']
+                    )
+                }
+            >
+                <MenuItem value="jpeg">JPEG screenshot</MenuItem>
+                <MenuItem value="webm" disabled={!webmCaptureSupported}>
+                    {webmCaptureSupported ? 'WebM clip' : 'WebM clip (unsupported)'}
+                </MenuItem>
+            </TextField>
+            <TextField
                 type="number"
                 label={t('settings.maxImageWidth')}
                 fullWidth
@@ -233,6 +255,42 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                     },
                 }}
             />
+            {mediaFragmentFormat === 'webm' && webmCaptureSupported && (
+                <>
+                    <TextField
+                        type="number"
+                        label="Clip trim start"
+                        fullWidth
+                        value={mediaFragmentTrimStart}
+                        color="primary"
+                        onChange={(event) => onSettingChanged('mediaFragmentTrimStart', Number(event.target.value))}
+                        slotProps={{
+                            htmlInput: {
+                                step: 100,
+                            },
+                            input: {
+                                endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                            },
+                        }}
+                    />
+                    <TextField
+                        type="number"
+                        label="Clip trim end"
+                        fullWidth
+                        value={mediaFragmentTrimEnd}
+                        color="primary"
+                        onChange={(event) => onSettingChanged('mediaFragmentTrimEnd', Number(event.target.value))}
+                        slotProps={{
+                            htmlInput: {
+                                step: 100,
+                            },
+                            input: {
+                                endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                            },
+                        }}
+                    />
+                </>
+            )}
             <SettingsSection>{t('settings.exportDialog')}</SettingsSection>
             <TextField
                 type="number"

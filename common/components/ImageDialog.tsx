@@ -2,7 +2,7 @@ import React, { useState, useLayoutEffect } from 'react';
 import makeStyles from '@mui/styles/makeStyles';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
-import { Image as CommonImage } from '@project/common';
+import { MediaFragment } from '@project/common';
 import { useImageData } from '../hooks/use-image-data';
 import Slider from '@mui/material/Slider';
 import Modal from '@mui/material/Modal';
@@ -42,7 +42,7 @@ function useWindowSize() {
 
 interface Props {
     open: boolean;
-    image?: CommonImage;
+    image?: MediaFragment;
     interval?: number[];
     onClose: () => void;
     onTimestampChange: (timestamp: number) => void;
@@ -80,6 +80,8 @@ export default function ImageDialog({ open, image, interval, onClose, onTimestam
         return null;
     }
 
+    const webm = image.extension === 'webm';
+
     return (
         <div>
             <Modal disableRestoreFocus style={{ width: '100vw', height: '100vh' }} open={open} onClose={onClose}>
@@ -94,7 +96,19 @@ export default function ImageDialog({ open, image, interval, onClose, onTimestam
                     }}
                 >
                     <Card>
-                        <CardMedia className={classes.image} image={dataUrl} title={image.name} style={{}} />
+                        {webm ? (
+                            <video
+                                className={classes.image}
+                                src={dataUrl}
+                                title={image.name}
+                                controls
+                                autoPlay
+                                loop
+                                muted
+                            />
+                        ) : (
+                            <CardMedia className={classes.image} image={dataUrl} title={image.name} style={{}} />
+                        )}
                     </Card>
                     {interval && image.canChangeTimestamp && (
                         <Slider
