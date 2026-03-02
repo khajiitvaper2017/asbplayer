@@ -1,14 +1,171 @@
 import { CardModel, FileModel, MediaFragmentErrorCode } from './model';
+import { isActiveBlobUrl } from '../blob-url';
 import { download } from '../util/util';
-import {
-    Base64MediaFragmentData,
-    CancelledMediaFragmentDataRenderingError,
-    FileMediaFragmentData,
-    makeMediaFragmentFileName,
-    type MediaFragmentData,
-    type MediaFragmentFormat,
-    WebmFileMediaFragmentData,
-} from './media-fragment-data';
+import { JpegFileMediaFragmentData } from './jpeg-file-media-fragment-data';
+import { WebmFileMediaFragmentData } from './webm-file-media-fragment-data';
+
+const maxPrefixLength = 24;
+const videoReadyTimeoutMs = 5_000;
+
+export type MediaFragmentFormat = 'jpeg' | 'webm';
+
+export const makeMediaFragmentFileName = (prefix: string, timestamp: number) => {
+    return `${prefix.replaceAll(' ', '_').substring(0, Math.min(prefix.length, maxPrefixLength))}_${Math.floor(
+        timestamp
+    )}`;
+};
+
+const mimeTypeForImageExtension = (extension: string) => {
+    if (extension === 'webm') {
+        return 'video/webm';
+    }
+
+    return `image/${extension}`;
+};
+
+export const mediaFragmentErrorForFile = (file: FileModel): MediaFragmentErrorCode | undefined => {
+    if (file.blobUrl) {
+        return isActiveBlobUrl(file.blobUrl) ? undefined : MediaFragmentErrorCode.fileLinkLost;
+    }
+
+    return undefined;
+};
+
+export const createVideoElement = async (blobUrl: string): Promise<HTMLVideoElement> =>
+    await new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        let settled = false;
+        const timeout = setTimeout(() => {
+            if (!settled) {
+                settled = true;
+                cleanup();
+                resolve(video);
+            }
+        }, videoReadyTimeoutMs);
+        const cleanup = () => {
+            clearTimeout(timeout);
+            video.onloadedmetadata = null;
+            video.oncanplay = null;
+            video.onerror = null;
+        };
+        const done = () => {
+            if (!settled) {
+                settled = true;
+                cleanup();
+                resolve(video);
+            }
+        };
+        const fail = () => {
+            if (!settled) {
+                settled = true;
+                cleanup();
+                reject(video.error?.message ?? 'Could not initialize video for MediaFragment capture');
+            }
+        };
+
+        video.onloadedmetadata = done;
+        video.oncanplay = done;
+        video.onerror = fail;
+        video.preload = 'metadata';
+        video.autoplay = false;
+        video.volume = 0;
+        video.controls = false;
+        video.pause();
+        video.src = blobUrl;
+    });
+
+export const disposeVideoElement = (video: HTMLVideoElement | undefined) => {
+    if (!video) {
+        return;
+    }
+
+    video.removeAttribute('src');
+    video.load();
+    video.remove();
+};
+
+export class Base64MediaFragmentData implements MediaFragmentData {
+    private readonly _name: string;
+    private readonly _timestamp: number;
+    private readonly _base64: string;
+    private readonly _extension: string;
+    private readonly _error?: MediaFragmentErrorCode;
+
+    private cachedBlob?: Blob;
+
+    constructor(name: string, timestamp: number, base64: string, extension: string, error?: MediaFragmentErrorCode) {
+        this._name = name;
+        this._timestamp = timestamp;
+        this._base64 = base64;
+        this._extension = extension;
+        this._error = error;
+    }
+
+    get name() {
+        return this._name;
+    }
+
+    get timestamp() {
+        return this._timestamp;
+    }
+
+    get extension() {
+        return this._extension;
+    }
+
+    get error() {
+        return this._error;
+    }
+
+    atTimestamp(_: number) {
+        return this;
+    }
+
+    get canChangeTimestamp() {
+        return false;
+    }
+
+    async base64() {
+        return this._base64;
+    }
+
+    async blob() {
+        return await this._blob();
+    }
+
+    async _blob() {
+        if (!this.cachedBlob) {
+            this.cachedBlob = await (await fetch(this._dataUrl())).blob();
+        }
+
+        return this.cachedBlob;
+    }
+
+    async dataUrl() {
+        return this._dataUrl();
+    }
+
+    private _dataUrl() {
+        return `data:${mimeTypeForImageExtension(this.extension)};base64,${this._base64}`;
+    }
+
+    dispose() {}
+}
+
+export class CancelledMediaFragmentDataRenderingError extends Error {}
+
+export interface MediaFragmentData {
+    name: string;
+    extension: string;
+    timestamp: number;
+    base64: () => Promise<string>;
+    dataUrl: () => Promise<string>;
+    blob: () => Promise<Blob>;
+    atTimestamp: (timestamp: number) => MediaFragmentData;
+    canChangeTimestamp: boolean;
+    error?: MediaFragmentErrorCode;
+    dispose: () => void;
+}
 
 export default class MediaFragment {
     private readonly data: MediaFragmentData;
@@ -85,7 +242,7 @@ export default class MediaFragment {
     }
 
     static fromFile(file: FileModel, timestamp: number, maxWidth: number, maxHeight: number) {
-        return new MediaFragment(new FileMediaFragmentData(file, timestamp, maxWidth, maxHeight));
+        return new MediaFragment(new JpegFileMediaFragmentData(file, timestamp, maxWidth, maxHeight));
     }
 
     static fromWebmFile(
@@ -171,5 +328,3 @@ export default class MediaFragment {
         download(blob, this.data.name);
     }
 }
-
-export { CancelledMediaFragmentDataRenderingError };
