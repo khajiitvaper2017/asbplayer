@@ -67,6 +67,9 @@ class SettingsAccessor {
     get preferMp3() {
         return this.settings.preferMp3;
     }
+    get mediaFragmentFormat() {
+        return this.settings.mediaFragmentFormat;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }

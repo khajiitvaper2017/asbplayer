@@ -4,8 +4,8 @@ import {
     AudioModel,
     Command,
     ExtensionToVideoCommand,
-    ImageErrorCode,
-    ImageModel,
+    MediaFragmentErrorCode,
+    MediaFragmentModel,
     Message,
     PostMineAction,
     ScreenshotTakenMessage,
@@ -59,7 +59,7 @@ export default class StartRecordingMediaHandler {
             }
         }
 
-        let imageModel: ImageModel | undefined;
+        let imageModel: MediaFragmentModel | undefined;
 
         if (startRecordingCommand.message.screenshot) {
             const imageDelay = startRecordingCommand.message.record ? startRecordingCommand.message.imageDelay : 0;
@@ -85,7 +85,7 @@ export default class StartRecordingMediaHandler {
                 imageModel = {
                     base64: '',
                     extension: 'jpeg',
-                    error: ImageErrorCode.captureFailed,
+                    error: MediaFragmentErrorCode.captureFailed,
                 };
             } finally {
                 const screenshotTakenCommand: ExtensionToVideoCommand<ScreenshotTakenMessage> = {
@@ -136,7 +136,7 @@ export default class StartRecordingMediaHandler {
                 {
                     subtitle: subtitle,
                     surroundingSubtitles: [],
-                    image: imageModel,
+                    mediaFragment: imageModel,
                     audio: audioModel,
                     url: startRecordingCommand.message.url,
                     subtitleFileName: startRecordingCommand.message.subtitleFileName,

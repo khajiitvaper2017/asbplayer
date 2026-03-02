@@ -7,8 +7,8 @@ import {
     ScreenshotTakenMessage,
     TakeScreenshotFromExtensionMessage,
     AnkiUiSavedState,
-    ImageModel,
-    ImageErrorCode,
+    MediaFragmentModel,
+    MediaFragmentErrorCode,
 } from '@project/common';
 import { CardPublisher } from '../../services/card-publisher';
 
@@ -33,7 +33,7 @@ export default class TakeScreenshotHandler {
         const senderTab = sender.tab!;
         const takeScreenshotCommand = command as VideoToExtensionCommand<TakeScreenshotFromExtensionMessage>;
         const { maxWidth, maxHeight, rect, frameId } = takeScreenshotCommand.message;
-        let imageModel: ImageModel;
+        let imageModel: MediaFragmentModel;
 
         try {
             const imageBase64 = await this._imageCapturer.capture(sender.tab!.id!, takeScreenshotCommand.src, 0, {
@@ -51,7 +51,7 @@ export default class TakeScreenshotHandler {
             imageModel = {
                 base64: '',
                 extension: 'jpeg',
-                error: ImageErrorCode.captureFailed,
+                error: MediaFragmentErrorCode.captureFailed,
             };
         }
 
@@ -59,11 +59,11 @@ export default class TakeScreenshotHandler {
 
         if (takeScreenshotCommand.message.ankiUiState) {
             ankiUiState = takeScreenshotCommand.message.ankiUiState;
-            ankiUiState.image = imageModel;
+            ankiUiState.mediaFragment = imageModel;
             this._cardPublisher.publish(
                 {
                     audio: ankiUiState.audio,
-                    image: ankiUiState.image,
+                    mediaFragment: ankiUiState.mediaFragment,
                     file: ankiUiState.file,
                     url: ankiUiState.url,
                     subtitle: ankiUiState.subtitle,

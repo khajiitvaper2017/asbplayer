@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Image,
-    ImageModel,
+    MediaFragmentModel,
     AudioModel,
     SubtitleModel,
     AnkiUiState,
@@ -62,8 +61,7 @@ export default function AnkiUi({ bridge }: Props) {
     const [surroundingSubtitles, setSurroundingSubtitles] = useState<SubtitleModel[]>();
     const [text, setText] = useState<string>();
     const [serializedAudio, setSerializedAudio] = useState<AudioModel>();
-    const [image, setImage] = useState<Image>();
-    const [serializedImage, setSerializedImage] = useState<ImageModel>();
+    const [serializedMediaFragment, setSerializedMediaFragment] = useState<MediaFragmentModel>();
     const [file, setFile] = useState<FileModel>();
     const [source, setSource] = useState<string>('');
     const [url, setUrl] = useState<string>('');
@@ -99,7 +97,7 @@ export default function AnkiUi({ bridge }: Props) {
             text: dialogState.text,
             surroundingSubtitles: dialogState.surroundingSubtitles,
             definition: dialogState.definition,
-            image: serializedImage,
+            mediaFragment: serializedMediaFragment,
             audio: serializedAudio,
             file,
             word: dialogState.word,
@@ -114,7 +112,7 @@ export default function AnkiUi({ bridge }: Props) {
             dialogRequestedTimestamp: dialogRequestedTimestamp,
         };
         return savedState;
-    }, [subtitle, serializedImage, serializedAudio, file, dialogRequestedTimestamp]);
+    }, [subtitle, serializedMediaFragment, serializedAudio, file, dialogRequestedTimestamp]);
 
     useEffect(() => {
         return bridge.addClientMessageListener((message: Message) => {
@@ -150,18 +148,17 @@ export default function AnkiUi({ bridge }: Props) {
             setUrl(s.url ?? '');
             setDialogRequestedTimestamp(s.dialogRequestedTimestamp);
             setSerializedAudio(s.audio);
-            setSerializedImage(s.image);
+            setSerializedMediaFragment(s.mediaFragment);
             setFile(s.file);
             setDisabled(false);
             setSettings(s.settings);
             setActiveProfile(s.activeProfile);
             setProfiles(s.profiles);
-            setImage(image);
             setOpen(s.open);
             setFtueHasSeenAnkiDialogQuickSelect(s.ftueHasSeenAnkiDialogQuickSelect);
             setInTutorial(s.inTutorial);
         });
-    }, [bridge, image]);
+    }, [bridge]);
 
     const handleProceed = useCallback(
         async (params: ExportParams) => {
@@ -308,7 +305,7 @@ export default function AnkiUi({ bridge }: Props) {
             surroundingSubtitles,
             url,
             audio: serializedAudio,
-            image: serializedImage,
+            mediaFragment: serializedMediaFragment,
             file,
             subtitleFileName: source,
             mediaTimestamp: serializedAudio?.start ?? subtitle.start,
@@ -323,7 +320,7 @@ export default function AnkiUi({ bridge }: Props) {
         subtitle,
         surroundingSubtitles,
         url,
-        serializedImage,
+        serializedMediaFragment,
         serializedAudio,
         text,
         word,

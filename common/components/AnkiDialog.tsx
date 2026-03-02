@@ -1,7 +1,7 @@
 import React, { MutableRefObject, useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import makeStyles from '@mui/styles/makeStyles';
-import { Image, SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
+import { MediaFragment, SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
 import { AnkiSettings, Profile, sortedAnkiFieldModels } from '@project/common/settings';
 import {
     humanReadableTime,
@@ -37,8 +37,8 @@ import DefinitionField from './DefinitionField';
 import WordField from './WordField';
 import CustomField from './CustomField';
 import AudioField from './AudioField';
-import ImageField from './ImageField';
-import ImageDialog from './ImageDialog';
+import MediaFragmentField from './MediaFragmentField';
+import MediaFragmentDialog from './MediaFragmentDialog';
 import MiniProfileSelector from './MiniProfileSelector';
 import Alert from '@mui/material/Alert';
 import { isMacOs } from '../device-detection/mac';
@@ -258,8 +258,8 @@ const AnkiDialog = ({
     const [width, setWidth] = useState<number>(0);
     const [audioClip, setAudioClip] = useState<AudioClip>();
     const [ankiIsAvailable, setAnkiIsAvailable] = useState<boolean>(true);
-    const [imageDialogOpen, setImageDialogOpen] = useState<boolean>(false);
-    const [image, setImage] = useState<Image>();
+    const [mediaFragmentDialogOpen, setMediaFragmentDialogOpen] = useState<boolean>(false);
+    const [mediaFragment, setMediaFragment] = useState<MediaFragment>();
     const dialogRef = useRef<HTMLDivElement>(undefined);
     const dialogRefCallback = useCallback((element: HTMLDivElement) => {
         dialogRef.current = element;
@@ -425,8 +425,18 @@ const AnkiDialog = ({
             e.preventDefault();
             e.stopPropagation();
             audioClip!.play().catch(console.info);
+
+            if (
+                settings.recordWithAudioPlayback &&
+                mediaFragment &&
+                mediaFragment.error === undefined &&
+                mediaFragment.extension === 'webm'
+            ) {
+                // Precompute video capture while audio is playing to reduce export-time waiting.
+                mediaFragment.blob().catch(console.error);
+            }
         },
-        [audioClip]
+        [audioClip, mediaFragment, settings.recordWithAudioPlayback]
     );
 
     const handleCustomFieldChange = useCallback(
@@ -444,38 +454,40 @@ const AnkiDialog = ({
             return;
         }
 
-        setImage(Image.fromCard(card, settings.maxImageWidth, settings.maxImageHeight));
-    }, [card, open, settings.maxImageWidth, settings.maxImageHeight]);
+        setMediaFragment(
+            MediaFragment.fromCard(card, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat)
+        );
+    }, [card, open, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat]);
 
     useEffect(() => {
-        if (!open && image) {
-            image.dispose();
-            setImage(undefined);
+        if (!open && mediaFragment) {
+            mediaFragment.dispose();
+            setMediaFragment(undefined);
         }
-    }, [open, image]);
+    }, [open, mediaFragment]);
 
     const handleViewImage = useCallback(
         async (e: React.MouseEvent<HTMLDivElement>) => {
-            if (image?.error !== undefined) {
+            if (mediaFragment?.error !== undefined) {
                 return;
             }
 
             e.preventDefault();
             e.stopPropagation();
-            setImageDialogOpen(true);
+            setMediaFragmentDialogOpen(true);
         },
-        [image]
+        [mediaFragment]
     );
 
-    const handleCloseImageDialog = useCallback(() => setImageDialogOpen(false), []);
+    const handleCloseMediaFragmentDialog = useCallback(() => setMediaFragmentDialogOpen(false), []);
 
     const handleImageTimestampChange = useCallback((timestamp: number) => {
-        setImage((image) => {
-            if (!image) {
+        setMediaFragment((mediaFragment) => {
+            if (!mediaFragment) {
                 return;
             }
 
-            return image.atTimestamp(timestamp);
+            return mediaFragment.atTimestamp(timestamp);
         });
     }, []);
 
@@ -601,13 +613,17 @@ const AnkiDialog = ({
         async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
             e.stopPropagation();
 
-            if (!image) {
+            if (!mediaFragment) {
                 return;
             }
 
-            onCopyToClipboard(await image.pngBlob());
+            if (mediaFragment.extension === 'webm') {
+                return;
+            }
+
+            onCopyToClipboard(await mediaFragment.pngBlob());
         },
-        [image, onCopyToClipboard]
+        [mediaFragment, onCopyToClipboard]
     );
 
     const disableApplyTextSelection = card.surroundingSubtitles.filter((s) => s.text.trim() !== '').length === 0;
@@ -689,7 +705,7 @@ const AnkiDialog = ({
                 track3,
                 definition,
                 audioClip,
-                image,
+                mediaFragment,
                 word,
                 source,
                 url,
@@ -705,7 +721,7 @@ const AnkiDialog = ({
             track3,
             definition,
             audioClip,
-            image,
+            mediaFragment,
             word,
             source,
             url,
@@ -819,10 +835,10 @@ const AnkiDialog = ({
                                             onConfirmTutorial={() => setTutorialStep(TutorialStep.configure)}
                                         />
                                     )}
-                                    {image && !model.custom && model.key === 'image' && model.field.display && (
-                                        <ImageField
+                                    {mediaFragment && !model.custom && model.key === 'image' && model.field.display && (
+                                        <MediaFragmentField
                                             onViewImage={handleViewImage}
-                                            image={image}
+                                            mediaFragment={mediaFragment}
                                             onCopyImageToClipboard={handleCopyImageToClipboard}
                                             copyEnabled={!isFirefox}
                                         />
@@ -1028,11 +1044,11 @@ const AnkiDialog = ({
                     </AnkiDialogButton>
                 </DialogActions>
             </Dialog>
-            <ImageDialog
-                open={open && imageDialogOpen}
-                image={image}
+            <MediaFragmentDialog
+                open={open && mediaFragmentDialogOpen}
+                mediaFragment={mediaFragment}
                 interval={timestampBoundaryInterval}
-                onClose={handleCloseImageDialog}
+                onClose={handleCloseMediaFragmentDialog}
                 onTimestampChange={handleImageTimestampChange}
             />
         </>

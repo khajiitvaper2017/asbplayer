@@ -11,6 +11,7 @@ import { AsbplayerSettings } from '@project/common/settings';
 import Switch from '@mui/material/Switch';
 import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
+import MenuItem from '@mui/material/MenuItem';
 import { FormControl } from '@mui/material';
 import SettingsSection from './SettingsSection';
 
@@ -32,6 +33,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         postMiningPlaybackState,
         recordWithAudioPlayback,
         preferMp3,
+        mediaFragmentFormat,
         copyToClipboardOnMine,
     } = settings;
     return (
@@ -205,6 +207,17 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 }}
             />
             <SettingsSection>{t('settings.screenshots')}</SettingsSection>
+            <TextField
+                label={t('settings.mediaFragmentFormat')}
+                fullWidth
+                color="primary"
+                select
+                value={mediaFragmentFormat}
+                onChange={(event) => onSettingChanged('mediaFragmentFormat', event.target.value as 'jpeg' | 'webm')}
+            >
+                <MenuItem value="jpeg">JPEG</MenuItem>
+                <MenuItem value="webm">WebM</MenuItem>
+            </TextField>
             <TextField
                 type="number"
                 label={t('settings.maxImageWidth')}

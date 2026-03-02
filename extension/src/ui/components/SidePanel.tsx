@@ -1,7 +1,7 @@
 import {
     AsbPlayerToTabCommand,
     AsbPlayerToVideoCommandV2,
-    Image,
+    MediaFragment,
     CopyHistoryItem,
     ExtensionToVideoCommand,
     LoadSubtitlesMessage,
@@ -418,10 +418,15 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     browser.tabs.sendMessage(currentTabId, downloadImageCommand);
                 }
             } else {
-                const image = Image.fromCard(item, settings.maxImageWidth, settings.maxImageHeight);
+                const mediaFragment = MediaFragment.fromCard(
+                    item,
+                    settings.maxImageWidth,
+                    settings.maxImageHeight,
+                    settings.mediaFragmentFormat
+                );
 
-                if (image) {
-                    image.download();
+                if (mediaFragment) {
+                    mediaFragment.download();
                 }
             }
         },

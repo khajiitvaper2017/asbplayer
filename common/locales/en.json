@@ -379,6 +379,7 @@
         "clickToMineDefaultAction": "Mining button default action",
         "misc": "Misc",
         "mp3Preference": "Re-encode audio as mp3 (slower)",
+        "mediaFragmentFormat": "Media fragment format",
         "noteType": "Note Type",
         "pages": "Pages",
         "preCacheSubtitleDom": "Pre-cache Subtitle DOM",

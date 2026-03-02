@@ -367,6 +367,10 @@ const settingsSchema = {
         preferMp3: {
             type: 'boolean',
         },
+        mediaFragmentFormat: {
+            type: 'string',
+            enum: ['jpeg', 'webm'],
+        },
         tabName: {
             type: 'string',
         },

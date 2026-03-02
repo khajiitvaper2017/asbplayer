@@ -2,8 +2,8 @@ import React, { useState, useLayoutEffect } from 'react';
 import makeStyles from '@mui/styles/makeStyles';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
-import { Image as CommonImage } from '@project/common';
-import { useImageData } from '../hooks/use-image-data';
+import { MediaFragment as CommonMediaFragment } from '@project/common';
+import { useMediaFragmentData } from '../hooks/use-media-fragment-data';
 import Slider from '@mui/material/Slider';
 import Modal from '@mui/material/Modal';
 import { humanReadableTime } from '../util';
@@ -42,7 +42,7 @@ function useWindowSize() {
 
 interface Props {
     open: boolean;
-    image?: CommonImage;
+    mediaFragment?: CommonMediaFragment;
     interval?: number[];
     onClose: () => void;
     onTimestampChange: (timestamp: number) => void;
@@ -62,8 +62,8 @@ const ValueLabelComponent = ({ children, open, value }: ValueLabelComponentProps
     );
 };
 
-export default function ImageDialog({ open, image, interval, onClose, onTimestampChange }: Props) {
-    const { width, height, dataUrl } = useImageData({ image, smoothTransition: true });
+export default function MediaFragmentDialog({ open, mediaFragment, interval, onClose, onTimestampChange }: Props) {
+    const { width, height, dataUrl } = useMediaFragmentData({ mediaFragment, smoothTransition: true });
     const [windowWidth, windowHeight] = useWindowSize();
 
     let resizeRatio;
@@ -76,7 +76,7 @@ export default function ImageDialog({ open, image, interval, onClose, onTimestam
 
     const classes = useStyles({ width: width * resizeRatio, height: height * resizeRatio });
 
-    if (!image || !dataUrl || !open) {
+    if (!mediaFragment || !dataUrl || !open) {
         return null;
     }
 
@@ -94,13 +94,25 @@ export default function ImageDialog({ open, image, interval, onClose, onTimestam
                     }}
                 >
                     <Card>
-                        <CardMedia className={classes.image} image={dataUrl} title={image.name} style={{}} />
+                        {mediaFragment.extension === 'webm' ? (
+                            <video
+                                src={dataUrl}
+                                width={width * resizeRatio}
+                                height={height * resizeRatio}
+                                autoPlay
+                                loop
+                                playsInline
+                                muted
+                            />
+                        ) : (
+                            <CardMedia className={classes.image} image={dataUrl} title={mediaFragment.name} style={{}} />
+                        )}
                     </Card>
-                    {interval && image.canChangeTimestamp && (
+                    {interval && mediaFragment.canChangeTimestamp && (
                         <Slider
                             slots={{ valueLabel: ValueLabelComponent }}
                             color="primary"
-                            value={image.timestamp}
+                            value={mediaFragment.timestamp}
                             min={interval[0]}
                             max={interval[1]}
                             onChange={(_: unknown, newValue: number | number[]) => {

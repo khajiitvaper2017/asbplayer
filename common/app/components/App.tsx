@@ -4,7 +4,7 @@ import { type Theme } from '@mui/material/styles';
 import ThemeProvider from '@mui/material/styles/ThemeProvider';
 import { useWindowSize } from '../hooks/use-window-size';
 import {
-    Image,
+    MediaFragment,
     SubtitleModel,
     VideoTabModel,
     LegacyPlayerSyncMessage,
@@ -19,7 +19,7 @@ import {
     DownloadImageMessage,
     DownloadAudioMessage,
     CardTextFieldValues,
-    ImageErrorCode,
+    MediaFragmentErrorCode,
     RequestSubtitlesResponse,
 } from '@project/common';
 import { createTheme } from '@project/common/theme';
@@ -506,10 +506,11 @@ function App({
                         track3: extractText(card.subtitle, card.surroundingSubtitles, 2),
                         definition: newCard.definition ?? '',
                         audioClip: audioClip,
-                        image: Image.fromCard(
+                        mediaFragment: MediaFragment.fromCard(
                             newCard,
                             settingsRef.current.maxImageWidth,
-                            settingsRef.current.maxImageHeight
+                            settingsRef.current.maxImageHeight,
+                            settingsRef.current.mediaFragmentFormat
                         ),
                         word: newCard.word ?? '',
                         source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
@@ -626,20 +627,25 @@ function App({
     const handleDownloadImage = useCallback(
         (item: CardModel) => {
             try {
-                const image = Image.fromCard(item, settings.maxImageWidth, settings.maxImageHeight)!;
+                const mediaFragment = MediaFragment.fromCard(
+                    item,
+                    settings.maxImageWidth,
+                    settings.maxImageHeight,
+                    settings.mediaFragmentFormat
+                )!;
 
-                if (image.error === undefined) {
-                    image.download();
-                } else if (image.error === ImageErrorCode.fileLinkLost) {
+                if (mediaFragment.error === undefined) {
+                    mediaFragment.download();
+                } else if (mediaFragment.error === MediaFragmentErrorCode.fileLinkLost) {
                     handleError(t('ankiDialog.imageFileLinkLost'));
-                } else if (image.error === ImageErrorCode.captureFailed) {
+                } else if (mediaFragment.error === MediaFragmentErrorCode.captureFailed) {
                     handleError(t('ankiDialog.imageCaptureFailed'));
                 }
             } catch (e) {
                 handleError(e);
             }
         },
-        [handleError, settings.maxImageWidth, settings.maxImageHeight, t]
+        [handleError, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat, t]
     );
 
     const handleDownloadCopyHistorySectionAsSrt = useCallback(

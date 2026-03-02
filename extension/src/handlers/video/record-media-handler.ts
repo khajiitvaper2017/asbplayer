@@ -2,7 +2,7 @@ import ImageCapturer from '../../services/image-capturer';
 import {
     AudioModel,
     Command,
-    ImageModel,
+    MediaFragmentModel,
     Message,
     RecordMediaAndForwardSubtitleMessage,
     VideoToExtensionCommand,
@@ -10,7 +10,7 @@ import {
     ScreenshotTakenMessage,
     CardModel,
     AudioErrorCode,
-    ImageErrorCode,
+    MediaFragmentErrorCode,
     PostMineAction,
 } from '@project/common';
 import { SettingsProvider } from '@project/common/settings';
@@ -57,7 +57,7 @@ export default class RecordMediaHandler {
         const subtitle = recordMediaCommand.message.subtitle;
         let audioPromise = undefined;
         let imagePromise = undefined;
-        let imageModel: ImageModel | undefined = undefined;
+        let imageModel: MediaFragmentModel | undefined = undefined;
         let audioModel: AudioModel | undefined = undefined;
         let encodeAsMp3 = false;
 
@@ -142,14 +142,14 @@ export default class RecordMediaHandler {
                 imageModel = {
                     base64: '',
                     extension: 'jpeg',
-                    error: ImageErrorCode.captureFailed,
+                    error: MediaFragmentErrorCode.captureFailed,
                 };
             }
         }
 
         const { isBulkExport, ...messageWithoutBulkFlag } = recordMediaCommand.message;
         const card: CardModel = {
-            image: imageModel,
+            mediaFragment: imageModel,
             audio: audioModel,
             ...messageWithoutBulkFlag,
         };

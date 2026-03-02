@@ -95,7 +95,16 @@ export default class AnkiUiController {
 
     async show(
         context: Binding,
-        { subtitle, surroundingSubtitles, image, audio, text, definition, word, customFieldValues }: ShowAnkiUiMessage
+        {
+            subtitle,
+            surroundingSubtitles,
+            mediaFragment,
+            audio,
+            text,
+            definition,
+            word,
+            customFieldValues,
+        }: ShowAnkiUiMessage
     ) {
         if (!this._settings) {
             throw new Error('Unable to show Anki UI because settings are missing.');
@@ -114,7 +123,7 @@ export default class AnkiUiController {
             url: url,
             subtitle: subtitle,
             surroundingSubtitles: surroundingSubtitles,
-            image: image,
+            mediaFragment: mediaFragment,
             audio: audio,
             dialogRequestedTimestamp: context.video.currentTime * 1000,
             text,

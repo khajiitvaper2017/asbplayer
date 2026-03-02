@@ -115,7 +115,7 @@ export class IndexedDBCopyHistoryRepository implements CopyHistoryRepository {
             surroundingSubtitles: item.surroundingSubtitles,
             subtitleFileName: item.subtitleFileName,
             url: item.url,
-            image: item.image,
+            mediaFragment: item.mediaFragment,
             audio: item.audio,
             file: item.file,
             mediaTimestamp: item.mediaTimestamp,

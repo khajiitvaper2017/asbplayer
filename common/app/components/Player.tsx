@@ -699,7 +699,7 @@ const Player = React.memo(function Player({
                     surroundingSubtitles,
                     cardTextFieldValues,
                     audio,
-                    image,
+                    mediaFragment,
                     url,
                     postMineAction,
                     id,
@@ -721,7 +721,7 @@ const Player = React.memo(function Player({
                                   }
                                 : undefined,
                             audio,
-                            image,
+                            mediaFragment,
                             url,
                         },
                         postMineAction,

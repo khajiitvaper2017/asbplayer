@@ -1,5 +1,5 @@
 import { AudioClip } from '@project/common/audio-clip';
-import { AnkiExportMode, CardModel, Image } from '@project/common';
+import { AnkiExportMode, CardModel, MediaFragment } from '@project/common';
 import { HttpFetcher, Fetcher } from '@project/common';
 import { AnkiSettings, AnkiSettingsFieldKey } from '@project/common/settings';
 import sanitize from 'sanitize-filename';
@@ -136,7 +136,7 @@ export interface ExportParams {
     track3: string | undefined;
     definition: string | undefined;
     audioClip: AudioClip | undefined;
-    image: Image | undefined;
+    mediaFragment: MediaFragment | undefined;
     word: string | undefined;
     source: string | undefined;
     url: string | undefined;
@@ -173,15 +173,15 @@ export async function exportCard(
         track3: extractText(card.subtitle, card.surroundingSubtitles, 2),
         definition: card.definition,
         audioClip,
-        image:
-            card.image === undefined
+        mediaFragment:
+            card.mediaFragment === undefined
                 ? undefined
-                : Image.fromBase64(
+                : MediaFragment.fromBase64(
                       source,
                       card.subtitle.start,
-                      card.image.base64,
-                      card.image.extension,
-                      card.image.error
+                      card.mediaFragment.base64,
+                      card.mediaFragment.extension,
+                      card.mediaFragment.error
                   ),
         word: card.word,
         source: source,
@@ -411,7 +411,7 @@ export class Anki {
         track3,
         definition,
         audioClip,
-        image,
+        mediaFragment,
         word,
         source,
         url,
@@ -479,14 +479,21 @@ export class Anki {
             }
         }
 
-        if (this.settingsProvider.imageField && image && image.error === undefined) {
-            const sanitizedName = this._sanitizeFileName(image.name);
-            const data = await image.base64();
+        if (this.settingsProvider.imageField && mediaFragment && mediaFragment.error === undefined) {
+            const sanitizedName = this._sanitizeFileName(mediaFragment.name);
+            const data = await mediaFragment.base64();
 
             if (data) {
-                if (gui || updateLast) {
+                if (gui || updateLast || mediaFragment.extension === 'webm') {
                     const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
-                    this._appendField(fields, this.settingsProvider.imageField, `<img src="${fileName}">`, false);
+                    this._appendField(
+                        fields,
+                        this.settingsProvider.imageField,
+                        mediaFragment.extension === 'webm'
+                            ? `<video src="${fileName}" autoplay loop muted playsinline></video>`
+                            : `<img src="${fileName}">`,
+                        false
+                    );
                 } else {
                     params.note['picture'] = {
                         filename: sanitizedName,

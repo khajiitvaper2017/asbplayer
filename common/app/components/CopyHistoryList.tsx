@@ -22,7 +22,7 @@ import Typography from '@mui/material/Typography';
 import { type Theme } from '@mui/material';
 import { CopyHistoryItem } from '../..';
 import { AudioClip } from '../../audio-clip';
-import { Image } from '../..';
+import { MediaFragment } from '../..';
 
 interface CopyHistoryListProps {
     open: boolean;
@@ -103,20 +103,20 @@ const useAudioAvailability = (item: CopyHistoryItem) => {
     return { isAudioAvailable };
 };
 
-const useImageAvailability = (item: CopyHistoryItem) => {
-    const [isImageAvailable, setIsImageAvailable] = useState<boolean>();
+const useMediaFragmentAvailability = (item: CopyHistoryItem) => {
+    const [isMediaFragmentAvailable, setIsMediaFragmentAvailable] = useState<boolean>();
 
     useEffect(() => {
-        const image = Image.fromCard(item, 0, 0);
+        const mediaFragment = MediaFragment.fromCard(item, 0, 0);
 
-        if (image) {
-            setIsImageAvailable(image.error === undefined);
+        if (mediaFragment) {
+            setIsMediaFragmentAvailable(mediaFragment.error === undefined);
         } else {
-            setIsImageAvailable(false);
+            setIsMediaFragmentAvailable(false);
         }
     }, [item]);
 
-    return { isImageAvailable };
+    return { isMediaFragmentAvailable };
 };
 
 interface MenuProps {
@@ -172,7 +172,7 @@ function Menu({
         onClose();
     }, [item, onDelete, onClose]);
 
-    const { isImageAvailable } = useImageAvailability(item);
+    const { isMediaFragmentAvailable } = useMediaFragmentAvailability(item);
     const { isAudioAvailable } = useAudioAvailability(item);
 
     return (
@@ -213,7 +213,7 @@ function Menu({
                         </ListItemButton>
                     </ListItem>
                 )}
-                {(isImageAvailable || forceShowDownloadOptions) && (
+                {(isMediaFragmentAvailable || forceShowDownloadOptions) && (
                     <ListItem disablePadding onClick={handleDownloadImage}>
                         <ListItemButton>
                             <ListItemText

@@ -20,7 +20,7 @@ export const testCard: (urls: { imageUrl: string; audioUrl: string }) => Promise
         surroundingSubtitles: [],
         subtitleFileName: "You Don't Have to Be Perfect to Become Fluent.srt",
         url: 'https://www.youtube.com/watch?v=eO4d6iueGzY',
-        image: {
+        mediaFragment: {
             base64: await urlToBase64(imageUrl),
             extension: 'jpeg',
         },

@@ -77,7 +77,7 @@ export interface CardModel extends CardTextFieldValues {
     readonly surroundingSubtitles: SubtitleModel[];
     readonly subtitleFileName: string;
     readonly url?: string;
-    readonly image?: ImageModel;
+    readonly mediaFragment?: MediaFragmentModel;
     readonly audio?: AudioModel;
     readonly file?: FileModel;
     readonly mediaTimestamp: number;
@@ -95,15 +95,15 @@ export interface CopyHistoryItem extends CardModel {
     readonly timestamp: number;
 }
 
-export enum ImageErrorCode {
+export enum MediaFragmentErrorCode {
     captureFailed = 1,
     fileLinkLost = 2,
 }
 
-export interface ImageModel {
+export interface MediaFragmentModel {
     readonly base64: string;
-    readonly extension: 'jpeg';
-    readonly error?: ImageErrorCode;
+    readonly extension: 'jpeg' | 'webm';
+    readonly error?: MediaFragmentErrorCode;
 }
 
 export enum AudioErrorCode {
@@ -141,7 +141,7 @@ export interface AnkiUiState extends CardTextFieldValues {
     readonly surroundingSubtitles: SubtitleModel[];
     readonly url?: string;
     readonly source: string;
-    readonly image?: ImageModel;
+    readonly mediaFragment?: MediaFragmentModel;
     readonly audio?: AudioModel;
     readonly file?: FileModel;
     readonly dialogRequestedTimestamp: number;
@@ -170,7 +170,7 @@ export interface AnkiUiSavedState {
     surroundingSubtitles: SubtitleModel[];
     text: string;
     definition: string;
-    image?: ImageModel;
+    mediaFragment?: MediaFragmentModel;
     audio?: AudioModel;
     file?: FileModel;
     word: string;

@@ -2,8 +2,8 @@ import ImageCapturer from '../../services/image-capturer';
 import {
     AudioModel,
     Command,
-    ImageErrorCode,
-    ImageModel,
+    MediaFragmentErrorCode,
+    MediaFragmentModel,
     Message,
     PostMineAction,
     StopRecordingMediaMessage,
@@ -58,7 +58,7 @@ export default class StopRecordingMediaHandler {
             stopRecordingCommand.message.surroundingSubtitles ??
             mockSurroundingSubtitles(subtitle, stopRecordingCommand.message.videoDuration, 5000);
 
-        let imageModel: ImageModel | undefined = undefined;
+        let imageModel: MediaFragmentModel | undefined = undefined;
 
         if (stopRecordingCommand.message.screenshot) {
             try {
@@ -83,7 +83,7 @@ export default class StopRecordingMediaHandler {
                 imageModel = {
                     base64: '',
                     extension: 'jpeg',
-                    error: ImageErrorCode.captureFailed,
+                    error: MediaFragmentErrorCode.captureFailed,
                 };
             }
         }
@@ -113,7 +113,7 @@ export default class StopRecordingMediaHandler {
                 {
                     subtitle: subtitle,
                     surroundingSubtitles: surroundingSubtitles,
-                    image: imageModel,
+                    mediaFragment: imageModel,
                     audio: audioModel,
                     url: stopRecordingCommand.message.url,
                     subtitleFileName: stopRecordingCommand.message.subtitleFileName,

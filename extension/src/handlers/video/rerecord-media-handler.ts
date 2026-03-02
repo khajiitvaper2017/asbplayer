@@ -71,7 +71,7 @@ export default class RerecordMediaHandler {
         this._cardPublisher.publish(
             {
                 audio: audio,
-                image: rerecordCommand.message.uiState.image,
+                mediaFragment: rerecordCommand.message.uiState.mediaFragment,
                 url: rerecordCommand.message.uiState.url,
                 subtitle: rerecordCommand.message.uiState.subtitle,
                 surroundingSubtitles: rerecordCommand.message.uiState.surroundingSubtitles,
