@@ -290,6 +290,15 @@ const settingsSchema = {
         maxImageHeight: {
             type: 'number',
         },
+        mediaFragmentFormat: {
+            type: 'string',
+        },
+        mediaFragmentTrimStart: {
+            type: 'number',
+        },
+        mediaFragmentTrimEnd: {
+            type: 'number',
+        },
         surroundingSubtitlesCountRadius: {
             type: 'number',
         },

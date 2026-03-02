@@ -26,6 +26,9 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         audioPaddingEnd,
         maxImageWidth,
         maxImageHeight,
+        mediaFragmentFormat,
+        mediaFragmentTrimStart,
+        mediaFragmentTrimEnd,
         surroundingSubtitlesCountRadius,
         surroundingSubtitlesTimeRadius,
         clickToMineDefaultAction,
@@ -205,6 +208,35 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 }}
             />
             <SettingsSection>{t('settings.screenshots')}</SettingsSection>
+            <FormControl>
+                <FormLabel component="legend">Capture format</FormLabel>
+                <RadioGroup row={false}>
+                    <LabelWithHoverEffect
+                        control={
+                            <Radio
+                                checked={mediaFragmentFormat === 'jpeg'}
+                                value="jpeg"
+                                onChange={(event) =>
+                                    event.target.checked && onSettingChanged('mediaFragmentFormat', 'jpeg')
+                                }
+                            />
+                        }
+                        label="JPEG screenshot"
+                    />
+                    <LabelWithHoverEffect
+                        control={
+                            <Radio
+                                checked={mediaFragmentFormat === 'webm'}
+                                value="webm"
+                                onChange={(event) =>
+                                    event.target.checked && onSettingChanged('mediaFragmentFormat', 'webm')
+                                }
+                            />
+                        }
+                        label="WebM clip"
+                    />
+                </RadioGroup>
+            </FormControl>
             <TextField
                 type="number"
                 label={t('settings.maxImageWidth')}
@@ -232,6 +264,40 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                         step: 1,
                     },
                 }}
+            />
+            <TextField
+                type="number"
+                label="Clip trim start"
+                fullWidth
+                value={mediaFragmentTrimStart}
+                color="primary"
+                onChange={(event) => onSettingChanged('mediaFragmentTrimStart', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        step: 1,
+                    },
+                    input: {
+                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                    },
+                }}
+                disabled={mediaFragmentFormat !== 'webm'}
+            />
+            <TextField
+                type="number"
+                label="Clip trim end"
+                fullWidth
+                value={mediaFragmentTrimEnd}
+                color="primary"
+                onChange={(event) => onSettingChanged('mediaFragmentTrimEnd', Number(event.target.value))}
+                slotProps={{
+                    htmlInput: {
+                        step: 1,
+                    },
+                    input: {
+                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                    },
+                }}
+                disabled={mediaFragmentFormat !== 'webm'}
             />
             <SettingsSection>{t('settings.exportDialog')}</SettingsSection>
             <TextField

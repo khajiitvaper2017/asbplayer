@@ -1,5 +1,5 @@
 import { AudioClip } from '@project/common/audio-clip';
-import { AnkiExportMode, CardModel, Image } from '@project/common';
+import { AnkiExportMode, CardModel, MediaFragment } from '@project/common';
 import { HttpFetcher, Fetcher } from '@project/common';
 import { AnkiSettings, AnkiSettingsFieldKey } from '@project/common/settings';
 import sanitize from 'sanitize-filename';
@@ -136,7 +136,7 @@ export interface ExportParams {
     track3: string | undefined;
     definition: string | undefined;
     audioClip: AudioClip | undefined;
-    image: Image | undefined;
+    image: MediaFragment | undefined;
     word: string | undefined;
     source: string | undefined;
     url: string | undefined;
@@ -166,6 +166,8 @@ export async function exportCard(
                   card.audio.error
               );
 
+    const serializedMediaFragment = card.mediaFragment ?? card.image;
+
     return await anki.export({
         text: card.text ?? extractText(card.subtitle, card.surroundingSubtitles),
         track1: extractText(card.subtitle, card.surroundingSubtitles, 0),
@@ -174,14 +176,14 @@ export async function exportCard(
         definition: card.definition,
         audioClip,
         image:
-            card.image === undefined
+            serializedMediaFragment === undefined
                 ? undefined
-                : Image.fromBase64(
+                : MediaFragment.fromBase64(
                       source,
                       card.subtitle.start,
-                      card.image.base64,
-                      card.image.extension,
-                      card.image.error
+                      serializedMediaFragment.base64,
+                      serializedMediaFragment.extension,
+                      serializedMediaFragment.error
                   ),
         word: card.word,
         source: source,
@@ -484,9 +486,22 @@ export class Anki {
             const data = await image.base64();
 
             if (data) {
-                if (gui || updateLast) {
+                if (image.extension === 'webm') {
                     const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
-                    this._appendField(fields, this.settingsProvider.imageField, `<img src="${fileName}">`, false);
+                    this._appendField(
+                        fields,
+                        this.settingsProvider.imageField,
+                        this._mediaFragmentFieldHtml(fileName, image.extension),
+                        false
+                    );
+                } else if (gui || updateLast) {
+                    const fileName = (await this._storeMediaFile(sanitizedName, data, ankiConnectUrl)).result;
+                    this._appendField(
+                        fields,
+                        this.settingsProvider.imageField,
+                        this._mediaFragmentFieldHtml(fileName, image.extension),
+                        false
+                    );
                 } else {
                     params.note['picture'] = {
                         filename: sanitizedName,
@@ -570,6 +585,14 @@ export class Anki {
         }
 
         fields[fieldName] = newValue;
+    }
+
+    private _mediaFragmentFieldHtml(fileName: string, extension: string) {
+        if (extension === 'webm') {
+            return `<video controls src="${fileName}"></video>`;
+        }
+
+        return `<img src="${fileName}">`;
     }
 
     private _sanitizeUnsafeURLChars(name: string) {

@@ -1,7 +1,7 @@
-import { CancelledImageDataRenderingError, Image as CommonImage } from '@project/common';
+import { CancelledMediaFragmentDataRenderingError, MediaFragment } from '@project/common';
 import { useEffect, useState } from 'react';
 
-export const useImageData = ({ image, smoothTransition }: { image?: CommonImage; smoothTransition: boolean }) => {
+export const useImageData = ({ image, smoothTransition }: { image?: MediaFragment; smoothTransition: boolean }) => {
     const [dataUrl, setDataUrl] = useState<string>('');
     const [width, setWidth] = useState<number>(0);
     const [height, setHeight] = useState<number>(0);
@@ -18,15 +18,40 @@ export const useImageData = ({ image, smoothTransition }: { image?: CommonImage;
         }
 
         let img: HTMLImageElement | undefined;
+        let video: HTMLVideoElement | undefined;
 
         function fetchImage() {
             if (!image) {
                 return;
             }
 
+            if (image.extension === 'webm') {
+                image
+                    .dataUrl()
+                    .then((nextDataUrl) => {
+                        video = document.createElement('video');
+                        video.onloadedmetadata = () => {
+                            if (!video) {
+                                return;
+                            }
+
+                            setWidth(video.videoWidth);
+                            setHeight(video.videoHeight);
+                            setDataUrl(nextDataUrl);
+                        };
+                        video.src = nextDataUrl;
+                    })
+                    .catch((e) => {
+                        if (!(e instanceof CancelledMediaFragmentDataRenderingError)) {
+                            throw e;
+                        }
+                    });
+                return;
+            }
+
             image
                 .dataUrl()
-                .then((dataUrl) => {
+                .then((nextDataUrl) => {
                     img = new Image();
                     img.onload = () => {
                         if (!img) {
@@ -35,12 +60,12 @@ export const useImageData = ({ image, smoothTransition }: { image?: CommonImage;
 
                         setWidth(img.width);
                         setHeight(img.height);
-                        setDataUrl(dataUrl);
+                        setDataUrl(nextDataUrl);
                     };
-                    img.src = dataUrl;
+                    img.src = nextDataUrl;
                 })
                 .catch((e) => {
-                    if (!(e instanceof CancelledImageDataRenderingError)) {
+                    if (!(e instanceof CancelledMediaFragmentDataRenderingError)) {
                         throw e;
                     }
                 });
@@ -51,6 +76,10 @@ export const useImageData = ({ image, smoothTransition }: { image?: CommonImage;
         return () => {
             if (img) {
                 img.onload = null;
+            }
+
+            if (video) {
+                video.onloadedmetadata = null;
             }
         };
     }, [image, smoothTransition]);
