@@ -5,7 +5,7 @@ import { JpegFileMediaFragmentData } from './jpeg-file-media-fragment-data';
 import { WebmFileMediaFragmentData } from './webm-file-media-fragment-data';
 
 const maxPrefixLength = 24;
-const videoReadyTimeoutMs = 5_000;
+const videoReadyTimeoutMs = 7_000;
 const webmMimeTypeCandidates = [
     // Preferred codec order for short fragments: AV1, VP8, VP9, then generic WebM fallback.
     'video/webm;codecs=av1',
@@ -310,9 +310,7 @@ export default class MediaFragment {
         maxWidth: number,
         maxHeight: number
     ) {
-        return new MediaFragment(
-            new WebmFileMediaFragmentData(file, startTimestamp, endTimestamp, maxWidth, maxHeight, undefined, undefined)
-        );
+        return new MediaFragment(new WebmFileMediaFragmentData(file, startTimestamp, endTimestamp, maxWidth, maxHeight));
     }
 
     get name() {

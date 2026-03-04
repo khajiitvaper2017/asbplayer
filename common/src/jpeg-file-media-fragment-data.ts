@@ -71,7 +71,13 @@ export class JpegFileMediaFragmentData implements MediaFragmentData {
             return this;
         }
 
-        this._canvasPromiseReject?.(new CancelledMediaFragmentDataRenderingError());
+        const canvasPromiseReject = this._canvasPromiseReject;
+        if (canvasPromiseReject) {
+            this._canvasPromise = undefined;
+            this._canvasPromiseReject = undefined;
+            canvasPromiseReject(new CancelledMediaFragmentDataRenderingError());
+        }
+
         return new JpegFileMediaFragmentData(
             this._file,
             timestamp,
@@ -88,33 +94,25 @@ export class JpegFileMediaFragmentData implements MediaFragmentData {
     }
 
     async base64(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            this._getCanvas()
-                .then((canvas) => {
-                    const dataUrl = canvas.toDataURL('image/jpeg', this._jpegCompressionQuality);
-                    resolve(dataUrl.substring(dataUrl.indexOf(',') + 1));
-                })
-                .catch(reject);
-        });
+        const canvas = await this._getCanvas();
+        const dataUrl = canvas.toDataURL('image/jpeg', this._jpegCompressionQuality);
+        return dataUrl.substring(dataUrl.indexOf(',') + 1);
     }
 
     async blob(): Promise<Blob> {
-        return new Promise((resolve, reject) => {
-            this._getCanvas()
-                .then((canvas) => {
-                    canvas.toBlob(
-                        (blob) => {
-                            if (blob === null) {
-                                reject(new Error('Could not obtain blob'));
-                            } else {
-                                resolve(blob);
-                            }
-                        },
-                        'image/jpeg',
-                        this._jpegCompressionQuality
-                    );
-                })
-                .catch(reject);
+        const canvas = await this._getCanvas();
+        return await new Promise((resolve, reject) => {
+            canvas.toBlob(
+                (blob) => {
+                    if (blob === null) {
+                        reject(new Error('Could not obtain blob'));
+                    } else {
+                        resolve(blob);
+                    }
+                },
+                'image/jpeg',
+                this._jpegCompressionQuality
+            );
         });
     }
 
@@ -128,51 +126,101 @@ export class JpegFileMediaFragmentData implements MediaFragmentData {
             return this._canvasPromise;
         }
 
-        this._canvasPromise = new Promise(async (resolve, reject) => {
-            this._canvasPromiseReject = reject;
-            const video = await this._videoElement(this._file);
-            const calculateCurrentTime = () => Math.max(0, Math.min(video.duration, this._timestamp / 1000));
+        let canvasPromise: Promise<HTMLCanvasElement>;
+        canvasPromise = this._renderCanvas().catch((error) => {
+            if (this._canvasPromise === canvasPromise) {
+                this._canvasPromise = undefined;
+            }
+
+            this._canvasPromiseReject = undefined;
+            throw error;
+        });
+        this._canvasPromise = canvasPromise;
+        return canvasPromise;
+    }
+
+    private async _renderCanvas(): Promise<HTMLCanvasElement> {
+        const video = await this._videoElement(this._file);
+        const calculateCurrentTime = () => Math.max(0, Math.min(video.duration, this._timestamp / 1000));
+
+        return await new Promise((resolve, reject) => {
+            let settled = false;
+
+            const cleanup = () => {
+                video.removeEventListener('loadedmetadata', onLoadedMetadata);
+                video.removeEventListener('seeked', onSeeked);
+                video.removeEventListener('error', onVideoError);
+            };
+
+            const fail = (error: unknown) => {
+                if (settled) {
+                    return;
+                }
+
+                settled = true;
+                cleanup();
+                this._canvasPromiseReject = undefined;
+                reject(error instanceof Error ? error : new Error(String(error)));
+            };
+
+            const finish = () => {
+                this._drawCanvas(video)
+                    .then((canvas) => {
+                        if (settled) {
+                            return;
+                        }
+
+                        settled = true;
+                        cleanup();
+                        this._canvasPromiseReject = undefined;
+                        resolve(canvas);
+                    })
+                    .catch(fail);
+            };
+
+            const onSeeked = () => {
+                finish();
+            };
+
+            const onVideoError = () => {
+                fail(new Error(video.error?.message ?? 'Could not load video to obtain screenshot'));
+            };
+
+            const onLoadedMetadata = () => {
+                video.currentTime = calculateCurrentTime();
+            };
+
+            this._canvasPromiseReject = (error) => {
+                fail(error);
+            };
+
+            video.addEventListener('seeked', onSeeked, { once: true });
+            video.addEventListener('error', onVideoError, { once: true });
 
             if (Number.isFinite(video.duration)) {
                 video.currentTime = calculateCurrentTime();
             } else {
-                video.onloadedmetadata = () => {
-                    video.currentTime = calculateCurrentTime();
-                    video.onloadedmetadata = null;
-                };
+                video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
             }
-
-            video.onseeked = async () => {
-                try {
-                    this._canvasPromiseReject = undefined;
-
-                    if (!this._canvas) {
-                        this._canvas = document.createElement('canvas');
-                    }
-
-                    const canvas = this._canvas;
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    const ctx = canvas.getContext('2d');
-                    ctx!.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    video.onseeked = null;
-
-                    if (this._maxWidth > 0 || this._maxHeight > 0) {
-                        await resizeCanvas(canvas, ctx!, this._maxWidth, this._maxHeight);
-                    }
-
-                    resolve(canvas);
-                } catch (e) {
-                    reject(e);
-                }
-            };
-
-            video.onerror = () => {
-                reject(video.error?.message ?? 'Could not load video to obtain screenshot');
-            };
         });
+    }
 
-        return this._canvasPromise;
+    private async _drawCanvas(video: HTMLVideoElement): Promise<HTMLCanvasElement> {
+        if (!this._canvas) {
+            this._canvas = document.createElement('canvas');
+        }
+
+        const canvas = this._canvas;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx!.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        if (this._maxWidth > 0 || this._maxHeight > 0) {
+            await resizeCanvas(canvas, ctx!, this._maxWidth, this._maxHeight);
+        }
+
+        return canvas;
     }
 
     private async _videoElement(file: FileModel): Promise<HTMLVideoElement> {
