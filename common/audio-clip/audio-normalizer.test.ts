@@ -6,8 +6,12 @@ describe('peakNormalizationGainForChannels', () => {
         expect(peakNormalizationGainForChannels([Float32Array.from([0, 0, 0])])).toBe(1);
     });
 
-    it('does not attenuate clips that are already loud enough', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0.2, -1, 0.3])])).toBe(1);
+    it('attenuates clips that are louder than the target peak', () => {
+        expect(peakNormalizationGainForChannels([Float32Array.from([0.2, -1, 0.3])])).toBeCloseTo(0.95);
+    });
+
+    it('returns 1 when peak already matches the target', () => {
+        expect(peakNormalizationGainForChannels([Float32Array.from([0.2, -0.95, 0.3])])).toBeCloseTo(1);
     });
 
     it('boosts quieter clips up to the target peak', () => {
@@ -40,12 +44,20 @@ describe('applyPeakNormalizationToChannels', () => {
         expect(channels[0][2]).toBeCloseTo(0.4);
     });
 
-    it('skips already-loud channels', () => {
+    it('attenuates already-loud channels', () => {
         const channels = [Float32Array.from([0.2, -1, 0.3])];
-        expect(applyPeakNormalizationToChannels(channels)).toBe(false);
-        expect(channels[0][0]).toBeCloseTo(0.2);
-        expect(channels[0][1]).toBeCloseTo(-1);
-        expect(channels[0][2]).toBeCloseTo(0.3);
+        expect(applyPeakNormalizationToChannels(channels)).toBe(true);
+        expect(channels[0][0]).toBeCloseTo(0.19);
+        expect(channels[0][1]).toBeCloseTo(-0.95);
+        expect(channels[0][2]).toBeCloseTo(0.285);
+    });
+
+    it('can reduce all the way to silence at the lowest target', () => {
+        const channels = [Float32Array.from([0.2, -1, 0.3])];
+        expect(applyPeakNormalizationToChannels(channels, 0)).toBe(true);
+        expect(channels[0][0]).toBeCloseTo(0);
+        expect(channels[0][1]).toBeCloseTo(0);
+        expect(channels[0][2]).toBeCloseTo(0);
     });
 });
 

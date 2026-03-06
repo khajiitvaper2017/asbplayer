@@ -22,7 +22,7 @@ export function peakNormalizationGainForChannels(
         return 1;
     }
 
-    return Math.min(maxGain, Math.max(1, clampedTargetPeak / peak));
+    return Math.min(maxGain, clampedTargetPeak / peak);
 }
 
 export function applyPeakNormalizationToChannels(channels: Float32Array[], targetPeak: number = targetPeakAmplitude) {

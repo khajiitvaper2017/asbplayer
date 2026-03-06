@@ -38,6 +38,8 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         preferMp3,
         copyToClipboardOnMine,
     } = settings;
+    const normalizationAvailable = preferMp3;
+    const targetLoudnessAvailable = normalizationAvailable && normalizeAudio;
     return (
         <Stack spacing={1}>
             <FormControl>
@@ -178,31 +180,38 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                     <Switch
                         checked={normalizeAudio}
                         onChange={(event) => onSettingChanged('normalizeAudio', event.target.checked)}
+                        disabled={!normalizationAvailable}
                     />
                 }
                 label={t('settings.normalizeAudio')}
                 labelPlacement="start"
+                disabled={!normalizationAvailable}
             />
-            <Typography color="textSecondary" variant="subtitle2">
-                {t('settings.normalizeAudioTargetLoudness')}
-            </Typography>
-            <Slider
-                color="primary"
-                value={normalizeAudioTargetLoudness}
-                onChange={(_, value) => onSettingChanged('normalizeAudioTargetLoudness', value as number)}
-                min={0}
-                max={100}
-                step={5}
-                marks={[
-                    { value: 50, label: '50%' },
-                    { value: 75, label: '75%' },
-                    { value: 95, label: '95%' },
-                    { value: 100, label: '100%' },
-                ]}
-                disabled={!normalizeAudio}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `${value}%`}
-            />
+            <Stack sx={{ width: '90%', alignSelf: 'center' }}>
+                <Typography
+                    color={targetLoudnessAvailable ? 'textSecondary' : 'text.disabled'}
+                    variant="subtitle2"
+                >
+                    {t('settings.normalizeAudioTargetLoudness')}
+                </Typography>
+                <Slider
+                    color="primary"
+                    value={normalizeAudioTargetLoudness}
+                    onChange={(_, value) => onSettingChanged('normalizeAudioTargetLoudness', value as number)}
+                    min={5}
+                    max={100}
+                    step={5}
+                    marks={[
+                        { value: 50, label: '50%' },
+                        { value: 75, label: '75%' },
+                        { value: 90, label: '90%' },
+                        { value: 100, label: '100%' },
+                    ]}
+                    disabled={!targetLoudnessAvailable}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(value) => `${value}%`}
+                />
+            </Stack>
 
             <TextField
                 type="number"
