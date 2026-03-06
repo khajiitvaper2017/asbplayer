@@ -59,6 +59,16 @@ export default class RerecordMediaHandler {
                 },
                 { src: rerecordCommand.src, tabId: sender.tab?.id! }
             );
+            console.info('[asbplayer][audio] Rerecorded extension audio', {
+                normalizeAudio,
+                targetLufs,
+                durationMs: Math.round(
+                    rerecordCommand.message.duration / rerecordCommand.message.playbackRate +
+                        rerecordCommand.message.audioPaddingEnd
+                ),
+                base64Length: audioBase64.length,
+                extension: 'webm',
+            });
             audio = {
                 ...baseAudioModel,
                 base64: audioBase64,

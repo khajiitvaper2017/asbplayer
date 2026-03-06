@@ -14,6 +14,13 @@ const highPassFrequencyHz = 38;
 const highPassQ = 0.5;
 const noGainEpsilon = 0.0001;
 
+export interface LoudnessNormalizationInfo {
+    measuredLufs?: number;
+    targetLufs: number;
+    peak: number;
+    gain: number;
+}
+
 type BiquadCoefficients = {
     b0: number;
     b1: number;
@@ -182,18 +189,44 @@ export function loudnessNormalizationGainForChannels(
     targetLufs: number = defaultTargetLufs,
     maxGain: number = maxLoudnessNormalizationGain
 ) {
+    return loudnessNormalizationInfoForChannels(channels, sampleRate, targetLufs, maxGain).gain;
+}
+
+export function loudnessNormalizationInfoForChannels(
+    channels: Float32Array[],
+    sampleRate: number,
+    targetLufs: number = defaultTargetLufs,
+    maxGain: number = maxLoudnessNormalizationGain
+): LoudnessNormalizationInfo {
     const measuredLufs = integratedLufsForChannels(channels, sampleRate);
+    const clampedTargetLufs = clampTargetLufs(targetLufs);
+    const peak = peakForChannels(channels);
 
     if (measuredLufs === undefined) {
-        return 1;
+        return {
+            measuredLufs,
+            targetLufs: clampedTargetLufs,
+            peak,
+            gain: 1,
+        };
     }
 
-    const clampedTargetLufs = clampTargetLufs(targetLufs);
     const loudnessGain = Math.pow(10, (clampedTargetLufs - measuredLufs) / 20);
-    const peak = peakForChannels(channels);
     const safeGain = peak > 0 ? 1 / peak : loudnessGain;
+    return {
+        measuredLufs,
+        targetLufs: clampedTargetLufs,
+        peak,
+        gain: Math.min(maxGain, loudnessGain, safeGain),
+    };
+}
 
-    return Math.min(maxGain, loudnessGain, safeGain);
+export function applyGainToChannels(channels: Float32Array[], gain: number) {
+    for (const channel of channels) {
+        for (let i = 0; i < channel.length; ++i) {
+            channel[i] *= gain;
+        }
+    }
 }
 
 export function applyLoudnessNormalizationToChannels(
@@ -201,17 +234,12 @@ export function applyLoudnessNormalizationToChannels(
     sampleRate: number,
     targetLufs: number = defaultTargetLufs
 ) {
-    const gain = loudnessNormalizationGainForChannels(channels, sampleRate, targetLufs);
+    const { gain } = loudnessNormalizationInfoForChannels(channels, sampleRate, targetLufs);
 
     if (Math.abs(gain - 1) <= noGainEpsilon) {
         return false;
     }
 
-    for (const channel of channels) {
-        for (let i = 0; i < channel.length; ++i) {
-            channel[i] *= gain;
-        }
-    }
-
+    applyGainToChannels(channels, gain);
     return true;
 }

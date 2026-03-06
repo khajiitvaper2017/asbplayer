@@ -1,4 +1,4 @@
-import { applyLoudnessNormalizationToChannels } from './audio-normalizer';
+import { applyGainToChannels, loudnessNormalizationInfoForChannels } from './audio-normalizer';
 
 export interface SerializableAudioBuffer {
     channels: Float32Array[];
@@ -28,9 +28,25 @@ export default class Mp3Encoder {
                 channels.push(audioBuffer.getChannelData(i).slice());
             }
 
+            let loudnessInfo = undefined;
+
             if (options.normalizeAudio) {
-                applyLoudnessNormalizationToChannels(channels, audioBuffer.sampleRate, options.targetLufs);
+                loudnessInfo = loudnessNormalizationInfoForChannels(channels, audioBuffer.sampleRate, options.targetLufs);
+
+                if (Math.abs(loudnessInfo.gain - 1) > 0.0001) {
+                    applyGainToChannels(channels, loudnessInfo.gain);
+                }
             }
+
+            console.info('[asbplayer][audio] Encoding MP3', {
+                blobType: blob.type,
+                blobSize: blob.size,
+                sampleRate: audioBuffer.sampleRate,
+                channels: audioBuffer.numberOfChannels,
+                durationMs: Math.round((audioBuffer.length / audioBuffer.sampleRate) * 1000),
+                normalizeAudio: options.normalizeAudio === true,
+                loudnessInfo,
+            });
 
             const workerValue = workerFactory();
             const worker = workerValue instanceof Worker ? workerValue : await workerValue;

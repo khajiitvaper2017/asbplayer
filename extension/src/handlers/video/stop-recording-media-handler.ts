@@ -110,6 +110,16 @@ export default class StopRecordingMediaHandler {
                     src: stopRecordingCommand.src,
                 }
             );
+            console.info('[asbplayer][audio] Recorded extension audio after stop', {
+                encodeAsMp3,
+                normalizeAudio,
+                targetLufs,
+                startMs: stopRecordingCommand.message.startTimestamp,
+                endMs: stopRecordingCommand.message.endTimestamp,
+                durationMs: stopRecordingCommand.message.endTimestamp - stopRecordingCommand.message.startTimestamp,
+                base64Length: audioBase64.length,
+                extension: encodeAsMp3 ? 'mp3' : 'webm',
+            });
             const audioModel: AudioModel = {
                 base64: audioBase64,
                 extension: encodeAsMp3 ? 'mp3' : 'webm',

@@ -124,6 +124,17 @@ export default class RecordMediaHandler {
 
             try {
                 const audioBase64 = await audioPromise;
+                console.info('[asbplayer][audio] Recorded timed extension audio', {
+                    encodeAsMp3,
+                    normalizeAudio,
+                    targetLufs,
+                    durationMs: Math.round(
+                        (subtitle.end - subtitle.start) / recordMediaCommand.message.playbackRate +
+                            recordMediaCommand.message.audioPaddingEnd
+                    ),
+                    base64Length: audioBase64.length,
+                    extension: encodeAsMp3 ? 'mp3' : 'webm',
+                });
                 audioModel = {
                     ...baseAudioModel,
                     base64: audioBase64,

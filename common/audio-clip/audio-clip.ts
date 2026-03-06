@@ -343,6 +343,16 @@ class FileAudioClipper {
                     recorder.onstop = () => {
                         if (finished) {
                             this._blob = new Blob(chunks, { type: this._recorderMimeType });
+                            console.info('[asbplayer][audio] Created local audio clip', {
+                                source: this._file.name,
+                                startMs: this._start,
+                                endMs: this._end,
+                                durationMs: this._end - this._start,
+                                playbackRate: this._playbackRate,
+                                mimeType: this._recorderMimeType,
+                                size: this._blob.size,
+                                trackId: this._trackId,
+                            });
                             resolve(this._blob);
                         }
                     };
