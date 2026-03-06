@@ -339,7 +339,7 @@ export default function AnkiUi({ bridge }: Props) {
                 base64: await blobToBase64(blob),
                 extension,
                 normalizeAudio: options?.normalizeAudio,
-                targetPeak: options?.targetPeak,
+                targetLufs: options?.targetLufs,
                 messageId: uuidv4(),
             };
             const { base64 } = await bridge.sendMessageFromServerAndExpectResponse(encodeMp3Message, 60_000);

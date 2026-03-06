@@ -22,11 +22,11 @@ const _sendAudioBase64 = async (
     requestId: string,
     encodeAsMp3: boolean,
     normalizeAudio?: boolean,
-    targetPeak?: number
+    targetLufs?: number
 ) => {
     if (encodeAsMp3) {
         const blob = await (await fetch('data:audio/webm;base64,' + base64)).blob();
-        const mp3Blob = await Mp3Encoder.encode(blob, mp3WorkerFactory, { normalizeAudio, targetPeak });
+        const mp3Blob = await Mp3Encoder.encode(blob, mp3WorkerFactory, { normalizeAudio, targetLufs });
         base64 = bufferToBase64(await mp3Blob.arrayBuffer());
     }
 
@@ -97,7 +97,7 @@ window.onload = async () => {
                                 startRecordingAudioWithTimeoutMessage.requestId,
                                 startRecordingAudioWithTimeoutMessage.encodeAsMp3,
                                 startRecordingAudioWithTimeoutMessage.normalizeAudio,
-                                startRecordingAudioWithTimeoutMessage.targetPeak
+                                startRecordingAudioWithTimeoutMessage.targetLufs
                             )
                         )
                         .catch((e) => {
@@ -131,7 +131,7 @@ window.onload = async () => {
                                 currentRequestId!,
                                 stopRecordingAudioMessage.encodeAsMp3,
                                 stopRecordingAudioMessage.normalizeAudio,
-                                stopRecordingAudioMessage.targetPeak
+                                stopRecordingAudioMessage.targetLufs
                             );
                         })
                         .catch((e) => {
@@ -160,11 +160,11 @@ window.onload = async () => {
                     return true;
                 case 'encode-mp3':
                     const encodeMp3Message = request.message as EncodeMp3InServiceWorkerMessage;
-                    const { base64, extension, normalizeAudio, targetPeak } = encodeMp3Message;
+                    const { base64, extension, normalizeAudio, targetLufs } = encodeMp3Message;
 
                     Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), mp3WorkerFactory, {
                         normalizeAudio,
-                        targetPeak,
+                        targetLufs,
                     })
                         .then((blob) => blob.arrayBuffer())
                         .then((buffer) => sendResponse(bufferToBase64(buffer)))

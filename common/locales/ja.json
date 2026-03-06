@@ -380,7 +380,7 @@
         "misc": "その他",
         "mp3Preference": "音声を mp3 形式で再録音（低速）",
         "normalizeAudio": "音声を正規化（MP3のみ）",
-        "normalizeAudioTargetLoudness": "目標ラウドネス",
+        "normalizeAudioTargetLoudness": "目標ラウドネス (LUFS)",
         "noteType": "メモタイプ",
         "pages": "ページ",
         "preCacheSubtitleDom": "字幕DOMをキャッシュ",

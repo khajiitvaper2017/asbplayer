@@ -61,7 +61,7 @@ export default class RecordMediaHandler {
         let audioModel: AudioModel | undefined = undefined;
         let encodeAsMp3 = false;
         let normalizeAudio = false;
-        let targetPeak: number | undefined = undefined;
+        let targetLufs: number | undefined = undefined;
 
         if (recordMediaCommand.message.record) {
             const time =
@@ -71,7 +71,7 @@ export default class RecordMediaHandler {
             if (recordMediaCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
                 normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
-                targetPeak = (await this._settingsProvider.getSingle('normalizeAudioTargetLoudness')) / 100;
+                targetLufs = await this._settingsProvider.getSingle('normalizeAudioTargetLoudness');
             }
 
             audioPromise = this._audioRecorder.startWithTimeout(
@@ -79,7 +79,7 @@ export default class RecordMediaHandler {
                 {
                     encodeAsMp3,
                     normalizeAudio,
-                    targetPeak,
+                    targetLufs,
                 },
                 {
                     src: recordMediaCommand.src,

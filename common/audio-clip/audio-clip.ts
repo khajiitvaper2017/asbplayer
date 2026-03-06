@@ -7,9 +7,9 @@ import { base64ToBlob, blobToBase64 } from '../base64';
 import { isFirefox } from '../browser-detection';
 
 const maxPrefixLength = 24;
-const minNormalizeAudioTargetLoudness = 0;
-const maxNormalizeAudioTargetLoudness = 100;
-const defaultNormalizeAudioTargetLoudness = 95;
+const minNormalizeAudioTargetLoudness = -30;
+const maxNormalizeAudioTargetLoudness = -8;
+const defaultNormalizeAudioTargetLoudness = -16;
 
 const clampNormalizeAudioTargetLoudness = (targetLoudness: number) =>
     Number.isFinite(targetLoudness)
@@ -643,7 +643,7 @@ class FileAudioData implements AudioData {
     mp3EncodeOptions() {
         return {
             normalizeAudio: this._normalizeAudio,
-            targetPeak: this._normalizeAudioTargetLoudness / 100,
+            targetLufs: this._normalizeAudioTargetLoudness,
         };
     }
 
@@ -837,7 +837,7 @@ export default class AudioClip {
                 card.audio.error,
                 {
                     normalizeAudio,
-                    targetPeak: normalizeAudioTargetLoudness / 100,
+                    targetLufs: normalizeAudioTargetLoudness,
                 }
             );
         }

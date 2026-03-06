@@ -235,7 +235,7 @@ export default class AnkiUiController {
                         browser.runtime.sendMessage(copyToClipboardCommand);
                         return;
                     case 'encode-mp3':
-                        const { base64, messageId, extension, normalizeAudio, targetPeak } = message as EncodeMp3Message;
+                        const { base64, messageId, extension, normalizeAudio, targetLufs } = message as EncodeMp3Message;
                         const encodeMp3Command: VideoToExtensionCommand<EncodeMp3InServiceWorkerMessage> = {
                             sender: 'asbplayer-video',
                             message: {
@@ -243,7 +243,7 @@ export default class AnkiUiController {
                                 base64,
                                 extension,
                                 normalizeAudio,
-                                targetPeak,
+                                targetLufs,
                             },
                             src: context.video.src,
                         };

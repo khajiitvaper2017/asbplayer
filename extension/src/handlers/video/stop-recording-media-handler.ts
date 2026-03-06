@@ -91,19 +91,19 @@ export default class StopRecordingMediaHandler {
         try {
             let encodeAsMp3 = false;
             let normalizeAudio = false;
-            let targetPeak: number | undefined = undefined;
+            let targetLufs: number | undefined = undefined;
 
             if (stopRecordingCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
                 normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
-                targetPeak = (await this._settingsProvider.getSingle('normalizeAudioTargetLoudness')) / 100;
+                targetLufs = await this._settingsProvider.getSingle('normalizeAudioTargetLoudness');
             }
 
             const audioBase64 = await this._audioRecorder.stop(
                 {
                     encodeAsMp3,
                     normalizeAudio,
-                    targetPeak,
+                    targetLufs,
                 },
                 {
                     tabId: sender.tab!.id!,

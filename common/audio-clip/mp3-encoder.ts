@@ -1,4 +1,4 @@
-import { applyPeakNormalizationToChannels } from './audio-normalizer';
+import { applyLoudnessNormalizationToChannels } from './audio-normalizer';
 
 export interface SerializableAudioBuffer {
     channels: Float32Array[];
@@ -9,7 +9,7 @@ export interface SerializableAudioBuffer {
 
 export interface Mp3EncodeOptions {
     normalizeAudio?: boolean;
-    targetPeak?: number;
+    targetLufs?: number;
 }
 
 export default class Mp3Encoder {
@@ -29,7 +29,7 @@ export default class Mp3Encoder {
             }
 
             if (options.normalizeAudio) {
-                applyPeakNormalizationToChannels(channels, options.targetPeak);
+                applyLoudnessNormalizationToChannels(channels, audioBuffer.sampleRate, options.targetLufs);
             }
 
             const workerValue = workerFactory();

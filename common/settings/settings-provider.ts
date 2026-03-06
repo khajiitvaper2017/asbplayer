@@ -162,7 +162,7 @@ export const defaultSettings: AsbplayerSettings = {
     },
     recordWithAudioPlayback: true,
     normalizeAudio: true,
-    normalizeAudioTargetLoudness: 95,
+    normalizeAudioTargetLoudness: -16,
     preferMp3: true,
     tabName: 'asbplayer',
     miningHistoryStorageLimit: 25,
@@ -501,6 +501,23 @@ export const ensureConsistencyOnRead = (settings: Partial<AsbplayerSettings>) =>
     let newKeyBindSet: any = {};
     let ankiFieldSettingsModified = false;
     let newAnkiFieldSettings: any = {};
+    let normalizeAudioTargetLoudnessModified = false;
+    let normalizeAudioTargetLoudness = settings.normalizeAudioTargetLoudness;
+
+    if (normalizeAudioTargetLoudness !== undefined) {
+        let normalizedTargetLoudness = normalizeAudioTargetLoudness;
+
+        if (!Number.isFinite(normalizedTargetLoudness)) {
+            normalizedTargetLoudness = defaultSettings.normalizeAudioTargetLoudness;
+        } else {
+            normalizedTargetLoudness = Math.max(-30, Math.min(-8, normalizedTargetLoudness));
+        }
+
+        if (normalizedTargetLoudness !== normalizeAudioTargetLoudness) {
+            normalizeAudioTargetLoudness = normalizedTargetLoudness;
+            normalizeAudioTargetLoudnessModified = true;
+        }
+    }
 
     if (settings.keyBindSet !== undefined) {
         const keyBindSet = settings.keyBindSet;
@@ -532,11 +549,16 @@ export const ensureConsistencyOnRead = (settings: Partial<AsbplayerSettings>) =>
         }
     }
 
-    if (!ankiFieldSettingsModified && !keyBindSetModified) {
+    if (!ankiFieldSettingsModified && !keyBindSetModified && !normalizeAudioTargetLoudnessModified) {
         return settings;
     }
 
-    return { ...settings, ...{ ankiFieldSettings: newAnkiFieldSettings }, ...{ keyBindSet: newKeyBindSet } };
+    return {
+        ...settings,
+        ...(ankiFieldSettingsModified ? { ankiFieldSettings: newAnkiFieldSettings } : {}),
+        ...(keyBindSetModified ? { keyBindSet: newKeyBindSet } : {}),
+        ...(normalizeAudioTargetLoudnessModified ? { normalizeAudioTargetLoudness } : {}),
+    };
 };
 
 type SettingsKey = keyof AsbplayerSettings;

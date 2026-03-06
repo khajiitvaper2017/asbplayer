@@ -122,7 +122,7 @@ it('validates exported settings', () => {
         },
         recordWithAudioPlayback: true,
         normalizeAudio: true,
-        normalizeAudioTargetLoudness: 95,
+        normalizeAudioTargetLoudness: -16,
         preferMp3: true,
         tabName: 'asbplayer',
         miningHistoryStorageLimit: 25,

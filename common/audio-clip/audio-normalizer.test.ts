@@ -1,63 +1,64 @@
 import AudioClip from './audio-clip';
-import { applyPeakNormalizationToChannels, peakNormalizationGainForChannels } from './audio-normalizer';
+import {
+    applyLoudnessNormalizationToChannels,
+    integratedLufsForChannels,
+    loudnessNormalizationGainForChannels,
+} from './audio-normalizer';
 
-describe('peakNormalizationGainForChannels', () => {
-    it('returns 1 for silent audio', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0, 0, 0])])).toBe(1);
+const sampleRate = 48_000;
+const constantSignal = (amplitude: number, durationSeconds: number = 1) =>
+    new Float32Array(sampleRate * durationSeconds).fill(amplitude);
+
+describe('integratedLufsForChannels', () => {
+    it('returns undefined for silence', () => {
+        expect(integratedLufsForChannels([constantSignal(0)], sampleRate)).toBeUndefined();
     });
 
-    it('attenuates clips that are louder than the target peak', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0.2, -1, 0.3])])).toBeCloseTo(0.95);
-    });
-
-    it('returns 1 when peak already matches the target', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0.2, -0.95, 0.3])])).toBeCloseTo(1);
-    });
-
-    it('boosts quieter clips up to the target peak', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0.1, -0.5, 0.25])])).toBeCloseTo(1.9);
-    });
-
-    it('supports a custom target peak', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0.1, -0.5, 0.25])], 0.8)).toBeCloseTo(1.6);
-    });
-
-    it('caps normalization gain', () => {
-        expect(peakNormalizationGainForChannels([Float32Array.from([0.05, -0.1])])).toBe(4);
+    it('reports louder LUFS for stronger signals', () => {
+        const quiet = integratedLufsForChannels([constantSignal(0.25)], sampleRate)!;
+        const loud = integratedLufsForChannels([constantSignal(0.5)], sampleRate)!;
+        expect(loud).toBeGreaterThan(quiet);
+        expect(loud - quiet).toBeCloseTo(6, 0);
     });
 });
 
-describe('applyPeakNormalizationToChannels', () => {
-    it('scales quiet channels in place', () => {
-        const channels = [Float32Array.from([0.1, -0.5, 0.25])];
-        expect(applyPeakNormalizationToChannels(channels)).toBe(true);
-        expect(channels[0][0]).toBeCloseTo(0.19);
-        expect(channels[0][1]).toBeCloseTo(-0.95);
-        expect(channels[0][2]).toBeCloseTo(0.475);
+describe('loudnessNormalizationGainForChannels', () => {
+    it('returns 1 for silence', () => {
+        expect(loudnessNormalizationGainForChannels([constantSignal(0)], sampleRate)).toBe(1);
     });
 
-    it('scales to a custom target peak', () => {
-        const channels = [Float32Array.from([0.1, -0.5, 0.25])];
-        expect(applyPeakNormalizationToChannels(channels, 0.8)).toBe(true);
-        expect(channels[0][0]).toBeCloseTo(0.16);
-        expect(channels[0][1]).toBeCloseTo(-0.8);
-        expect(channels[0][2]).toBeCloseTo(0.4);
+    it('boosts quieter clips toward the LUFS target', () => {
+        expect(loudnessNormalizationGainForChannels([constantSignal(0.05)], sampleRate, -16)).toBeGreaterThan(1);
     });
 
-    it('attenuates already-loud channels', () => {
-        const channels = [Float32Array.from([0.2, -1, 0.3])];
-        expect(applyPeakNormalizationToChannels(channels)).toBe(true);
-        expect(channels[0][0]).toBeCloseTo(0.19);
-        expect(channels[0][1]).toBeCloseTo(-0.95);
-        expect(channels[0][2]).toBeCloseTo(0.285);
+    it('attenuates louder clips toward the LUFS target', () => {
+        const loud = [constantSignal(0.8)];
+        const measuredLufs = integratedLufsForChannels(loud, sampleRate)!;
+        expect(loudnessNormalizationGainForChannels(loud, sampleRate, measuredLufs - 6)).toBeLessThan(1);
     });
 
-    it('can reduce all the way to silence at the lowest target', () => {
-        const channels = [Float32Array.from([0.2, -1, 0.3])];
-        expect(applyPeakNormalizationToChannels(channels, 0)).toBe(true);
-        expect(channels[0][0]).toBeCloseTo(0);
-        expect(channels[0][1]).toBeCloseTo(0);
-        expect(channels[0][2]).toBeCloseTo(0);
+    it('caps boost to avoid extreme amplification', () => {
+        expect(loudnessNormalizationGainForChannels([constantSignal(0.01)], sampleRate, -8)).toBe(4);
+    });
+});
+
+describe('applyLoudnessNormalizationToChannels', () => {
+    it('scales channels in place toward the target LUFS', () => {
+        const channels = [constantSignal(0.05)];
+        const targetLufs = -16;
+        const before = integratedLufsForChannels(channels, sampleRate)!;
+        expect(applyLoudnessNormalizationToChannels(channels, sampleRate, targetLufs)).toBe(true);
+        const after = integratedLufsForChannels(channels, sampleRate)!;
+        expect(Math.abs(after - targetLufs)).toBeLessThan(Math.abs(before - targetLufs));
+    });
+
+    it('also reduces loud clips toward the target LUFS', () => {
+        const channels = [constantSignal(0.8)];
+        const targetLufs = -16;
+        const before = integratedLufsForChannels(channels, sampleRate)!;
+        expect(applyLoudnessNormalizationToChannels(channels, sampleRate, targetLufs)).toBe(true);
+        const after = integratedLufsForChannels(channels, sampleRate)!;
+        expect(Math.abs(after - targetLufs)).toBeLessThan(Math.abs(before - targetLufs));
     });
 });
 

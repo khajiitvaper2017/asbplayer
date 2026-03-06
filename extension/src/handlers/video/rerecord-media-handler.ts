@@ -46,7 +46,7 @@ export default class RerecordMediaHandler {
         };
         let audio: AudioModel;
         const normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
-        const targetPeak: number = (await this._settingsProvider.getSingle('normalizeAudioTargetLoudness')) / 100;
+        const targetLufs: number = await this._settingsProvider.getSingle('normalizeAudioTargetLoudness');
 
         try {
             const audioBase64 = await this._audioRecorder.startWithTimeout(
@@ -55,7 +55,7 @@ export default class RerecordMediaHandler {
                 {
                     encodeAsMp3: false,
                     normalizeAudio,
-                    targetPeak,
+                    targetLufs,
                 },
                 { src: rerecordCommand.src, tabId: sender.tab?.id! }
             );

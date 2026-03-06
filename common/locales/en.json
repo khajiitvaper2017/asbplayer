@@ -380,7 +380,7 @@
         "misc": "Misc",
         "mp3Preference": "Re-encode audio as mp3 (slower)",
         "normalizeAudio": "Normalize audio (MP3 only)",
-        "normalizeAudioTargetLoudness": "Target loudness",
+        "normalizeAudioTargetLoudness": "Target loudness (LUFS)",
         "noteType": "Note Type",
         "pages": "Pages",
         "preCacheSubtitleDom": "Pre-cache Subtitle DOM",

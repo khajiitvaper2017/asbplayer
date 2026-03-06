@@ -292,7 +292,7 @@
         "settings.misc": "Section heading for misc settings.",
         "settings.mp3Preference": "Setting to re-encode the audio-recordings as an mp3 before creating a card in Anki. If this setting is disabled, audio would be sent to Anki in a different format.",
         "settings.normalizeAudio": "Setting to normalize recorded audio when it is encoded as MP3.",
-        "settings.normalizeAudioTargetLoudness": "Label for the target loudness slider used by MP3 normalization.",
+        "settings.normalizeAudioTargetLoudness": "Label for the target loudness slider in LUFS used by MP3 normalization.",
         "settings.noteType": "Anki note type.",
         "settings.postMinePlayback": "Label for setting that controls video playback state following a mining action.",
         "settings.postMiningPlaybackState": "Label for setting that controls video playback state following a mining action.",

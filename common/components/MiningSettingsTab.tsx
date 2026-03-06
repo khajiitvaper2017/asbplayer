@@ -198,18 +198,20 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                     color="primary"
                     value={normalizeAudioTargetLoudness}
                     onChange={(_, value) => onSettingChanged('normalizeAudioTargetLoudness', value as number)}
-                    min={5}
-                    max={100}
-                    step={5}
+                    min={-30}
+                    max={-8}
+                    step={1}
                     marks={[
-                        { value: 50, label: '50%' },
-                        { value: 75, label: '75%' },
-                        { value: 90, label: '90%' },
-                        { value: 100, label: '100%' },
+                        { value: -30, label: '-30' },
+                        { value: -24, label: '-24' },
+                        { value: -20, label: '-20' },
+                        { value: -16, label: '-16' },
+                        { value: -12, label: '-12' },
+                        { value: -8, label: '-8' },
                     ]}
                     disabled={!targetLoudnessAvailable}
                     valueLabelDisplay="auto"
-                    valueLabelFormat={(value) => `${value}%`}
+                    valueLabelFormat={(value) => `${value} LUFS`}
                 />
             </Stack>
 
