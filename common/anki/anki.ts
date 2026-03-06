@@ -1,5 +1,5 @@
 import { AudioClip } from '@project/common/audio-clip';
-import { AnkiExportMode, CardModel, MediaFragment } from '@project/common';
+import { AnkiExportMode, CardModel, MediaFragment, Progress } from '@project/common';
 import { HttpFetcher, Fetcher } from '@project/common';
 import { AnkiSettings, AnkiSettingsFieldKey } from '@project/common/settings';
 import sanitize from 'sanitize-filename';
@@ -160,6 +160,17 @@ export interface ExportParams {
     tags: string[];
     mode: AnkiExportMode;
     ankiConnectUrl?: string;
+}
+
+interface EncodedMedia {
+    sanitizedName: string;
+    data: string;
+}
+
+interface Base64Exportable {
+    name: string;
+    extension: string;
+    base64: () => Promise<string>;
 }
 
 export async function exportCard(
@@ -338,7 +349,11 @@ export class Anki {
         return response.result;
     }
 
-    async cardsInfo(allCards: number[], ankiConnectUrl?: string): Promise<CardInfo[]> {
+    async cardsInfo(
+        allCards: number[],
+        statusUpdates?: (progress: Progress) => Promise<void>,
+        ankiConnectUrl?: string
+    ): Promise<CardInfo[]> {
         if (!allCards.length) return [];
         return (
             await fromBatches(
@@ -353,7 +368,7 @@ export class Anki {
                     }
                     return cardsInfo;
                 },
-                { batchSize: ANKI_CARDS_INFO_BATCH_SIZE }
+                { batchSize: ANKI_CARDS_INFO_BATCH_SIZE, statusUpdates }
             )
         ).flat();
     }
@@ -489,67 +504,28 @@ export class Anki {
 
         const gui = mode === 'gui';
         const updateLast = mode === 'updateLast';
-        if (updateLast && (await this._executeAction('findNotes', { query: 'added:1' }, ankiConnectUrl)).result.length === 0) throw new Error('Could not find note to update');
-        let sanitizedAudioName: string | undefined = undefined;
-        let sanitizedImageName: string | undefined = undefined;
-        let audioDataPromise: Promise<string | undefined> = Promise.resolve(undefined);
-        let imageDataPromise: Promise<string | undefined> = Promise.resolve(undefined);
 
-        if (this.settingsProvider.audioField && audioClip && audioClip.error === undefined) {
-            const sanitizedName = this._sanitizeFileName(audioClip.name);
-            sanitizedAudioName = sanitizedName;
-            audioDataPromise = timedMediaBase64('audio', audioClip.extension, sanitizedName, () =>
-                audioClip.base64()
-            );
+        const recentNotes = updateLast ? await this.findNotes('added:1', ankiConnectUrl) : [];
+        if (updateLast && recentNotes.length === 0) {
+            throw new Error('Could not find note to update');
         }
 
-        if (this.settingsProvider.imageField && image && image.error === undefined) {
-            const sanitizedName = this._sanitizeFileName(image.name);
-            sanitizedImageName = sanitizedName;
-            imageDataPromise = timedMediaBase64(image.extension, image.extension, sanitizedName, () =>
-                image.base64()
-            );
+        const exportableAudio =
+            this.settingsProvider.audioField && audioClip && audioClip.error === undefined ? audioClip : undefined;
+        const exportableImage =
+            this.settingsProvider.imageField && image && image.error === undefined ? image : undefined;
+
+        const [encodedAudio, encodedImage] = await Promise.all([
+            this._encodeMedia(exportableAudio, 'audio'),
+            this._encodeMedia(exportableImage, image?.extension === 'webm' ? 'clip' : 'image'),
+        ]);
+
+        if (encodedAudio) {
+            await this._attachAudio(params, fields, encodedAudio, gui || updateLast, ankiConnectUrl);
         }
 
-        const [audioData, imageData] = await Promise.all([audioDataPromise, imageDataPromise]);
-
-        if (sanitizedAudioName !== undefined && audioData) {
-            if (gui || updateLast) {
-                const fileName = (await this._storeMediaFile(sanitizedAudioName, audioData, ankiConnectUrl)).result;
-                this._appendField(fields, this.settingsProvider.audioField, `[sound:${fileName}]`, false);
-            } else {
-                params.note['audio'] = {
-                    filename: sanitizedAudioName,
-                    data: audioData,
-                    fields: [this.settingsProvider.audioField],
-                };
-            }
-        }
-
-        if (sanitizedImageName !== undefined && imageData && image) {
-            if (image.extension === 'webm') {
-                const fileName = (await this._storeMediaFile(sanitizedImageName, imageData, ankiConnectUrl)).result;
-                this._appendField(
-                    fields,
-                    this.settingsProvider.imageField,
-                    this._mediaFragmentFieldHtml(fileName, image.extension),
-                    false
-                );
-            } else if (gui || updateLast) {
-                const fileName = (await this._storeMediaFile(sanitizedImageName, imageData, ankiConnectUrl)).result;
-                this._appendField(
-                    fields,
-                    this.settingsProvider.imageField,
-                    this._mediaFragmentFieldHtml(fileName, image.extension),
-                    false
-                );
-            } else {
-                params.note['picture'] = {
-                    filename: sanitizedImageName,
-                    data: imageData,
-                    fields: [this.settingsProvider.imageField],
-                };
-            }
+        if (encodedImage && image) {
+            await this._attachMediaFragment(params, fields, encodedImage, image, gui || updateLast, ankiConnectUrl);
         }
 
         params.note['fields'] = fields;
@@ -558,17 +534,9 @@ export class Anki {
             case 'gui':
                 return (await this._executeAction('guiAddCards', params, ankiConnectUrl)).result;
             case 'updateLast':
-                const recentNotes = (
-                    await this._executeAction('findNotes', { query: 'added:1' }, ankiConnectUrl)
-                ).result.sort();
-
-                if (recentNotes.length === 0) {
-                    throw new Error('Could not find note to update');
-                }
-
-                const lastNoteId = recentNotes[recentNotes.length - 1];
+                const lastNoteId = [...recentNotes].sort()[recentNotes.length - 1];
                 params.note['id'] = lastNoteId;
-                const infoResponse = await this._executeAction('notesInfo', { notes: [lastNoteId] });
+                const infoResponse = await this._executeAction('notesInfo', { notes: [lastNoteId] }, ankiConnectUrl);
 
                 if (infoResponse.result.length > 0 && infoResponse.result[0].noteId === lastNoteId) {
                     const info = infoResponse.result[0];
@@ -627,6 +595,84 @@ export class Anki {
         fields[fieldName] = newValue;
     }
 
+    private async _encodeMedia(media: Base64Exportable | undefined, type: string): Promise<EncodedMedia | undefined> {
+        if (!media) {
+            return undefined;
+        }
+
+        const sanitizedName = this._sanitizeFileName(media.name);
+        const data = await timedMediaBase64(type, media.extension, sanitizedName, () => media.base64());
+
+        if (!data) {
+            return undefined;
+        }
+
+        return { sanitizedName, data };
+    }
+
+    private async _attachAudio(
+        params: any,
+        fields: any,
+        encodedAudio: EncodedMedia,
+        storeMediaFile: boolean,
+        ankiConnectUrl?: string
+    ) {
+        if (storeMediaFile) {
+            await this._storeAndAppendField(
+                fields,
+                this.settingsProvider.audioField,
+                encodedAudio,
+                (fileName) => `[sound:${fileName}]`,
+                ankiConnectUrl
+            );
+            return;
+        }
+
+        params.note['audio'] = {
+            filename: encodedAudio.sanitizedName,
+            data: encodedAudio.data,
+            fields: [this.settingsProvider.audioField],
+        };
+    }
+
+    private async _attachMediaFragment(
+        params: any,
+        fields: any,
+        encodedImage: EncodedMedia,
+        image: MediaFragment,
+        storeMediaFile: boolean,
+        ankiConnectUrl?: string
+    ) {
+        if (image.extension === 'webm' || storeMediaFile) {
+            await this._storeAndAppendField(
+                fields,
+                this.settingsProvider.imageField,
+                encodedImage,
+                (fileName) => this._mediaFragmentFieldHtml(fileName, image.extension),
+                ankiConnectUrl
+            );
+            return;
+        }
+
+        params.note['picture'] = {
+            filename: encodedImage.sanitizedName,
+            data: encodedImage.data,
+            fields: [this.settingsProvider.imageField],
+        };
+    }
+
+    private async _storeAndAppendField(
+        fields: any,
+        fieldName: string | undefined,
+        encodedMedia: EncodedMedia,
+        value: (fileName: string) => string,
+        ankiConnectUrl?: string
+    ) {
+        const fileName = (await this._storeMediaFile(encodedMedia.sanitizedName, encodedMedia.data, ankiConnectUrl))
+            .result;
+        this._appendField(fields, fieldName, value(fileName), false);
+    }
+
     private _mediaFragmentFieldHtml(fileName: string, extension: string) {
         if (extension === 'webm') {
             return `<video autoplay loop muted playsinline src="${fileName}"></video>`;
@@ -647,7 +693,10 @@ export class Anki {
         // Sanitize unsafe URL characters for AnkiWeb compatibility.
         name = this._sanitizeUnsafeURLChars(name);
         // Sanitize for file system compatibility on various operating systems.
-        return sanitize(name, { replacement: replacement });
+        name = sanitize(name, { replacement: replacement });
+        // Prefix to allow filtering by asbplayer created files,
+        // and to prevent Anki from skipping cleanup of files that start with an underscore.
+        return 'asbp_' + name;
     }
 
     private async _storeMediaFile(name: string, base64: string, ankiConnectUrl?: string) {
