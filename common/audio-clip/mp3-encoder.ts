@@ -18,6 +18,7 @@ export function mixChannelsToMono(channels: Float32Array[]) {
     }
 
     const monoChannel = new Float32Array(channels[0].length);
+    let peak = 0;
 
     for (let i = 0; i < channels[0].length; ++i) {
         let sum = 0;
@@ -26,7 +27,17 @@ export function mixChannelsToMono(channels: Float32Array[]) {
             sum += channel[i];
         }
 
-        monoChannel[i] = sum / channels.length;
+        // Use an equal-power style downmix so mono output stays closer in perceived loudness to stereo.
+        monoChannel[i] = sum / Math.sqrt(channels.length);
+        peak = Math.max(peak, Math.abs(monoChannel[i]));
+    }
+
+    if (peak > 1) {
+        const gain = 1 / peak;
+
+        for (let i = 0; i < monoChannel.length; ++i) {
+            monoChannel[i] *= gain;
+        }
     }
 
     return [monoChannel];
@@ -49,10 +60,10 @@ export default class Mp3Encoder {
                 channels.push(audioBuffer.getChannelData(i).slice());
             }
 
-            const outputChannels = options.monoAudio ? mixChannelsToMono(channels) : channels;
             const compressionInfo = options.normalizeAudio
-                ? applyLightCompressionToChannels(outputChannels, audioBuffer.sampleRate)
+                ? applyLightCompressionToChannels(channels, audioBuffer.sampleRate)
                 : undefined;
+            const outputChannels = options.monoAudio ? mixChannelsToMono(channels) : channels;
 
             console.info('[asbplayer][audio] Encoding MP3', {
                 blobType: blob.type,

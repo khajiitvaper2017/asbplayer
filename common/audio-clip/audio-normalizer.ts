@@ -1,5 +1,5 @@
-const compressorThresholdDb = -24;
-const compressorRatio = 2.5;
+const compressorThresholdDb = -18;
+const compressorRatio = 1.8;
 const compressorAttackMs = 5;
 const compressorReleaseMs = 120;
 const minLinearLevel = 1e-8;
