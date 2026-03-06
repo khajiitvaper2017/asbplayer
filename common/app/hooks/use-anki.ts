@@ -67,6 +67,9 @@ class SettingsAccessor {
     get preferMp3() {
         return this.settings.preferMp3;
     }
+    get normalizeAudio() {
+        return this.settings.normalizeAudio;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }

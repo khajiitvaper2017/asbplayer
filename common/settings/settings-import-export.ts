@@ -376,6 +376,9 @@ const settingsSchema = {
         recordWithAudioPlayback: {
             type: 'boolean',
         },
+        normalizeAudio: {
+            type: 'boolean',
+        },
         preferMp3: {
             type: 'boolean',
         },

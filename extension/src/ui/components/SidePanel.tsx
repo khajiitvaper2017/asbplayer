@@ -390,7 +390,13 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     browser.tabs.sendMessage(currentTabId, downloadAudioCommand);
                 }
             } else {
-                const clip = AudioClip.fromCard(item, settings.audioPaddingStart, settings.audioPaddingEnd, false);
+                const clip = AudioClip.fromCard(
+                    item,
+                    settings.audioPaddingStart,
+                    settings.audioPaddingEnd,
+                    false,
+                    settings.normalizeAudio
+                );
 
                 if (clip) {
                     if (settings.preferMp3) {

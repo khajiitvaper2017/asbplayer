@@ -1,3 +1,5 @@
+import { applyPeakNormalizationToChannels } from './audio-normalizer';
+
 export interface SerializableAudioBuffer {
     channels: Float32Array[];
     numberOfChannels: number;
@@ -5,51 +7,55 @@ export interface SerializableAudioBuffer {
     sampleRate: number;
 }
 
+export interface Mp3EncodeOptions {
+    normalizeAudio?: boolean;
+}
+
 export default class Mp3Encoder {
-    static async encode(blob: Blob, workerFactory: () => Worker | Promise<Worker>): Promise<Blob> {
-        return new Promise(async (resolve, reject) => {
-            var reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const audioContext = new AudioContext();
+    static async encode(
+        blob: Blob,
+        workerFactory: () => Worker | Promise<Worker>,
+        options: Mp3EncodeOptions = {}
+    ): Promise<Blob> {
+        const audioContext = new AudioContext();
 
-                    if (e.target === null) {
-                        reject(new Error('Could not obtain buffer to encode'));
-                        return;
-                    }
+        try {
+            const audioBuffer = await audioContext.decodeAudioData(await blob.arrayBuffer());
+            const channels: Float32Array[] = [];
 
-                    const audioBuffer = await audioContext.decodeAudioData(e.target.result as ArrayBuffer);
-                    const channels: Float32Array[] = [];
+            for (let i = 0; i < audioBuffer.numberOfChannels; ++i) {
+                channels.push(audioBuffer.getChannelData(i).slice());
+            }
 
-                    for (let i = 0; i < audioBuffer.numberOfChannels; ++i) {
-                        channels.push(audioBuffer.getChannelData(i));
-                    }
+            if (options.normalizeAudio) {
+                applyPeakNormalizationToChannels(channels);
+            }
 
-                    const workerValue = workerFactory();
-                    const worker = workerValue instanceof Worker ? workerValue : await workerValue;
-                    worker.postMessage({
-                        command: 'encode',
-                        audioBuffer: {
-                            channels: channels,
-                            numberOfChannels: audioBuffer.numberOfChannels,
-                            length: audioBuffer.length,
-                            sampleRate: audioBuffer.sampleRate,
-                        },
-                    });
-                    worker.onmessage = (e) => {
-                        resolve(new Blob(e.data.buffer, { type: 'audio/mp3' }));
-                        worker.terminate();
-                    };
-                    worker.onerror = (e) => {
-                        const error = e?.error ?? new Error('MP3 encoding failed: ' + e?.message);
-                        reject(error);
-                        worker.terminate();
-                    };
-                } catch (e) {
-                    reject(e);
-                }
-            };
-            reader.readAsArrayBuffer(blob);
-        });
+            const workerValue = workerFactory();
+            const worker = workerValue instanceof Worker ? workerValue : await workerValue;
+
+            return await new Promise<Blob>((resolve, reject) => {
+                worker.postMessage({
+                    command: 'encode',
+                    audioBuffer: {
+                        channels,
+                        numberOfChannels: audioBuffer.numberOfChannels,
+                        length: audioBuffer.length,
+                        sampleRate: audioBuffer.sampleRate,
+                    },
+                });
+                worker.onmessage = (e) => {
+                    resolve(new Blob(e.data.buffer, { type: 'audio/mp3' }));
+                    worker.terminate();
+                };
+                worker.onerror = (e) => {
+                    const error = e?.error ?? new Error('MP3 encoding failed: ' + e?.message);
+                    reject(error);
+                    worker.terminate();
+                };
+            });
+        } finally {
+            await audioContext.close().catch(() => undefined);
+        }
     }
 }

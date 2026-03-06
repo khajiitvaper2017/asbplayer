@@ -1,5 +1,5 @@
 import AudioClip from './audio-clip';
-import { peakNormalizationGainForChannels } from './audio-normalizer';
+import { applyPeakNormalizationToChannels, peakNormalizationGainForChannels } from './audio-normalizer';
 
 describe('peakNormalizationGainForChannels', () => {
     it('returns 1 for silent audio', () => {
@@ -16,6 +16,24 @@ describe('peakNormalizationGainForChannels', () => {
 
     it('caps normalization gain', () => {
         expect(peakNormalizationGainForChannels([Float32Array.from([0.05, -0.1])])).toBe(4);
+    });
+});
+
+describe('applyPeakNormalizationToChannels', () => {
+    it('scales quiet channels in place', () => {
+        const channels = [Float32Array.from([0.1, -0.5, 0.25])];
+        expect(applyPeakNormalizationToChannels(channels)).toBe(true);
+        expect(channels[0][0]).toBeCloseTo(0.19);
+        expect(channels[0][1]).toBeCloseTo(-0.95);
+        expect(channels[0][2]).toBeCloseTo(0.475);
+    });
+
+    it('skips already-loud channels', () => {
+        const channels = [Float32Array.from([0.2, -1, 0.3])];
+        expect(applyPeakNormalizationToChannels(channels)).toBe(false);
+        expect(channels[0][0]).toBeCloseTo(0.2);
+        expect(channels[0][1]).toBeCloseTo(-1);
+        expect(channels[0][2]).toBeCloseTo(0.3);
     });
 });
 

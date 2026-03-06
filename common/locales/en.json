@@ -379,6 +379,7 @@
         "clickToMineDefaultAction": "Mining button default action",
         "misc": "Misc",
         "mp3Preference": "Re-encode audio as mp3 (slower)",
+        "normalizeAudio": "Normalize local video audio (MP3 only)",
         "noteType": "Note Type",
         "pages": "Pages",
         "preCacheSubtitleDom": "Pre-cache Subtitle DOM",

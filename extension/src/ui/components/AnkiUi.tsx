@@ -332,11 +332,12 @@ export default function AnkiUi({ bridge }: Props) {
     ]);
 
     const mp3Encoder = useCallback(
-        async (blob: Blob, extension: string) => {
+        async (blob: Blob, extension: string, options?: { normalizeAudio?: boolean }) => {
             const encodeMp3Message: EncodeMp3Message = {
                 command: 'encode-mp3',
                 base64: await blobToBase64(blob),
                 extension,
+                normalizeAudio: options?.normalizeAudio,
                 messageId: uuidv4(),
             };
             const { base64 } = await bridge.sendMessageFromServerAndExpectResponse(encodeMp3Message, 60_000);

@@ -97,12 +97,14 @@ export interface EncodeMp3Message extends MessageWithId {
     readonly messageId: string;
     readonly base64: string;
     readonly extension: string;
+    readonly normalizeAudio?: boolean;
 }
 
 export interface EncodeMp3InServiceWorkerMessage extends Message {
     readonly command: 'encode-mp3';
     readonly base64: string;
     readonly extension: string;
+    readonly normalizeAudio?: boolean;
 }
 
 export interface SettingsUpdatedMessage extends Message {

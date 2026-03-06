@@ -492,7 +492,8 @@ function App({
                         newCard,
                         settingsRef.current.audioPaddingStart,
                         settingsRef.current.audioPaddingEnd,
-                        settingsRef.current.recordWithAudioPlayback
+                        settingsRef.current.recordWithAudioPlayback,
+                        settingsRef.current.normalizeAudio
                     );
 
                     if (audioClip && settingsRef.current.preferMp3) {
@@ -605,7 +606,13 @@ function App({
     const handleDownloadAudio = useCallback(
         async (card: CardModel) => {
             try {
-                const clip = AudioClip.fromCard(card, settings.audioPaddingStart, settings.audioPaddingEnd, false);
+                const clip = AudioClip.fromCard(
+                    card,
+                    settings.audioPaddingStart,
+                    settings.audioPaddingEnd,
+                    false,
+                    settings.normalizeAudio
+                );
 
                 if (clip?.error === undefined) {
                     if (settings.preferMp3) {
@@ -620,7 +627,7 @@ function App({
                 handleError(e);
             }
         },
-        [handleError, settings.audioPaddingStart, settings.audioPaddingEnd, settings.preferMp3, t]
+        [handleError, settings.audioPaddingStart, settings.audioPaddingEnd, settings.normalizeAudio, settings.preferMp3, t]
     );
 
     const handleDownloadImage = useCallback(
@@ -1232,8 +1239,8 @@ function App({
         );
     }, [extension, keyBinder, handleOpenCopyHistory, ankiDialogOpen]);
 
-    const mp3Encoder = useCallback(async (blob: Blob, extension: string) => {
-        return await Mp3Encoder.encode(blob, () => new mp3WorkerFactory());
+    const mp3Encoder = useCallback(async (blob: Blob, extension: string, options?: { normalizeAudio?: boolean }) => {
+        return await Mp3Encoder.encode(blob, () => new mp3WorkerFactory(), options);
     }, []);
 
     useEffect(() => {

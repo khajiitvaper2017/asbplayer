@@ -146,9 +146,11 @@ window.onload = async () => {
                     return true;
                 case 'encode-mp3':
                     const encodeMp3Message = request.message as EncodeMp3InServiceWorkerMessage;
-                    const { base64, extension } = encodeMp3Message;
+                    const { base64, extension, normalizeAudio } = encodeMp3Message;
 
-                    Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), mp3WorkerFactory)
+                    Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), mp3WorkerFactory, {
+                        normalizeAudio,
+                    })
                         .then((blob) => blob.arrayBuffer())
                         .then((buffer) => sendResponse(bufferToBase64(buffer)))
                         .catch(console.error);

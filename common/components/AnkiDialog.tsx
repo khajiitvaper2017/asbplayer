@@ -10,7 +10,7 @@ import {
     joinSubtitles,
     extractText,
 } from '@project/common/util';
-import { AudioClip } from '@project/common/audio-clip';
+import { AudioClip, type Mp3EncodeOptions } from '@project/common/audio-clip';
 import Badge from '@mui/material/Badge';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -199,7 +199,7 @@ interface AnkiDialogProps {
     lastAppliedTimestampIntervalToText?: number[];
     lastAppliedTimestampIntervalToAudio?: number[];
     stateRef?: MutableRefObject<AnkiDialogState | undefined>;
-    mp3Encoder: (blob: Blob, extension: string) => Promise<Blob>;
+    mp3Encoder: (blob: Blob, extension: string, options?: Mp3EncodeOptions) => Promise<Blob>;
     profiles?: Profile[];
     activeProfile?: string;
     onSetActiveProfile?: (profile: string | undefined) => void;
@@ -382,9 +382,10 @@ const AnkiDialog = ({
                 card,
                 settings.audioPaddingStart,
                 settings.audioPaddingEnd,
-                settings.recordWithAudioPlayback
+                settings.recordWithAudioPlayback,
+                settings.normalizeAudio
             ),
-        [card, settings.audioPaddingStart, settings.audioPaddingEnd, settings.recordWithAudioPlayback]
+        [card, settings.audioPaddingStart, settings.audioPaddingEnd, settings.recordWithAudioPlayback, settings.normalizeAudio]
     );
 
     useEffect(() => {
