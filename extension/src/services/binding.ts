@@ -867,7 +867,9 @@ export default class Binding {
                                 this._sendAudioBase64(
                                     audioBase64,
                                     startRecordingAudioWithTimeoutMessage.requestId,
-                                    startRecordingAudioWithTimeoutMessage.encodeAsMp3
+                                    startRecordingAudioWithTimeoutMessage.encodeAsMp3,
+                                    startRecordingAudioWithTimeoutMessage.normalizeAudio,
+                                    startRecordingAudioWithTimeoutMessage.monoAudio
                                 )
                             )
                             .catch((e) => {
@@ -896,7 +898,9 @@ export default class Binding {
                                 this._sendAudioBase64(
                                     audioBase64,
                                     this.currentAudioRecordingRequestId!,
-                                    stopRecordingAudioMessage.encodeAsMp3
+                                    stopRecordingAudioMessage.encodeAsMp3,
+                                    stopRecordingAudioMessage.normalizeAudio,
+                                    stopRecordingAudioMessage.monoAudio
                                 );
                             })
                             .catch((e) => {
@@ -1616,7 +1620,13 @@ export default class Binding {
         return this.audioStream.active ? this.audioStream : undefined;
     }
 
-    private async _sendAudioBase64(base64: string, requestId: string, encodeAsMp3: boolean) {
+    private async _sendAudioBase64(
+        base64: string,
+        requestId: string,
+        encodeAsMp3: boolean,
+        normalizeAudio?: boolean,
+        monoAudio?: boolean
+    ) {
         if (encodeAsMp3) {
             const encodeMp3Command: VideoToExtensionCommand<EncodeMp3InServiceWorkerMessage> = {
                 sender: 'asbplayer-video',
@@ -1624,6 +1634,8 @@ export default class Binding {
                     command: 'encode-mp3',
                     base64,
                     extension: 'webm',
+                    normalizeAudio,
+                    monoAudio,
                 },
                 src: this.video.src,
             };

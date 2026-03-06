@@ -164,6 +164,8 @@ export const defaultSettings: AsbplayerSettings = {
         toggleHoveredTokenIgnored: { keys: 'Q+I' },
     },
     recordWithAudioPlayback: true,
+    normalizeAudio: true,
+    audioOutputMono: false,
     preferMp3: true,
     tabName: 'asbplayer',
     miningHistoryStorageLimit: 25,
@@ -537,7 +539,11 @@ export const ensureConsistencyOnRead = (settings: Partial<AsbplayerSettings>) =>
         return settings;
     }
 
-    return { ...settings, ...{ ankiFieldSettings: newAnkiFieldSettings }, ...{ keyBindSet: newKeyBindSet } };
+    return {
+        ...settings,
+        ...(ankiFieldSettingsModified ? { ankiFieldSettings: newAnkiFieldSettings } : {}),
+        ...(keyBindSetModified ? { keyBindSet: newKeyBindSet } : {}),
+    };
 };
 
 type SettingsKey = keyof AsbplayerSettings;

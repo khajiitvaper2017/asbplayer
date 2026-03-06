@@ -60,6 +60,8 @@ export default class RecordMediaHandler {
         let imageModel: ImageModel | undefined = undefined;
         let audioModel: AudioModel | undefined = undefined;
         let encodeAsMp3 = false;
+        let normalizeAudio = false;
+        let monoAudio = false;
 
         if (recordMediaCommand.message.record) {
             const time =
@@ -68,12 +70,22 @@ export default class RecordMediaHandler {
 
             if (recordMediaCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
+                normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
+                monoAudio = await this._settingsProvider.getSingle('audioOutputMono');
             }
 
-            audioPromise = this._audioRecorder.startWithTimeout(time, encodeAsMp3, {
-                src: recordMediaCommand.src,
-                tabId: sender.tab?.id!,
-            });
+            audioPromise = this._audioRecorder.startWithTimeout(
+                time,
+                {
+                    encodeAsMp3,
+                    normalizeAudio,
+                    monoAudio,
+                },
+                {
+                    src: recordMediaCommand.src,
+                    tabId: sender.tab?.id!,
+                }
+            );
         }
 
         if (recordMediaCommand.message.screenshot) {
@@ -112,6 +124,17 @@ export default class RecordMediaHandler {
 
             try {
                 const audioBase64 = await audioPromise;
+                console.info('[asbplayer][audio] Recorded timed extension audio', {
+                    encodeAsMp3,
+                    normalizeAudio,
+                    monoAudio,
+                    durationMs: Math.round(
+                        (subtitle.end - subtitle.start) / recordMediaCommand.message.playbackRate +
+                            recordMediaCommand.message.audioPaddingEnd
+                    ),
+                    base64Length: audioBase64.length,
+                    extension: encodeAsMp3 ? 'mp3' : 'webm',
+                });
                 audioModel = {
                     ...baseAudioModel,
                     base64: audioBase64,

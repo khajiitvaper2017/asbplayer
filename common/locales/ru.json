@@ -379,6 +379,8 @@
         "clickToMineDefaultAction": "Действие кнопки майнинга по умолчанию",
         "misc": "Разное",
         "mp3Preference": "Перекодировать аудио в MP3 (медленнее)",
+        "normalizeAudio": "Сжимать аудио (только MP3)",
+        "audioOutputMono": "Выводить моно-аудио (только MP3)",
         "noteType": "Тип Anki-записи",
         "pages": "Pages",
         "preCacheSubtitleDom": "Предварительная загрузка DOM субтитров",

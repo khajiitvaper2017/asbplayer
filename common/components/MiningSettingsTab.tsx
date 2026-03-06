@@ -37,9 +37,12 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
         clickToMineDefaultAction,
         postMiningPlaybackState,
         recordWithAudioPlayback,
+        normalizeAudio,
+        audioOutputMono,
         preferMp3,
         copyToClipboardOnMine,
     } = settings;
+    const normalizationAvailable = preferMp3;
     return (
         <Stack spacing={1}>
             <FormControl>
@@ -174,6 +177,30 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                 }
                 label={t('settings.mp3Preference')}
                 labelPlacement="start"
+            />
+            <SwitchLabelWithHoverEffect
+                control={
+                    <Switch
+                        checked={normalizeAudio}
+                        onChange={(event) => onSettingChanged('normalizeAudio', event.target.checked)}
+                        disabled={!normalizationAvailable}
+                    />
+                }
+                label={t('settings.normalizeAudio')}
+                labelPlacement="start"
+                disabled={!normalizationAvailable}
+            />
+            <SwitchLabelWithHoverEffect
+                control={
+                    <Switch
+                        checked={audioOutputMono}
+                        onChange={(event) => onSettingChanged('audioOutputMono', event.target.checked)}
+                        disabled={!preferMp3}
+                    />
+                }
+                label={t('settings.audioOutputMono')}
+                labelPlacement="start"
+                disabled={!preferMp3}
             />
 
             <TextField

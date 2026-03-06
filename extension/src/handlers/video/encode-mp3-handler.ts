@@ -29,11 +29,14 @@ export default class EncodeMp3Handler {
         }
 
         const {
-            message: { base64, extension },
+            message: { base64, extension, normalizeAudio, monoAudio },
         } = command as VideoToExtensionCommand<EncodeMp3InServiceWorkerMessage>;
 
         if (isFirefoxBuild) {
-            Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), () => new Worker('mp3-encoder-worker.js'))
+            Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), () => new Worker('mp3-encoder-worker.js'), {
+                normalizeAudio,
+                monoAudio,
+            })
                 .then((blob) => blob.arrayBuffer())
                 .then((buffer) => sendResponse(bufferToBase64(buffer)))
                 .catch(console.error);
@@ -46,6 +49,8 @@ export default class EncodeMp3Handler {
                             command: 'encode-mp3',
                             base64,
                             extension,
+                            normalizeAudio,
+                            monoAudio,
                         },
                     };
                     return browser.runtime.sendMessage(audioServiceCommand);

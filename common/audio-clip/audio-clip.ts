@@ -1,4 +1,4 @@
-import Mp3Encoder from './mp3-encoder';
+import Mp3Encoder, { Mp3EncodeOptions } from './mp3-encoder';
 
 import { AudioErrorCode, CardModel, FileModel } from '@project/common';
 import { download } from '@project/common/util';
@@ -32,6 +32,7 @@ interface AudioData {
     base64: () => Promise<string>;
     slice: (start: number, end: number) => AudioData;
     isSliceable: () => boolean;
+    mp3EncodeOptions: () => Mp3EncodeOptions;
     error?: AudioErrorCode;
     playing: boolean;
     onEvent: (name: AudioClipEvent, callback: () => void) => () => void;
@@ -70,6 +71,7 @@ class Base64AudioData implements AudioData {
     private readonly _base64: string;
     private readonly _extension: string;
     private readonly _error?: AudioErrorCode;
+    private readonly _mp3EncodeOptions: Mp3EncodeOptions;
     private readonly _callbacks: AudioClipEventCallbacks = { play: [], pause: [] };
     private playingAudio?: HTMLAudioElement;
     private stopAudioTimeout?: NodeJS.Timeout;
@@ -82,7 +84,8 @@ class Base64AudioData implements AudioData {
         playbackRate: number,
         base64: string,
         extension: string,
-        error: AudioErrorCode | undefined
+        error: AudioErrorCode | undefined,
+        mp3EncodeOptions: Mp3EncodeOptions = {}
     ) {
         this._name = makeFileName(baseName, start);
         this._start = start;
@@ -91,6 +94,7 @@ class Base64AudioData implements AudioData {
         this._base64 = base64;
         this._extension = extension;
         this._error = error;
+        this._mp3EncodeOptions = mp3EncodeOptions;
     }
 
     get name(): string {
@@ -190,6 +194,10 @@ class Base64AudioData implements AudioData {
 
     isSliceable() {
         return false;
+    }
+
+    mp3EncodeOptions() {
+        return this._mp3EncodeOptions;
     }
 
     get error() {
@@ -296,7 +304,7 @@ class FileAudioClipper {
         this._blobPromise = new Promise(async (resolve, reject) => {
             try {
                 const audio = await this._audioElement(this._file.blobUrl, true);
-                audio.oncanplay = async (e) => {
+                audio.oncanplay = async () => {
                     audio.oncanplay = null;
 
                     if (!audible) {
@@ -320,12 +328,23 @@ class FileAudioClipper {
                     recorder.ondataavailable = (e) => {
                         chunks.push(e.data);
                     };
+                    recorder.onerror = (e) => reject(e.error ?? new Error('Could not record audio'));
 
                     let finished = false;
 
-                    recorder.onstop = (e) => {
+                    recorder.onstop = () => {
                         if (finished) {
                             this._blob = new Blob(chunks, { type: this._recorderMimeType });
+                            console.info('[asbplayer][audio] Created local audio clip', {
+                                source: this._file.name,
+                                startMs: this._start,
+                                endMs: this._end,
+                                durationMs: this._end - this._start,
+                                playbackRate: this._playbackRate,
+                                mimeType: this._recorderMimeType,
+                                size: this._blob.size,
+                                trackId: this._trackId,
+                            });
                             resolve(this._blob);
                         }
                     };
@@ -471,6 +490,8 @@ class FileAudioData implements AudioData {
     private readonly _end: number;
     private readonly _playbackRate: number;
     private readonly _recordAudibly: boolean;
+    private readonly _normalizeAudio: boolean;
+    private readonly _audioOutputMono: boolean;
     private readonly _trackId?: string;
     private readonly _extension: string;
     private readonly _recorderMimeType: string;
@@ -485,6 +506,8 @@ class FileAudioData implements AudioData {
         end: number,
         playbackRate: number,
         recordAudibly: boolean,
+        normalizeAudio: boolean,
+        audioOutputMono: boolean,
         trackId?: string,
         callbacks?: AudioClipEventCallbacks
     ) {
@@ -496,6 +519,8 @@ class FileAudioData implements AudioData {
         this._end = end;
         this._playbackRate = playbackRate;
         this._recordAudibly = recordAudibly;
+        this._normalizeAudio = normalizeAudio;
+        this._audioOutputMono = audioOutputMono;
         this._trackId = trackId;
         this._callbacks = callbacks ?? { play: [], pause: [] };
         this._extension = recorderExtension;
@@ -601,11 +626,27 @@ class FileAudioData implements AudioData {
     }
 
     slice(start: number, end: number) {
-        return new FileAudioData(this._file, start, end, this._playbackRate, this._recordAudibly, this._trackId);
+        return new FileAudioData(
+            this._file,
+            start,
+            end,
+            this._playbackRate,
+            this._recordAudibly,
+            this._normalizeAudio,
+            this._audioOutputMono,
+            this._trackId
+        );
     }
 
     isSliceable() {
         return true;
+    }
+
+    mp3EncodeOptions() {
+        return {
+            normalizeAudio: this._normalizeAudio,
+            monoAudio: this._audioOutputMono,
+        };
     }
 
     get error() {
@@ -665,7 +706,7 @@ class Mp3AudioData implements AudioData {
 
     async blob() {
         if (!this._blob) {
-            this._blob = await Mp3Encoder.encode(await this.data.blob(), this.workerFactory);
+            this._blob = await Mp3Encoder.encode(await this.data.blob(), this.workerFactory, this.data.mp3EncodeOptions());
         }
 
         return this._blob;
@@ -679,6 +720,10 @@ class Mp3AudioData implements AudioData {
         return this.data.isSliceable();
     }
 
+    mp3EncodeOptions() {
+        return this.data.mp3EncodeOptions();
+    }
+
     get error() {
         return this.data.error;
     }
@@ -686,11 +731,15 @@ class Mp3AudioData implements AudioData {
 
 class EncodedAudioData implements AudioData {
     private readonly _data: AudioData;
-    private readonly _encoder: (blob: Blob, extension: string) => Promise<Blob>;
+    private readonly _encoder: (blob: Blob, extension: string, options?: Mp3EncodeOptions) => Promise<Blob>;
     private readonly _extension: string;
     private _blob?: Blob;
 
-    constructor(data: AudioData, encoder: (blob: Blob, extension: string) => Promise<Blob>, extension: string) {
+    constructor(
+        data: AudioData,
+        encoder: (blob: Blob, extension: string, options?: Mp3EncodeOptions) => Promise<Blob>,
+        extension: string
+    ) {
         this._data = data;
         this._encoder = encoder;
         this._extension = extension;
@@ -734,7 +783,11 @@ class EncodedAudioData implements AudioData {
 
     async blob() {
         if (this._blob === undefined) {
-            this._blob = await this._encoder(await this._data.blob(), this._data.extension);
+            this._blob = await this._encoder(
+                await this._data.blob(),
+                this._data.extension,
+                this._data.mp3EncodeOptions()
+            );
         }
 
         return this._blob;
@@ -746,6 +799,10 @@ class EncodedAudioData implements AudioData {
 
     isSliceable() {
         return this._data.isSliceable();
+    }
+
+    mp3EncodeOptions() {
+        return this._data.mp3EncodeOptions();
     }
 
     get error() {
@@ -760,7 +817,14 @@ export default class AudioClip {
         this.data = data;
     }
 
-    static fromCard(card: CardModel, paddingStart: number, paddingEnd: number, recordAudibly: boolean) {
+    static fromCard(
+        card: CardModel,
+        paddingStart: number,
+        paddingEnd: number,
+        recordAudibly: boolean,
+        normalizeAudio: boolean = true,
+        audioOutputMono: boolean = false
+    ) {
         if (card.audio) {
             const start = card.audio.start ?? card.subtitle.start;
             const end = card.audio.end ?? card.subtitle.end;
@@ -772,7 +836,11 @@ export default class AudioClip {
                 card.audio.playbackRate ?? 1,
                 card.audio.base64,
                 card.audio.extension,
-                card.audio.error
+                card.audio.error,
+                {
+                    normalizeAudio,
+                    monoAudio: audioOutputMono,
+                }
             );
         }
 
@@ -783,6 +851,8 @@ export default class AudioClip {
                 card.subtitle.end + paddingEnd,
                 card.file?.playbackRate ?? 1,
                 recordAudibly,
+                normalizeAudio,
+                audioOutputMono,
                 card.file?.audioTrack
             );
         }
@@ -797,7 +867,8 @@ export default class AudioClip {
         playbackRate: number,
         base64: string,
         extension: string,
-        error: AudioErrorCode | undefined
+        error: AudioErrorCode | undefined,
+        mp3EncodeOptions: Mp3EncodeOptions = {}
     ) {
         return new AudioClip(
             new Base64AudioData(
@@ -807,7 +878,8 @@ export default class AudioClip {
                 playbackRate,
                 base64,
                 extension,
-                error
+                error,
+                mp3EncodeOptions
             )
         );
     }
@@ -818,9 +890,22 @@ export default class AudioClip {
         end: number,
         playbackRate: number,
         recordAudibly: boolean,
+        normalizeAudio: boolean = true,
+        audioOutputMono: boolean = false,
         trackId?: string
     ) {
-        return new AudioClip(new FileAudioData(file, start, end, playbackRate, recordAudibly, trackId));
+        return new AudioClip(
+            new FileAudioData(
+                file,
+                start,
+                end,
+                playbackRate,
+                recordAudibly,
+                normalizeAudio,
+                audioOutputMono,
+                trackId
+            )
+        );
     }
 
     get start() {
@@ -880,7 +965,7 @@ export default class AudioClip {
         return new AudioClip(new Mp3AudioData(this.data, mp3WorkerFactory));
     }
 
-    toEncoded(encoder: (blob: Blob, extension: string) => Promise<Blob>, extension: string) {
+    toEncoded(encoder: (blob: Blob, extension: string, options?: Mp3EncodeOptions) => Promise<Blob>, extension: string) {
         return new AudioClip(new EncodedAudioData(this.data, encoder, extension));
     }
 

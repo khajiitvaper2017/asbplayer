@@ -90,14 +90,35 @@ export default class StopRecordingMediaHandler {
 
         try {
             let encodeAsMp3 = false;
+            let normalizeAudio = false;
+            let monoAudio = false;
 
             if (stopRecordingCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
+                normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
+                monoAudio = await this._settingsProvider.getSingle('audioOutputMono');
             }
 
-            const audioBase64 = await this._audioRecorder.stop(encodeAsMp3, {
-                tabId: sender.tab!.id!,
-                src: stopRecordingCommand.src,
+            const audioBase64 = await this._audioRecorder.stop(
+                {
+                    encodeAsMp3,
+                    normalizeAudio,
+                    monoAudio,
+                },
+                {
+                    tabId: sender.tab!.id!,
+                    src: stopRecordingCommand.src,
+                }
+            );
+            console.info('[asbplayer][audio] Recorded extension audio after stop', {
+                encodeAsMp3,
+                normalizeAudio,
+                monoAudio,
+                startMs: stopRecordingCommand.message.startTimestamp,
+                endMs: stopRecordingCommand.message.endTimestamp,
+                durationMs: stopRecordingCommand.message.endTimestamp - stopRecordingCommand.message.startTimestamp,
+                base64Length: audioBase64.length,
+                extension: encodeAsMp3 ? 'mp3' : 'webm',
             });
             const audioModel: AudioModel = {
                 base64: audioBase64,

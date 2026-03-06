@@ -121,6 +121,8 @@ it('validates exported settings', () => {
             toggleHoveredTokenIgnored: { keys: 'Q+I' },
         },
         recordWithAudioPlayback: true,
+        normalizeAudio: true,
+        audioOutputMono: false,
         preferMp3: true,
         tabName: 'asbplayer',
         miningHistoryStorageLimit: 25,

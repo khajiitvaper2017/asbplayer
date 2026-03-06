@@ -17,10 +17,16 @@ import { mp3WorkerFactory } from '@/services/mp3-worker-factory';
 
 const audioRecorder = new AudioRecorder();
 
-const _sendAudioBase64 = async (base64: string, requestId: string, encodeAsMp3: boolean) => {
+const _sendAudioBase64 = async (
+    base64: string,
+    requestId: string,
+    encodeAsMp3: boolean,
+    normalizeAudio?: boolean,
+    monoAudio?: boolean
+) => {
     if (encodeAsMp3) {
         const blob = await (await fetch('data:audio/webm;base64,' + base64)).blob();
-        const mp3Blob = await Mp3Encoder.encode(blob, mp3WorkerFactory);
+        const mp3Blob = await Mp3Encoder.encode(blob, mp3WorkerFactory, { normalizeAudio, monoAudio });
         base64 = bufferToBase64(await mp3Blob.arrayBuffer());
     }
 
@@ -89,7 +95,9 @@ window.onload = async () => {
                             _sendAudioBase64(
                                 audioBase64,
                                 startRecordingAudioWithTimeoutMessage.requestId,
-                                startRecordingAudioWithTimeoutMessage.encodeAsMp3
+                                startRecordingAudioWithTimeoutMessage.encodeAsMp3,
+                                startRecordingAudioWithTimeoutMessage.normalizeAudio,
+                                startRecordingAudioWithTimeoutMessage.monoAudio
                             )
                         )
                         .catch((e) => {
@@ -118,7 +126,13 @@ window.onload = async () => {
                             };
 
                             sendResponse(successResponse);
-                            _sendAudioBase64(audioBase64, currentRequestId!, stopRecordingAudioMessage.encodeAsMp3);
+                            _sendAudioBase64(
+                                audioBase64,
+                                currentRequestId!,
+                                stopRecordingAudioMessage.encodeAsMp3,
+                                stopRecordingAudioMessage.normalizeAudio,
+                                stopRecordingAudioMessage.monoAudio
+                            );
                         })
                         .catch((e) => {
                             let errorCode: StopRecordingErrorCode;
@@ -146,9 +160,12 @@ window.onload = async () => {
                     return true;
                 case 'encode-mp3':
                     const encodeMp3Message = request.message as EncodeMp3InServiceWorkerMessage;
-                    const { base64, extension } = encodeMp3Message;
+                    const { base64, extension, normalizeAudio, monoAudio } = encodeMp3Message;
 
-                    Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), mp3WorkerFactory)
+                    Mp3Encoder.encode(base64ToBlob(base64, `audio/${extension}`), mp3WorkerFactory, {
+                        normalizeAudio,
+                        monoAudio,
+                    })
                         .then((blob) => blob.arrayBuffer())
                         .then((buffer) => sendResponse(bufferToBase64(buffer)))
                         .catch(console.error);

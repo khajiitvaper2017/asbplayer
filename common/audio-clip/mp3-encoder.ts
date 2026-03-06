@@ -1,3 +1,5 @@
+import { applyLightCompressionToChannels } from './audio-normalizer';
+
 export interface SerializableAudioBuffer {
     channels: Float32Array[];
     numberOfChannels: number;
@@ -5,51 +7,101 @@ export interface SerializableAudioBuffer {
     sampleRate: number;
 }
 
+export interface Mp3EncodeOptions {
+    normalizeAudio?: boolean;
+    monoAudio?: boolean;
+}
+
+export function mixChannelsToMono(channels: Float32Array[]) {
+    if (channels.length <= 1) {
+        return channels;
+    }
+
+    const monoChannel = new Float32Array(channels[0].length);
+    let peak = 0;
+
+    for (let i = 0; i < channels[0].length; ++i) {
+        let sum = 0;
+
+        for (const channel of channels) {
+            sum += channel[i];
+        }
+
+        // Use an equal-power style downmix so mono output stays closer in perceived loudness to stereo.
+        monoChannel[i] = sum / Math.sqrt(channels.length);
+        peak = Math.max(peak, Math.abs(monoChannel[i]));
+    }
+
+    if (peak > 1) {
+        const gain = 1 / peak;
+
+        for (let i = 0; i < monoChannel.length; ++i) {
+            monoChannel[i] *= gain;
+        }
+    }
+
+    return [monoChannel];
+}
+
 export default class Mp3Encoder {
-    static async encode(blob: Blob, workerFactory: () => Worker | Promise<Worker>): Promise<Blob> {
-        return new Promise(async (resolve, reject) => {
-            var reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const audioContext = new AudioContext();
+    static async encode(
+        blob: Blob,
+        workerFactory: () => Worker | Promise<Worker>,
+        options: Mp3EncodeOptions = {}
+    ): Promise<Blob> {
+        const audioContext = new AudioContext();
 
-                    if (e.target === null) {
-                        reject(new Error('Could not obtain buffer to encode'));
-                        return;
-                    }
+        try {
+            const audioBuffer = await audioContext.decodeAudioData(await blob.arrayBuffer());
+            const channels: Float32Array[] = [];
+            const inputChannels = audioBuffer.numberOfChannels;
 
-                    const audioBuffer = await audioContext.decodeAudioData(e.target.result as ArrayBuffer);
-                    const channels: Float32Array[] = [];
+            for (let i = 0; i < audioBuffer.numberOfChannels; ++i) {
+                channels.push(audioBuffer.getChannelData(i).slice());
+            }
 
-                    for (let i = 0; i < audioBuffer.numberOfChannels; ++i) {
-                        channels.push(audioBuffer.getChannelData(i));
-                    }
+            const compressionInfo = options.normalizeAudio
+                ? applyLightCompressionToChannels(channels, audioBuffer.sampleRate)
+                : undefined;
+            const outputChannels = options.monoAudio ? mixChannelsToMono(channels) : channels;
 
-                    const workerValue = workerFactory();
-                    const worker = workerValue instanceof Worker ? workerValue : await workerValue;
-                    worker.postMessage({
-                        command: 'encode',
-                        audioBuffer: {
-                            channels: channels,
-                            numberOfChannels: audioBuffer.numberOfChannels,
-                            length: audioBuffer.length,
-                            sampleRate: audioBuffer.sampleRate,
-                        },
-                    });
-                    worker.onmessage = (e) => {
-                        resolve(new Blob(e.data.buffer, { type: 'audio/mp3' }));
-                        worker.terminate();
-                    };
-                    worker.onerror = (e) => {
-                        const error = e?.error ?? new Error('MP3 encoding failed: ' + e?.message);
-                        reject(error);
-                        worker.terminate();
-                    };
-                } catch (e) {
-                    reject(e);
-                }
-            };
-            reader.readAsArrayBuffer(blob);
-        });
+            console.info('[asbplayer][audio] Encoding MP3', {
+                blobType: blob.type,
+                blobSize: blob.size,
+                sampleRate: audioBuffer.sampleRate,
+                inputChannels,
+                outputChannels: outputChannels.length,
+                durationMs: Math.round((audioBuffer.length / audioBuffer.sampleRate) * 1000),
+                normalizeAudio: options.normalizeAudio === true,
+                monoAudio: options.monoAudio === true,
+                compressionInfo,
+            });
+
+            const workerValue = workerFactory();
+            const worker = workerValue instanceof Worker ? workerValue : await workerValue;
+
+            return await new Promise<Blob>((resolve, reject) => {
+                worker.postMessage({
+                    command: 'encode',
+                    audioBuffer: {
+                        channels: outputChannels,
+                        numberOfChannels: outputChannels.length,
+                        length: audioBuffer.length,
+                        sampleRate: audioBuffer.sampleRate,
+                    },
+                });
+                worker.onmessage = (e) => {
+                    resolve(new Blob(e.data.buffer, { type: 'audio/mp3' }));
+                    worker.terminate();
+                };
+                worker.onerror = (e) => {
+                    const error = e?.error ?? new Error('MP3 encoding failed: ' + e?.message);
+                    reject(error);
+                    worker.terminate();
+                };
+            });
+        } finally {
+            await audioContext.close().catch(() => undefined);
+        }
     }
 }
