@@ -91,19 +91,19 @@ export default class StopRecordingMediaHandler {
         try {
             let encodeAsMp3 = false;
             let normalizeAudio = false;
-            let targetLufs: number | undefined = undefined;
+            let monoAudio = false;
 
             if (stopRecordingCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
                 normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
-                targetLufs = await this._settingsProvider.getSingle('normalizeAudioTargetLoudness');
+                monoAudio = await this._settingsProvider.getSingle('audioOutputMono');
             }
 
             const audioBase64 = await this._audioRecorder.stop(
                 {
                     encodeAsMp3,
                     normalizeAudio,
-                    targetLufs,
+                    monoAudio,
                 },
                 {
                     tabId: sender.tab!.id!,
@@ -113,7 +113,7 @@ export default class StopRecordingMediaHandler {
             console.info('[asbplayer][audio] Recorded extension audio after stop', {
                 encodeAsMp3,
                 normalizeAudio,
-                targetLufs,
+                monoAudio,
                 startMs: stopRecordingCommand.message.startTimestamp,
                 endMs: stopRecordingCommand.message.endTimestamp,
                 durationMs: stopRecordingCommand.message.endTimestamp - stopRecordingCommand.message.startTimestamp,

@@ -56,7 +56,7 @@ export class OffscreenAudioRecorder implements AudioRecorderDelegate {
                 timeout: time,
                 encodeAsMp3: encodeOptions.encodeAsMp3,
                 normalizeAudio: encodeOptions.normalizeAudio,
-                targetLufs: encodeOptions.targetLufs,
+                monoAudio: encodeOptions.monoAudio,
                 streamId,
                 requestId,
             },
@@ -86,7 +86,7 @@ export class OffscreenAudioRecorder implements AudioRecorderDelegate {
                 command: 'stop-recording-audio',
                 encodeAsMp3: encodeOptions.encodeAsMp3,
                 normalizeAudio: encodeOptions.normalizeAudio,
-                targetLufs: encodeOptions.targetLufs,
+                monoAudio: encodeOptions.monoAudio,
             },
         };
         return (await browser.runtime.sendMessage(command)) as StopRecordingResponse;
@@ -107,7 +107,7 @@ export class CaptureStreamAudioRecorder implements AudioRecorderDelegate {
                 timeout: time,
                 encodeAsMp3: encodeOptions.encodeAsMp3,
                 normalizeAudio: encodeOptions.normalizeAudio,
-                targetLufs: encodeOptions.targetLufs,
+                monoAudio: encodeOptions.monoAudio,
                 requestId,
             },
             src,
@@ -135,7 +135,7 @@ export class CaptureStreamAudioRecorder implements AudioRecorderDelegate {
                 command: 'stop-recording-audio',
                 encodeAsMp3: encodeOptions.encodeAsMp3,
                 normalizeAudio: encodeOptions.normalizeAudio,
-                targetLufs: encodeOptions.targetLufs,
+                monoAudio: encodeOptions.monoAudio,
             },
             src,
         };

@@ -5,14 +5,12 @@ import FormLabel from '@mui/material/FormLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import LabelWithHoverEffect from './LabelWithHoverEffect';
 import SwitchLabelWithHoverEffect from './SwitchLabelWithHoverEffect';
-import Slider from '@mui/material/Slider';
 import Radio from '@mui/material/Radio';
 import { PostMineAction, PostMinePlayback } from '@project/common';
 import { AsbplayerSettings } from '@project/common/settings';
 import Switch from '@mui/material/Switch';
 import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { FormControl } from '@mui/material';
 import SettingsSection from './SettingsSection';
 
@@ -34,12 +32,11 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         postMiningPlaybackState,
         recordWithAudioPlayback,
         normalizeAudio,
-        normalizeAudioTargetLoudness,
+        audioOutputMono,
         preferMp3,
         copyToClipboardOnMine,
     } = settings;
     const normalizationAvailable = preferMp3;
-    const targetLoudnessAvailable = normalizationAvailable && normalizeAudio;
     return (
         <Stack spacing={1}>
             <FormControl>
@@ -187,33 +184,18 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 labelPlacement="start"
                 disabled={!normalizationAvailable}
             />
-            <Stack sx={{ width: '90%', alignSelf: 'center' }}>
-                <Typography
-                    color={targetLoudnessAvailable ? 'textSecondary' : 'text.disabled'}
-                    variant="subtitle2"
-                >
-                    {t('settings.normalizeAudioTargetLoudness')}
-                </Typography>
-                <Slider
-                    color="primary"
-                    value={normalizeAudioTargetLoudness}
-                    onChange={(_, value) => onSettingChanged('normalizeAudioTargetLoudness', value as number)}
-                    min={-30}
-                    max={-8}
-                    step={1}
-                    marks={[
-                        { value: -30, label: '-30' },
-                        { value: -24, label: '-24' },
-                        { value: -20, label: '-20' },
-                        { value: -16, label: '-16' },
-                        { value: -12, label: '-12' },
-                        { value: -8, label: '-8' },
-                    ]}
-                    disabled={!targetLoudnessAvailable}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(value) => `${value} LUFS`}
-                />
-            </Stack>
+            <SwitchLabelWithHoverEffect
+                control={
+                    <Switch
+                        checked={audioOutputMono}
+                        onChange={(event) => onSettingChanged('audioOutputMono', event.target.checked)}
+                        disabled={!preferMp3}
+                    />
+                }
+                label={t('settings.audioOutputMono')}
+                labelPlacement="start"
+                disabled={!preferMp3}
+            />
 
             <TextField
                 type="number"

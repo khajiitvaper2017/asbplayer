@@ -7,14 +7,6 @@ import { base64ToBlob, blobToBase64 } from '../base64';
 import { isFirefox } from '../browser-detection';
 
 const maxPrefixLength = 24;
-const minNormalizeAudioTargetLoudness = -30;
-const maxNormalizeAudioTargetLoudness = -8;
-const defaultNormalizeAudioTargetLoudness = -16;
-
-const clampNormalizeAudioTargetLoudness = (targetLoudness: number) =>
-    Number.isFinite(targetLoudness)
-        ? Math.max(minNormalizeAudioTargetLoudness, Math.min(maxNormalizeAudioTargetLoudness, targetLoudness))
-        : defaultNormalizeAudioTargetLoudness;
 
 const makeFileName = (prefix: string, start: number) => {
     return `${prefix.replaceAll(' ', '_').substring(0, Math.min(prefix.length, maxPrefixLength))}_${Math.floor(start)}`;
@@ -499,7 +491,7 @@ class FileAudioData implements AudioData {
     private readonly _playbackRate: number;
     private readonly _recordAudibly: boolean;
     private readonly _normalizeAudio: boolean;
-    private readonly _normalizeAudioTargetLoudness: number;
+    private readonly _audioOutputMono: boolean;
     private readonly _trackId?: string;
     private readonly _extension: string;
     private readonly _recorderMimeType: string;
@@ -515,7 +507,7 @@ class FileAudioData implements AudioData {
         playbackRate: number,
         recordAudibly: boolean,
         normalizeAudio: boolean,
-        normalizeAudioTargetLoudness: number,
+        audioOutputMono: boolean,
         trackId?: string,
         callbacks?: AudioClipEventCallbacks
     ) {
@@ -528,7 +520,7 @@ class FileAudioData implements AudioData {
         this._playbackRate = playbackRate;
         this._recordAudibly = recordAudibly;
         this._normalizeAudio = normalizeAudio;
-        this._normalizeAudioTargetLoudness = clampNormalizeAudioTargetLoudness(normalizeAudioTargetLoudness);
+        this._audioOutputMono = audioOutputMono;
         this._trackId = trackId;
         this._callbacks = callbacks ?? { play: [], pause: [] };
         this._extension = recorderExtension;
@@ -641,7 +633,7 @@ class FileAudioData implements AudioData {
             this._playbackRate,
             this._recordAudibly,
             this._normalizeAudio,
-            this._normalizeAudioTargetLoudness,
+            this._audioOutputMono,
             this._trackId
         );
     }
@@ -653,7 +645,7 @@ class FileAudioData implements AudioData {
     mp3EncodeOptions() {
         return {
             normalizeAudio: this._normalizeAudio,
-            targetLufs: this._normalizeAudioTargetLoudness,
+            monoAudio: this._audioOutputMono,
         };
     }
 
@@ -831,7 +823,7 @@ export default class AudioClip {
         paddingEnd: number,
         recordAudibly: boolean,
         normalizeAudio: boolean = true,
-        normalizeAudioTargetLoudness: number = defaultNormalizeAudioTargetLoudness
+        audioOutputMono: boolean = false
     ) {
         if (card.audio) {
             const start = card.audio.start ?? card.subtitle.start;
@@ -847,7 +839,7 @@ export default class AudioClip {
                 card.audio.error,
                 {
                     normalizeAudio,
-                    targetLufs: normalizeAudioTargetLoudness,
+                    monoAudio: audioOutputMono,
                 }
             );
         }
@@ -860,7 +852,7 @@ export default class AudioClip {
                 card.file?.playbackRate ?? 1,
                 recordAudibly,
                 normalizeAudio,
-                normalizeAudioTargetLoudness,
+                audioOutputMono,
                 card.file?.audioTrack
             );
         }
@@ -899,7 +891,7 @@ export default class AudioClip {
         playbackRate: number,
         recordAudibly: boolean,
         normalizeAudio: boolean = true,
-        normalizeAudioTargetLoudness: number = defaultNormalizeAudioTargetLoudness,
+        audioOutputMono: boolean = false,
         trackId?: string
     ) {
         return new AudioClip(
@@ -910,7 +902,7 @@ export default class AudioClip {
                 playbackRate,
                 recordAudibly,
                 normalizeAudio,
-                normalizeAudioTargetLoudness,
+                audioOutputMono,
                 trackId
             )
         );

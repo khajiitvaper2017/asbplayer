@@ -61,7 +61,7 @@ export default class RecordMediaHandler {
         let audioModel: AudioModel | undefined = undefined;
         let encodeAsMp3 = false;
         let normalizeAudio = false;
-        let targetLufs: number | undefined = undefined;
+        let monoAudio = false;
 
         if (recordMediaCommand.message.record) {
             const time =
@@ -71,7 +71,7 @@ export default class RecordMediaHandler {
             if (recordMediaCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
                 normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
-                targetLufs = await this._settingsProvider.getSingle('normalizeAudioTargetLoudness');
+                monoAudio = await this._settingsProvider.getSingle('audioOutputMono');
             }
 
             audioPromise = this._audioRecorder.startWithTimeout(
@@ -79,7 +79,7 @@ export default class RecordMediaHandler {
                 {
                     encodeAsMp3,
                     normalizeAudio,
-                    targetLufs,
+                    monoAudio,
                 },
                 {
                     src: recordMediaCommand.src,
@@ -127,7 +127,7 @@ export default class RecordMediaHandler {
                 console.info('[asbplayer][audio] Recorded timed extension audio', {
                     encodeAsMp3,
                     normalizeAudio,
-                    targetLufs,
+                    monoAudio,
                     durationMs: Math.round(
                         (subtitle.end - subtitle.start) / recordMediaCommand.message.playbackRate +
                             recordMediaCommand.message.audioPaddingEnd

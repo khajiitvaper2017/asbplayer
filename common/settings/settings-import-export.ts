@@ -379,8 +379,8 @@ const settingsSchema = {
         normalizeAudio: {
             type: 'boolean',
         },
-        normalizeAudioTargetLoudness: {
-            type: 'number',
+        audioOutputMono: {
+            type: 'boolean',
         },
         preferMp3: {
             type: 'boolean',

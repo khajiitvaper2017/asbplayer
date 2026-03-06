@@ -494,7 +494,7 @@ function App({
                         settingsRef.current.audioPaddingEnd,
                         settingsRef.current.recordWithAudioPlayback,
                         settingsRef.current.normalizeAudio,
-                        settingsRef.current.normalizeAudioTargetLoudness
+                        settingsRef.current.audioOutputMono
                     );
 
                     if (audioClip && settingsRef.current.preferMp3) {
@@ -613,7 +613,7 @@ function App({
                     settings.audioPaddingEnd,
                     false,
                     settings.normalizeAudio,
-                    settings.normalizeAudioTargetLoudness
+                    settings.audioOutputMono
                 );
 
                 if (clip?.error === undefined) {
@@ -634,7 +634,7 @@ function App({
             settings.audioPaddingStart,
             settings.audioPaddingEnd,
             settings.normalizeAudio,
-            settings.normalizeAudioTargetLoudness,
+            settings.audioOutputMono,
             settings.preferMp3,
             t,
         ]

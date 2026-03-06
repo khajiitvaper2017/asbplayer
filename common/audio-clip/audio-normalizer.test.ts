@@ -1,64 +1,32 @@
 import AudioClip from './audio-clip';
-import {
-    applyLoudnessNormalizationToChannels,
-    integratedLufsForChannels,
-    loudnessNormalizationGainForChannels,
-} from './audio-normalizer';
+import { applyGainToChannels, applyLightCompressionToChannels } from './audio-normalizer';
 
 const sampleRate = 48_000;
 const constantSignal = (amplitude: number, durationSeconds: number = 1) =>
     new Float32Array(sampleRate * durationSeconds).fill(amplitude);
 
-describe('integratedLufsForChannels', () => {
-    it('returns undefined for silence', () => {
-        expect(integratedLufsForChannels([constantSignal(0)], sampleRate)).toBeUndefined();
-    });
-
-    it('reports louder LUFS for stronger signals', () => {
-        const quiet = integratedLufsForChannels([constantSignal(0.25)], sampleRate)!;
-        const loud = integratedLufsForChannels([constantSignal(0.5)], sampleRate)!;
-        expect(loud).toBeGreaterThan(quiet);
-        expect(loud - quiet).toBeCloseTo(6, 0);
+describe('applyGainToChannels', () => {
+    it('applies the same gain to every channel', () => {
+        const channels = [Float32Array.from([0.25, -0.5]), Float32Array.from([0.5, -0.25])];
+        applyGainToChannels(channels, 0.5);
+        expect(Array.from(channels[0])).toEqual([0.125, -0.25]);
+        expect(Array.from(channels[1])).toEqual([0.25, -0.125]);
     });
 });
 
-describe('loudnessNormalizationGainForChannels', () => {
-    it('returns 1 for silence', () => {
-        expect(loudnessNormalizationGainForChannels([constantSignal(0)], sampleRate)).toBe(1);
+describe('applyLightCompressionToChannels', () => {
+    it('reduces peaks for loud material', () => {
+        const channels = [constantSignal(0.95)];
+        const info = applyLightCompressionToChannels(channels, sampleRate);
+        expect(info.maxReductionDb).toBeGreaterThan(0);
+        expect(channels[0][channels[0].length - 1]).toBeLessThan(0.95);
     });
 
-    it('boosts quieter clips toward the LUFS target', () => {
-        expect(loudnessNormalizationGainForChannels([constantSignal(0.05)], sampleRate, -16)).toBeGreaterThan(1);
-    });
-
-    it('attenuates louder clips toward the LUFS target', () => {
-        const loud = [constantSignal(0.8)];
-        const measuredLufs = integratedLufsForChannels(loud, sampleRate)!;
-        expect(loudnessNormalizationGainForChannels(loud, sampleRate, measuredLufs - 6)).toBeLessThan(1);
-    });
-
-    it('caps boost to avoid extreme amplification', () => {
-        expect(loudnessNormalizationGainForChannels([constantSignal(0.01)], sampleRate, -8)).toBe(4);
-    });
-});
-
-describe('applyLoudnessNormalizationToChannels', () => {
-    it('scales channels in place toward the target LUFS', () => {
+    it('largely leaves quiet material alone', () => {
         const channels = [constantSignal(0.05)];
-        const targetLufs = -16;
-        const before = integratedLufsForChannels(channels, sampleRate)!;
-        expect(applyLoudnessNormalizationToChannels(channels, sampleRate, targetLufs)).toBe(true);
-        const after = integratedLufsForChannels(channels, sampleRate)!;
-        expect(Math.abs(after - targetLufs)).toBeLessThan(Math.abs(before - targetLufs));
-    });
-
-    it('also reduces loud clips toward the target LUFS', () => {
-        const channels = [constantSignal(0.8)];
-        const targetLufs = -16;
-        const before = integratedLufsForChannels(channels, sampleRate)!;
-        expect(applyLoudnessNormalizationToChannels(channels, sampleRate, targetLufs)).toBe(true);
-        const after = integratedLufsForChannels(channels, sampleRate)!;
-        expect(Math.abs(after - targetLufs)).toBeLessThan(Math.abs(before - targetLufs));
+        const info = applyLightCompressionToChannels(channels, sampleRate);
+        expect(info.maxReductionDb).toBeCloseTo(0, 4);
+        expect(channels[0][channels[0].length - 1]).toBeCloseTo(0.05, 4);
     });
 });
 

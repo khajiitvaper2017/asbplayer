@@ -869,7 +869,7 @@ export default class Binding {
                                     startRecordingAudioWithTimeoutMessage.requestId,
                                     startRecordingAudioWithTimeoutMessage.encodeAsMp3,
                                     startRecordingAudioWithTimeoutMessage.normalizeAudio,
-                                    startRecordingAudioWithTimeoutMessage.targetLufs
+                                    startRecordingAudioWithTimeoutMessage.monoAudio
                                 )
                             )
                             .catch((e) => {
@@ -900,7 +900,7 @@ export default class Binding {
                                     this.currentAudioRecordingRequestId!,
                                     stopRecordingAudioMessage.encodeAsMp3,
                                     stopRecordingAudioMessage.normalizeAudio,
-                                    stopRecordingAudioMessage.targetLufs
+                                    stopRecordingAudioMessage.monoAudio
                                 );
                             })
                             .catch((e) => {
@@ -1625,7 +1625,7 @@ export default class Binding {
         requestId: string,
         encodeAsMp3: boolean,
         normalizeAudio?: boolean,
-        targetLufs?: number
+        monoAudio?: boolean
     ) {
         if (encodeAsMp3) {
             const encodeMp3Command: VideoToExtensionCommand<EncodeMp3InServiceWorkerMessage> = {
@@ -1635,7 +1635,7 @@ export default class Binding {
                     base64,
                     extension: 'webm',
                     normalizeAudio,
-                    targetLufs,
+                    monoAudio,
                 },
                 src: this.video.src,
             };

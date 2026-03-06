@@ -384,7 +384,7 @@ const AnkiDialog = ({
                 settings.audioPaddingEnd,
                 settings.recordWithAudioPlayback,
                 settings.normalizeAudio,
-                settings.normalizeAudioTargetLoudness
+                settings.audioOutputMono
             ),
         [
             card,
@@ -392,7 +392,7 @@ const AnkiDialog = ({
             settings.audioPaddingEnd,
             settings.recordWithAudioPlayback,
             settings.normalizeAudio,
-            settings.normalizeAudioTargetLoudness,
+            settings.audioOutputMono,
         ]
     );
 

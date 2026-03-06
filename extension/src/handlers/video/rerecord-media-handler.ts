@@ -46,7 +46,7 @@ export default class RerecordMediaHandler {
         };
         let audio: AudioModel;
         const normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
-        const targetLufs: number = await this._settingsProvider.getSingle('normalizeAudioTargetLoudness');
+        const monoAudio = await this._settingsProvider.getSingle('audioOutputMono');
 
         try {
             const audioBase64 = await this._audioRecorder.startWithTimeout(
@@ -55,13 +55,13 @@ export default class RerecordMediaHandler {
                 {
                     encodeAsMp3: false,
                     normalizeAudio,
-                    targetLufs,
+                    monoAudio,
                 },
                 { src: rerecordCommand.src, tabId: sender.tab?.id! }
             );
             console.info('[asbplayer][audio] Rerecorded extension audio', {
                 normalizeAudio,
-                targetLufs,
+                monoAudio,
                 durationMs: Math.round(
                     rerecordCommand.message.duration / rerecordCommand.message.playbackRate +
                         rerecordCommand.message.audioPaddingEnd
