@@ -383,9 +383,17 @@ const AnkiDialog = ({
                 settings.audioPaddingStart,
                 settings.audioPaddingEnd,
                 settings.recordWithAudioPlayback,
-                settings.normalizeAudio
+                settings.normalizeAudio,
+                settings.normalizeAudioTargetLoudness
             ),
-        [card, settings.audioPaddingStart, settings.audioPaddingEnd, settings.recordWithAudioPlayback, settings.normalizeAudio]
+        [
+            card,
+            settings.audioPaddingStart,
+            settings.audioPaddingEnd,
+            settings.recordWithAudioPlayback,
+            settings.normalizeAudio,
+            settings.normalizeAudioTargetLoudness,
+        ]
     );
 
     useEffect(() => {

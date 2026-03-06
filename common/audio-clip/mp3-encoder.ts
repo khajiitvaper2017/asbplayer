@@ -9,6 +9,7 @@ export interface SerializableAudioBuffer {
 
 export interface Mp3EncodeOptions {
     normalizeAudio?: boolean;
+    targetPeak?: number;
 }
 
 export default class Mp3Encoder {
@@ -28,7 +29,7 @@ export default class Mp3Encoder {
             }
 
             if (options.normalizeAudio) {
-                applyPeakNormalizationToChannels(channels);
+                applyPeakNormalizationToChannels(channels, options.targetPeak);
             }
 
             const workerValue = workerFactory();

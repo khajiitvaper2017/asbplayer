@@ -70,6 +70,9 @@ class SettingsAccessor {
     get normalizeAudio() {
         return this.settings.normalizeAudio;
     }
+    get normalizeAudioTargetLoudness() {
+        return this.settings.normalizeAudioTargetLoudness;
+    }
     get audioPaddingStart() {
         return this.settings.audioPaddingStart;
     }

@@ -5,12 +5,14 @@ import FormLabel from '@mui/material/FormLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import LabelWithHoverEffect from './LabelWithHoverEffect';
 import SwitchLabelWithHoverEffect from './SwitchLabelWithHoverEffect';
+import Slider from '@mui/material/Slider';
 import Radio from '@mui/material/Radio';
 import { PostMineAction, PostMinePlayback } from '@project/common';
 import { AsbplayerSettings } from '@project/common/settings';
 import Switch from '@mui/material/Switch';
 import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { FormControl } from '@mui/material';
 import SettingsSection from './SettingsSection';
 
@@ -32,6 +34,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
         postMiningPlaybackState,
         recordWithAudioPlayback,
         normalizeAudio,
+        normalizeAudioTargetLoudness,
         preferMp3,
         copyToClipboardOnMine,
     } = settings;
@@ -179,6 +182,26 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged }) => {
                 }
                 label={t('settings.normalizeAudio')}
                 labelPlacement="start"
+            />
+            <Typography color="textSecondary" variant="subtitle2">
+                {t('settings.normalizeAudioTargetLoudness')}
+            </Typography>
+            <Slider
+                color="primary"
+                value={normalizeAudioTargetLoudness}
+                onChange={(_, value) => onSettingChanged('normalizeAudioTargetLoudness', value as number)}
+                min={0}
+                max={100}
+                step={5}
+                marks={[
+                    { value: 50, label: '50%' },
+                    { value: 75, label: '75%' },
+                    { value: 95, label: '95%' },
+                    { value: 100, label: '100%' },
+                ]}
+                disabled={!normalizeAudio}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `${value}%`}
             />
 
             <TextField

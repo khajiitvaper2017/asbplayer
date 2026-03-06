@@ -37,6 +37,7 @@ import { BridgeFetcher } from '../bridge-fetcher';
 import { Anki, ExportParams } from '@project/common/anki';
 import { v4 as uuidv4 } from 'uuid';
 import { base64ToBlob, blobToBase64 } from '@project/common/base64';
+import type { Mp3EncodeOptions } from '@project/common/audio-clip';
 import { isMobile } from '@project/common/device-detection/mobile';
 import { StyledEngineProvider } from '@mui/material/styles';
 
@@ -332,12 +333,13 @@ export default function AnkiUi({ bridge }: Props) {
     ]);
 
     const mp3Encoder = useCallback(
-        async (blob: Blob, extension: string, options?: { normalizeAudio?: boolean }) => {
+        async (blob: Blob, extension: string, options?: Mp3EncodeOptions) => {
             const encodeMp3Message: EncodeMp3Message = {
                 command: 'encode-mp3',
                 base64: await blobToBase64(blob),
                 extension,
                 normalizeAudio: options?.normalizeAudio,
+                targetPeak: options?.targetPeak,
                 messageId: uuidv4(),
             };
             const { base64 } = await bridge.sendMessageFromServerAndExpectResponse(encodeMp3Message, 60_000);

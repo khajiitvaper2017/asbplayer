@@ -7,6 +7,14 @@ import { base64ToBlob, blobToBase64 } from '../base64';
 import { isFirefox } from '../browser-detection';
 
 const maxPrefixLength = 24;
+const minNormalizeAudioTargetLoudness = 0;
+const maxNormalizeAudioTargetLoudness = 100;
+const defaultNormalizeAudioTargetLoudness = 95;
+
+const clampNormalizeAudioTargetLoudness = (targetLoudness: number) =>
+    Number.isFinite(targetLoudness)
+        ? Math.max(minNormalizeAudioTargetLoudness, Math.min(maxNormalizeAudioTargetLoudness, targetLoudness))
+        : defaultNormalizeAudioTargetLoudness;
 
 const makeFileName = (prefix: string, start: number) => {
     return `${prefix.replaceAll(' ', '_').substring(0, Math.min(prefix.length, maxPrefixLength))}_${Math.floor(start)}`;
@@ -71,6 +79,7 @@ class Base64AudioData implements AudioData {
     private readonly _base64: string;
     private readonly _extension: string;
     private readonly _error?: AudioErrorCode;
+    private readonly _mp3EncodeOptions: Mp3EncodeOptions;
     private readonly _callbacks: AudioClipEventCallbacks = { play: [], pause: [] };
     private playingAudio?: HTMLAudioElement;
     private stopAudioTimeout?: NodeJS.Timeout;
@@ -83,7 +92,8 @@ class Base64AudioData implements AudioData {
         playbackRate: number,
         base64: string,
         extension: string,
-        error: AudioErrorCode | undefined
+        error: AudioErrorCode | undefined,
+        mp3EncodeOptions: Mp3EncodeOptions = {}
     ) {
         this._name = makeFileName(baseName, start);
         this._start = start;
@@ -92,6 +102,7 @@ class Base64AudioData implements AudioData {
         this._base64 = base64;
         this._extension = extension;
         this._error = error;
+        this._mp3EncodeOptions = mp3EncodeOptions;
     }
 
     get name(): string {
@@ -194,7 +205,7 @@ class Base64AudioData implements AudioData {
     }
 
     mp3EncodeOptions() {
-        return {};
+        return this._mp3EncodeOptions;
     }
 
     get error() {
@@ -478,6 +489,7 @@ class FileAudioData implements AudioData {
     private readonly _playbackRate: number;
     private readonly _recordAudibly: boolean;
     private readonly _normalizeAudio: boolean;
+    private readonly _normalizeAudioTargetLoudness: number;
     private readonly _trackId?: string;
     private readonly _extension: string;
     private readonly _recorderMimeType: string;
@@ -493,6 +505,7 @@ class FileAudioData implements AudioData {
         playbackRate: number,
         recordAudibly: boolean,
         normalizeAudio: boolean,
+        normalizeAudioTargetLoudness: number,
         trackId?: string,
         callbacks?: AudioClipEventCallbacks
     ) {
@@ -505,6 +518,7 @@ class FileAudioData implements AudioData {
         this._playbackRate = playbackRate;
         this._recordAudibly = recordAudibly;
         this._normalizeAudio = normalizeAudio;
+        this._normalizeAudioTargetLoudness = clampNormalizeAudioTargetLoudness(normalizeAudioTargetLoudness);
         this._trackId = trackId;
         this._callbacks = callbacks ?? { play: [], pause: [] };
         this._extension = recorderExtension;
@@ -617,6 +631,7 @@ class FileAudioData implements AudioData {
             this._playbackRate,
             this._recordAudibly,
             this._normalizeAudio,
+            this._normalizeAudioTargetLoudness,
             this._trackId
         );
     }
@@ -626,7 +641,10 @@ class FileAudioData implements AudioData {
     }
 
     mp3EncodeOptions() {
-        return { normalizeAudio: this._normalizeAudio };
+        return {
+            normalizeAudio: this._normalizeAudio,
+            targetPeak: this._normalizeAudioTargetLoudness / 100,
+        };
     }
 
     get error() {
@@ -802,7 +820,8 @@ export default class AudioClip {
         paddingStart: number,
         paddingEnd: number,
         recordAudibly: boolean,
-        normalizeAudio: boolean = true
+        normalizeAudio: boolean = true,
+        normalizeAudioTargetLoudness: number = defaultNormalizeAudioTargetLoudness
     ) {
         if (card.audio) {
             const start = card.audio.start ?? card.subtitle.start;
@@ -815,7 +834,11 @@ export default class AudioClip {
                 card.audio.playbackRate ?? 1,
                 card.audio.base64,
                 card.audio.extension,
-                card.audio.error
+                card.audio.error,
+                {
+                    normalizeAudio,
+                    targetPeak: normalizeAudioTargetLoudness / 100,
+                }
             );
         }
 
@@ -827,6 +850,7 @@ export default class AudioClip {
                 card.file?.playbackRate ?? 1,
                 recordAudibly,
                 normalizeAudio,
+                normalizeAudioTargetLoudness,
                 card.file?.audioTrack
             );
         }
@@ -841,7 +865,8 @@ export default class AudioClip {
         playbackRate: number,
         base64: string,
         extension: string,
-        error: AudioErrorCode | undefined
+        error: AudioErrorCode | undefined,
+        mp3EncodeOptions: Mp3EncodeOptions = {}
     ) {
         return new AudioClip(
             new Base64AudioData(
@@ -851,7 +876,8 @@ export default class AudioClip {
                 playbackRate,
                 base64,
                 extension,
-                error
+                error,
+                mp3EncodeOptions
             )
         );
     }
@@ -863,9 +889,21 @@ export default class AudioClip {
         playbackRate: number,
         recordAudibly: boolean,
         normalizeAudio: boolean = true,
+        normalizeAudioTargetLoudness: number = defaultNormalizeAudioTargetLoudness,
         trackId?: string
     ) {
-        return new AudioClip(new FileAudioData(file, start, end, playbackRate, recordAudibly, normalizeAudio, trackId));
+        return new AudioClip(
+            new FileAudioData(
+                file,
+                start,
+                end,
+                playbackRate,
+                recordAudibly,
+                normalizeAudio,
+                normalizeAudioTargetLoudness,
+                trackId
+            )
+        );
     }
 
     get start() {

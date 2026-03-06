@@ -60,6 +60,8 @@ export default class RecordMediaHandler {
         let imageModel: ImageModel | undefined = undefined;
         let audioModel: AudioModel | undefined = undefined;
         let encodeAsMp3 = false;
+        let normalizeAudio = false;
+        let targetPeak: number | undefined = undefined;
 
         if (recordMediaCommand.message.record) {
             const time =
@@ -68,12 +70,22 @@ export default class RecordMediaHandler {
 
             if (recordMediaCommand.message.postMineAction !== PostMineAction.showAnkiDialog) {
                 encodeAsMp3 = await this._settingsProvider.getSingle('preferMp3');
+                normalizeAudio = await this._settingsProvider.getSingle('normalizeAudio');
+                targetPeak = (await this._settingsProvider.getSingle('normalizeAudioTargetLoudness')) / 100;
             }
 
-            audioPromise = this._audioRecorder.startWithTimeout(time, encodeAsMp3, {
-                src: recordMediaCommand.src,
-                tabId: sender.tab?.id!,
-            });
+            audioPromise = this._audioRecorder.startWithTimeout(
+                time,
+                {
+                    encodeAsMp3,
+                    normalizeAudio,
+                    targetPeak,
+                },
+                {
+                    src: recordMediaCommand.src,
+                    tabId: sender.tab?.id!,
+                }
+            );
         }
 
         if (recordMediaCommand.message.screenshot) {

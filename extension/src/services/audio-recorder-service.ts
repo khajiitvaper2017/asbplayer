@@ -12,10 +12,15 @@ import {
 import TabRegistry from './tab-registry';
 import { AudioRecorderDelegate } from './audio-recorder-delegate';
 import { v4 as uuidv4 } from 'uuid';
+import type { Mp3EncodeOptions } from '@project/common/audio-clip';
 
 interface Requester {
     tabId: number;
     src: string;
+}
+
+export interface AudioEncodeOptions extends Mp3EncodeOptions {
+    encodeAsMp3: boolean;
 }
 
 export class DrmProtectedStreamError extends Error {}
@@ -48,11 +53,11 @@ export default class AudioRecorderService {
         }
     }
 
-    async startWithTimeout(time: number, encodeAsMp3: boolean, requester: Requester): Promise<string> {
+    async startWithTimeout(time: number, encodeOptions: AudioEncodeOptions, requester: Requester): Promise<string> {
         const requestId = uuidv4();
 
         try {
-            const response = await this._delegate.startWithTimeout(time, encodeAsMp3, requestId, requester);
+            const response = await this._delegate.startWithTimeout(time, encodeOptions, requestId, requester);
 
             if (response.started) {
                 this._notifyRecordingStarted(requester);
@@ -111,7 +116,7 @@ export default class AudioRecorderService {
         browser.tabs.sendMessage(tabId, command);
     }
 
-    async stop(encodeAsMp3: boolean, requester: Requester): Promise<string> {
+    async stop(encodeOptions: AudioEncodeOptions, requester: Requester): Promise<string> {
         if (this.audioBase64Promise === undefined) {
             // Benign no-op: If the user spams cancel on a bulk export,
             // we can get a cancel request on a non-recording state.
@@ -119,7 +124,7 @@ export default class AudioRecorderService {
             throw new NoRecordingInProgressServiceError();
         }
 
-        const response = await this._delegate.stop(encodeAsMp3, requester);
+        const response = await this._delegate.stop(encodeOptions, requester);
 
         if (!response.stopped) {
             if (response.error!.code === StopRecordingErrorCode.timedAudioRecordingInProgress) {

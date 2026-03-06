@@ -136,7 +136,7 @@ export class TabAnkiUiController {
                         browser.runtime.sendMessage(copyToClipboardCommand);
                         return;
                     case 'encode-mp3':
-                        const { base64, messageId, extension, normalizeAudio } = message as EncodeMp3Message;
+                        const { base64, messageId, extension, normalizeAudio, targetPeak } = message as EncodeMp3Message;
                         const encodeMp3Command: TabToExtensionCommand<EncodeMp3InServiceWorkerMessage> = {
                             sender: 'asbplayer-video-tab',
                             message: {
@@ -144,6 +144,7 @@ export class TabAnkiUiController {
                                 base64,
                                 extension,
                                 normalizeAudio,
+                                targetPeak,
                             },
                         };
                         const encodedBase64 = await browser.runtime.sendMessage(encodeMp3Command);

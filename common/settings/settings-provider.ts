@@ -162,6 +162,7 @@ export const defaultSettings: AsbplayerSettings = {
     },
     recordWithAudioPlayback: true,
     normalizeAudio: true,
+    normalizeAudioTargetLoudness: 95,
     preferMp3: true,
     tabName: 'asbplayer',
     miningHistoryStorageLimit: 25,

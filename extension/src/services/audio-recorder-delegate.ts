@@ -10,6 +10,7 @@ import {
     StopRecordingResponse,
 } from '@project/common';
 import { ensureOffscreenAudioServiceDocument } from './offscreen-document';
+import type { AudioEncodeOptions } from './audio-recorder-service';
 
 export interface Requester {
     tabId: number;
@@ -19,12 +20,12 @@ export interface Requester {
 export interface AudioRecorderDelegate {
     startWithTimeout: (
         time: number,
-        encodeAsMp3: boolean,
+        encodeOptions: AudioEncodeOptions,
         requestId: string,
         { tabId, src }: Requester
     ) => Promise<StartRecordingResponse>;
     start: (requestId: string, requester: Requester) => Promise<StartRecordingResponse>;
-    stop: (encodeAsMp3: boolean, requester: Requester) => Promise<StopRecordingResponse>;
+    stop: (encodeOptions: AudioEncodeOptions, requester: Requester) => Promise<StopRecordingResponse>;
 }
 
 export class OffscreenAudioRecorder implements AudioRecorderDelegate {
@@ -41,7 +42,7 @@ export class OffscreenAudioRecorder implements AudioRecorderDelegate {
 
     async startWithTimeout(
         time: number,
-        encodeAsMp3: boolean,
+        encodeOptions: AudioEncodeOptions,
         requestId: string,
         { tabId, src }: Requester
     ): Promise<StartRecordingResponse> {
@@ -53,7 +54,9 @@ export class OffscreenAudioRecorder implements AudioRecorderDelegate {
             message: {
                 command: 'start-recording-audio-with-timeout',
                 timeout: time,
-                encodeAsMp3,
+                encodeAsMp3: encodeOptions.encodeAsMp3,
+                normalizeAudio: encodeOptions.normalizeAudio,
+                targetPeak: encodeOptions.targetPeak,
                 streamId,
                 requestId,
             },
@@ -76,12 +79,14 @@ export class OffscreenAudioRecorder implements AudioRecorderDelegate {
         return (await browser.runtime.sendMessage(command)) as StartRecordingResponse;
     }
 
-    async stop(encodeAsMp3: boolean): Promise<StopRecordingResponse> {
+    async stop(encodeOptions: AudioEncodeOptions): Promise<StopRecordingResponse> {
         const command: ExtensionToOffscreenDocumentCommand<StopRecordingAudioMessage> = {
             sender: 'asbplayer-extension-to-offscreen-document',
             message: {
                 command: 'stop-recording-audio',
-                encodeAsMp3,
+                encodeAsMp3: encodeOptions.encodeAsMp3,
+                normalizeAudio: encodeOptions.normalizeAudio,
+                targetPeak: encodeOptions.targetPeak,
             },
         };
         return (await browser.runtime.sendMessage(command)) as StopRecordingResponse;
@@ -91,7 +96,7 @@ export class OffscreenAudioRecorder implements AudioRecorderDelegate {
 export class CaptureStreamAudioRecorder implements AudioRecorderDelegate {
     async startWithTimeout(
         time: number,
-        encodeAsMp3: boolean,
+        encodeOptions: AudioEncodeOptions,
         requestId: string,
         { tabId, src }: Requester
     ): Promise<StartRecordingResponse> {
@@ -100,7 +105,9 @@ export class CaptureStreamAudioRecorder implements AudioRecorderDelegate {
             message: {
                 command: 'start-recording-audio-with-timeout',
                 timeout: time,
-                encodeAsMp3,
+                encodeAsMp3: encodeOptions.encodeAsMp3,
+                normalizeAudio: encodeOptions.normalizeAudio,
+                targetPeak: encodeOptions.targetPeak,
                 requestId,
             },
             src,
@@ -121,12 +128,14 @@ export class CaptureStreamAudioRecorder implements AudioRecorderDelegate {
         return (await browser.tabs.sendMessage(tabId, command)) as StartRecordingResponse;
     }
 
-    async stop(encodeAsMp3: boolean, { tabId, src }: Requester): Promise<StopRecordingResponse> {
+    async stop(encodeOptions: AudioEncodeOptions, { tabId, src }: Requester): Promise<StopRecordingResponse> {
         const command: ExtensionToVideoCommand<StopRecordingAudioMessage> = {
             sender: 'asbplayer-extension-to-video',
             message: {
                 command: 'stop-recording-audio',
-                encodeAsMp3,
+                encodeAsMp3: encodeOptions.encodeAsMp3,
+                normalizeAudio: encodeOptions.normalizeAudio,
+                targetPeak: encodeOptions.targetPeak,
             },
             src,
         };

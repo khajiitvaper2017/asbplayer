@@ -273,6 +273,7 @@ export interface AnkiSettings {
     readonly tags: string[];
     readonly recordWithAudioPlayback: boolean;
     readonly normalizeAudio: boolean;
+    readonly normalizeAudioTargetLoudness: number;
     readonly preferMp3: boolean;
     readonly audioPaddingStart: number;
     readonly audioPaddingEnd: number;
@@ -322,6 +323,7 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     tags: true,
     recordWithAudioPlayback: true,
     normalizeAudio: true,
+    normalizeAudioTargetLoudness: true,
     preferMp3: true,
     audioPaddingStart: true,
     audioPaddingEnd: true,

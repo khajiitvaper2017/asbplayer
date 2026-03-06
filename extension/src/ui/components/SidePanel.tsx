@@ -395,7 +395,8 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     settings.audioPaddingStart,
                     settings.audioPaddingEnd,
                     false,
-                    settings.normalizeAudio
+                    settings.normalizeAudio,
+                    settings.normalizeAudioTargetLoudness
                 );
 
                 if (clip) {

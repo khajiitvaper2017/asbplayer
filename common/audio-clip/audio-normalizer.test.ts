@@ -14,6 +14,10 @@ describe('peakNormalizationGainForChannels', () => {
         expect(peakNormalizationGainForChannels([Float32Array.from([0.1, -0.5, 0.25])])).toBeCloseTo(1.9);
     });
 
+    it('supports a custom target peak', () => {
+        expect(peakNormalizationGainForChannels([Float32Array.from([0.1, -0.5, 0.25])], 0.8)).toBeCloseTo(1.6);
+    });
+
     it('caps normalization gain', () => {
         expect(peakNormalizationGainForChannels([Float32Array.from([0.05, -0.1])])).toBe(4);
     });
@@ -26,6 +30,14 @@ describe('applyPeakNormalizationToChannels', () => {
         expect(channels[0][0]).toBeCloseTo(0.19);
         expect(channels[0][1]).toBeCloseTo(-0.95);
         expect(channels[0][2]).toBeCloseTo(0.475);
+    });
+
+    it('scales to a custom target peak', () => {
+        const channels = [Float32Array.from([0.1, -0.5, 0.25])];
+        expect(applyPeakNormalizationToChannels(channels, 0.8)).toBe(true);
+        expect(channels[0][0]).toBeCloseTo(0.16);
+        expect(channels[0][1]).toBeCloseTo(-0.8);
+        expect(channels[0][2]).toBeCloseTo(0.4);
     });
 
     it('skips already-loud channels', () => {

@@ -98,6 +98,7 @@ export interface EncodeMp3Message extends MessageWithId {
     readonly base64: string;
     readonly extension: string;
     readonly normalizeAudio?: boolean;
+    readonly targetPeak?: number;
 }
 
 export interface EncodeMp3InServiceWorkerMessage extends Message {
@@ -105,6 +106,7 @@ export interface EncodeMp3InServiceWorkerMessage extends Message {
     readonly base64: string;
     readonly extension: string;
     readonly normalizeAudio?: boolean;
+    readonly targetPeak?: number;
 }
 
 export interface SettingsUpdatedMessage extends Message {
@@ -522,6 +524,8 @@ export interface StartRecordingAudioWithTimeoutMessage extends Message {
     readonly streamId: string;
     readonly requestId: string;
     readonly encodeAsMp3: boolean;
+    readonly normalizeAudio?: boolean;
+    readonly targetPeak?: number;
 }
 
 export interface StartRecordingAudioWithTimeoutViaCaptureStreamMessage extends Message {
@@ -529,6 +533,8 @@ export interface StartRecordingAudioWithTimeoutViaCaptureStreamMessage extends M
     readonly timeout: number;
     readonly requestId: string;
     readonly encodeAsMp3: boolean;
+    readonly normalizeAudio?: boolean;
+    readonly targetPeak?: number;
 }
 
 export interface StartRecordingAudioMessage extends Message {
@@ -545,6 +551,8 @@ export interface StartRecordingAudioViaCaptureStreamMessage extends Message {
 export interface StopRecordingAudioMessage extends Message {
     readonly command: 'stop-recording-audio';
     readonly encodeAsMp3: boolean;
+    readonly normalizeAudio?: boolean;
+    readonly targetPeak?: number;
 }
 
 export enum StartRecordingErrorCode {
