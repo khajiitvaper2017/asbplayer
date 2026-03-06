@@ -1,3 +1,4 @@
+import { normalizeAudioBlob } from './audio-normalizer';
 import Mp3Encoder from './mp3-encoder';
 
 import { AudioErrorCode, CardModel, FileModel } from '@project/common';
@@ -296,7 +297,7 @@ class FileAudioClipper {
         this._blobPromise = new Promise(async (resolve, reject) => {
             try {
                 const audio = await this._audioElement(this._file.blobUrl, true);
-                audio.oncanplay = async (e) => {
+                audio.oncanplay = async () => {
                     audio.oncanplay = null;
 
                     if (!audible) {
@@ -320,13 +321,22 @@ class FileAudioClipper {
                     recorder.ondataavailable = (e) => {
                         chunks.push(e.data);
                     };
+                    recorder.onerror = (e) => reject(e.error ?? new Error('Could not record audio'));
 
                     let finished = false;
 
-                    recorder.onstop = (e) => {
+                    recorder.onstop = () => {
                         if (finished) {
-                            this._blob = new Blob(chunks, { type: this._recorderMimeType });
-                            resolve(this._blob);
+                            const blob = new Blob(chunks, { type: this._recorderMimeType });
+                            normalizeAudioBlob(blob, this._recorderMimeType)
+                                .catch((error) => {
+                                    console.warn('Could not normalize local audio clip', error);
+                                    return blob;
+                                })
+                                .then((normalizedBlob) => {
+                                    this._blob = normalizedBlob;
+                                    resolve(normalizedBlob);
+                                }, reject);
                         }
                     };
 
