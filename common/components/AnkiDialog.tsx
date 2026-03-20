@@ -260,6 +260,7 @@ const AnkiDialog = ({
     const [ankiIsAvailable, setAnkiIsAvailable] = useState<boolean>(true);
     const [imageDialogOpen, setImageDialogOpen] = useState<boolean>(false);
     const [image, setImage] = useState<MediaFragment>();
+    const [imageTimestampInterval, setImageTimestampInterval] = useState<number[]>();
     const dialogRef = useRef<HTMLDivElement>(undefined);
     const dialogRefCallback = useCallback((element: HTMLDivElement) => {
         dialogRef.current = element;
@@ -453,16 +454,25 @@ const AnkiDialog = ({
             return;
         }
 
-        setImage(
-            MediaFragment.fromCard(
+        setImage((previousImage) => {
+            previousImage?.dispose();
+            const image = MediaFragment.fromCard(
                 card,
                 settings.maxImageWidth,
                 settings.maxImageHeight,
                 settings.mediaFragmentFormat,
                 settings.mediaFragmentTrimStart,
                 settings.mediaFragmentTrimEnd
-            )
-        );
+            );
+
+            setImageTimestampInterval(
+                image?.extension === 'webm' && image.endTimestamp !== undefined
+                    ? [image.timestamp, image.endTimestamp]
+                    : undefined
+            );
+
+            return image;
+        });
     }, [
         card,
         open,
@@ -504,6 +514,30 @@ const AnkiDialog = ({
             return image.atTimestamp(timestamp);
         });
     }, []);
+
+    const handleImageTimestampIntervalChange = useCallback(
+        (newTimestampInterval: number[]) => {
+            const file = card.file;
+
+            if (settings.mediaFragmentFormat !== 'webm' || !file) {
+                return;
+            }
+
+            setImageTimestampInterval(newTimestampInterval);
+
+            setImage((previousImage) => {
+                previousImage?.dispose();
+                return MediaFragment.fromWebmFile(
+                    file,
+                    newTimestampInterval[0],
+                    newTimestampInterval[1],
+                    settings.maxImageWidth,
+                    settings.maxImageHeight
+                );
+            });
+        },
+        [card.file, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat]
+    );
 
     const applyTimestampIntervalToTrack = useCallback(
         (
@@ -1062,8 +1096,10 @@ const AnkiDialog = ({
                 open={open && imageDialogOpen}
                 image={image}
                 interval={timestampBoundaryInterval}
+                timestampInterval={imageTimestampInterval}
                 onClose={handleCloseImageDialog}
                 onTimestampChange={handleImageTimestampChange}
+                onTimestampIntervalChange={handleImageTimestampIntervalChange}
             />
         </>
     );
