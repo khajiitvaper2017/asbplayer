@@ -379,6 +379,7 @@
         "mediaFragmentFormatVideoClip": "Video clip",
         "mediaFragmentFormatVideoClipUnsupported": "Video clip (unsupported)",
         "mediaFragmentMaxClipLength": "Max clip length",
+        "mediaFragmentCreationPreview": "Show media fragment preview while creating",
         "mediaFragmentTrimEnd": "Clip trim end",
         "mediaFragmentTrimStart": "Clip trim start",
         "mining": "Mining",

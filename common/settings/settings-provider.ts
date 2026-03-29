@@ -107,6 +107,7 @@ export const defaultSettings: AsbplayerSettings = {
     maxImageWidth: 0,
     maxImageHeight: 0,
     mediaFragmentFormat: 'jpeg',
+    mediaFragmentCreationPreview: true,
     mediaFragmentTrimStart: 200,
     mediaFragmentTrimEnd: 200,
     mediaFragmentMaxClipLength: 10000,

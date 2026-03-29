@@ -38,6 +38,7 @@ import Bar from './Bar';
 import ChromeExtension, { ExtensionMessage } from '../services/chrome-extension';
 import CopyHistory from './CopyHistory';
 import LandingPage from './LandingPage';
+import MediaFragmentCreationPreview, { type MediaFragmentCreationPreviewHandle } from './MediaFragmentCreationPreview';
 import Player, { MediaSources } from './Player';
 import SettingsDialog from './SettingsDialog';
 import VideoPlayer, { SeekRequest } from './VideoPlayer';
@@ -308,6 +309,7 @@ function App({
     const miningContext = useMemo(() => new MiningContext(), []);
     const [settingsDialogOpen, setSettingsDialogOpen] = useState<boolean>(false);
     const [settingsDialogScrollToId, setSettingsDialogScrollToId] = useState<string>();
+    const mediaFragmentCreationPreviewRef = useRef<MediaFragmentCreationPreviewHandle>(null);
     const [disableKeyEvents, setDisableKeyEvents] = useState<boolean>(false);
     const [tab, setTab] = useState<VideoTabModel>();
     const [availableTabs, setAvailableTabs] = useState<VideoTabModel[]>();
@@ -405,9 +407,23 @@ function App({
     const handleAnkiDialogProceed = useCallback(
         async (params: ExportParams) => {
             setAnkiDialogDisabled(true);
+            const mediaFragment = params.image;
+            const shouldPreviewMediaFragment =
+                settings.mediaFragmentCreationPreview &&
+                params.mode !== 'gui' &&
+                mediaFragment !== undefined &&
+                mediaFragment.error === undefined;
 
             try {
+                if (shouldPreviewMediaFragment) {
+                    await mediaFragmentCreationPreviewRef.current!.preview(mediaFragment);
+                }
+
                 const result = await anki.export(params);
+
+                if (shouldPreviewMediaFragment) {
+                    mediaFragmentCreationPreviewRef.current!.complete();
+                }
 
                 if (params.mode !== 'gui') {
                     if (params.mode === 'default') {
@@ -433,6 +449,9 @@ function App({
 
                 dictionaryProvider.ankiCardWasModified();
             } catch (e) {
+                if (shouldPreviewMediaFragment) {
+                    mediaFragmentCreationPreviewRef.current!.hide();
+                }
                 handleError(e);
             } finally {
                 setAnkiDialogDisabled(false);
@@ -442,6 +461,7 @@ function App({
         [
             anki,
             miningContext,
+            settings.mediaFragmentCreationPreview,
             settings.lastSelectedAnkiExportMode,
             onSettingsChanged,
             handleError,
@@ -1312,6 +1332,7 @@ function App({
                             {alert}
                         </Alert>
                     )}
+                    <MediaFragmentCreationPreview ref={mediaFragmentCreationPreviewRef} />
                     {inVideoPlayer ? (
                         <>
                             <RenderVideo
