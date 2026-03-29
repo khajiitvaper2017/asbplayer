@@ -31,6 +31,7 @@ export interface MiscSettings {
     readonly miningHistoryStorageLimit: number;
     readonly language: string;
     readonly clickToMineDefaultAction: PostMineAction;
+    readonly mediaFragmentCreationPreview: boolean;
     readonly postMiningPlaybackState: PostMinePlayback;
     readonly lastSubtitleOffset: number;
     readonly lastSelectedAnkiExportMode: AnkiExportMode;

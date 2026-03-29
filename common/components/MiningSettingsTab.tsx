@@ -35,6 +35,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
         mediaFragmentTrimStart,
         mediaFragmentTrimEnd,
         mediaFragmentMaxClipLength,
+        mediaFragmentCreationPreview,
         streamingScreenshotDelay,
         surroundingSubtitlesCountRadius,
         surroundingSubtitlesTimeRadius,
@@ -269,6 +270,16 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                         step: 1,
                     },
                 }}
+            />
+            <SwitchLabelWithHoverEffect
+                control={
+                    <Switch
+                        checked={mediaFragmentCreationPreview}
+                        onChange={(event) => onSettingChanged('mediaFragmentCreationPreview', event.target.checked)}
+                    />
+                }
+                label={t('settings.mediaFragmentCreationPreview')}
+                labelPlacement="start"
             />
             {showWebmMediaFragmentSettings && mediaFragmentFormat === 'webm' && webmCaptureSupported && (
                 <>

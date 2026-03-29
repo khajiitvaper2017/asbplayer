@@ -308,6 +308,9 @@ const settingsSchema = {
         mediaFragmentFormat: {
             type: 'string',
         },
+        mediaFragmentCreationPreview: {
+            type: 'boolean',
+        },
         mediaFragmentTrimStart: {
             type: 'number',
         },
