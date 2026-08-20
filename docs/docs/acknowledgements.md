@@ -54,7 +54,11 @@ We epecially acknowledge the wonderful humans below.
 [@Roka20012](https://github.com/Roka20012),
 [@RonzyOnGIT](https://github.com/RonzyOnGIT),
 [@Dr-TNineS](https://github.com/Dr-TNineS),
-[@thntx](https://github.com/thntx)
+[@thntx](https://github.com/thntx),
+[@Otto-Deviant1904](https://github.com/Otto-Deviant1904),
+[@Ayase-the-Dark](https://github.com/Ayase-the-Dark),
+[@aramrw](https://github.com/aramrw),
+[@steckums](https://github.com/steckums)
 
 ## Translators
 
