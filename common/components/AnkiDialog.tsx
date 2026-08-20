@@ -356,15 +356,15 @@ const AnkiDialog = ({
     );
     const jitenMineTargets = jitenSelectableSentenceWords
         .filter((word) => {
+            const isNew = jitenVocabularyByWord[word.wordId]?.knownStates?.[0] === 0;
             const key = `${word.wordId}/${word.readingIndex}`;
-            const state = jitenVocabularyByWord[word.wordId]?.knownStates?.[0];
-            const inList = Boolean(jitenMiningListByWord[key]);
             const media = jitenMediaByWord[key];
-            return (
-                (state === 0 && !inList) ||
-                (jitenMineAllExistingBehavior === 'addAndAttach' && state !== undefined && !inList) ||
-                (jitenMineAllExistingBehavior !== 'skip' && (!media?.image || !media?.audio))
-            );
+            if (isNew && !jitenMiningListByWord[key]) return true;
+            if (jitenMineAllExistingBehavior === 'skip') return false;
+            if (jitenMineAllExistingBehavior === 'addAndAttach' && !isNew && !jitenMiningListByWord[key]) {
+                return true;
+            }
+            return Boolean(media && (!media.image || !media.audio));
         })
         .map((word) => ({
             ...(selectedJitenTarget ?? { source: undefined }),
@@ -373,16 +373,16 @@ const AnkiDialog = ({
             spelling: word.originalText ?? '',
             reading: word.originalText ?? '',
         }));
-    const jitenMineWords = jitenMineTargets.filter((target) => {
-        const state = jitenVocabularyByWord[target.wordId]?.knownStates?.[0];
-        return (
+    const jitenMineWords = jitenMineTargets.filter(
+        (target) =>
             !jitenMiningListByWord[`${target.wordId}/${target.readingIndex}`] &&
-            (state === 0 || (jitenMineAllExistingBehavior === 'addAndAttach' && state !== undefined))
-        );
-    });
+            (jitenVocabularyByWord[target.wordId]?.knownStates?.[0] === 0 ||
+                (jitenMineAllExistingBehavior === 'addAndAttach' &&
+                    jitenVocabularyByWord[target.wordId]?.knownStates?.[0] !== undefined))
+    );
     const jitenAttachmentWords = jitenMineTargets.filter((target) => {
         const media = jitenMediaByWord[`${target.wordId}/${target.readingIndex}`];
-        return !media?.image || !media?.audio;
+        return !media || !media.image || !media.audio;
     });
     const jitenStatesByWord = Object.fromEntries(
         jitenSelectableSentenceWords.map((word) => [
@@ -479,19 +479,11 @@ const AnkiDialog = ({
         }
         if (provider !== 'jiten' || !jitenAutoMineMode || autoMineAllDone.current) return;
         if (!jitenDeckSelected || !onJitenMineAllNew) return;
-        const selectedTargetKey = selectedJitenTarget
-            ? `${selectedJitenTarget.wordId}/${selectedJitenTarget.readingIndex}`
-            : undefined;
-        const selectedTargetMedia = selectedTargetKey ? jitenMediaByWord[selectedTargetKey] : undefined;
-        const selectedTargetNeedsMedia =
-            selectedJitenTarget && (!selectedTargetMedia?.image || !selectedTargetMedia?.audio);
         const targets =
             jitenAutoMineMode === 'single'
-                ? selectedTargetNeedsMedia
-                    ? [selectedJitenTarget]
-                    : jitenMineWords.length === 1
-                      ? jitenMineWords
-                      : undefined
+                ? jitenMineWords.length === 1
+                    ? jitenMineWords
+                    : undefined
                 : jitenMineTargets.length > 0
                   ? jitenMineTargets
                   : undefined;
@@ -510,8 +502,8 @@ const AnkiDialog = ({
         jitenAutoMineMode,
         jitenDeckSelected,
         jitenMineTargets,
+        jitenMineAllExistingBehavior,
         jitenMineWords,
-        selectedJitenTarget,
         jitenMediaByWord,
         jitenMiningListByWord,
         jitenStatesByWord,
