@@ -1,7 +1,20 @@
-import { JitenClient, JitenTargetStore, isJitenPageEvent, targetFromJitenEvent } from '@project/common/jiten/jiten';
+import {
+    JitenClient,
+    JitenTargetStore,
+    isJitenPageEvent,
+    jitenSentenceContainsWordForm,
+    targetFromJitenEvent,
+} from '@project/common/jiten/jiten';
 import type { JitenPageEvent } from '@project/common/jiten/jiten';
 
 describe('Jiten page events', () => {
+    it('matches the last mined form and not an unrelated sentence marker', () => {
+        expect(jitenSentenceContainsWordForm('昨日は**見る**。', '食べる', 'たべる')).toBe(false);
+        expect(jitenSentenceContainsWordForm('昨日は**見る**。', '食べる', 'たべる', '**食べました**')).toBe(false);
+        expect(jitenSentenceContainsWordForm('昨日は食べる。', '食べる', 'たべる')).toBe(true);
+        expect(jitenSentenceContainsWordForm('昨日は食べました。', '食べる', 'たべる', '**食べました**')).toBe(true);
+    });
+
     it('accepts only versioned Jiten events and extracts mined targets', () => {
         expect(isJitenPageEvent({ source: 'other', version: 1, type: 'card-mined' })).toBe(false);
         const event: JitenPageEvent = {

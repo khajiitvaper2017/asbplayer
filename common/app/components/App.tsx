@@ -439,7 +439,7 @@ function App({
     const [ankiDialogOpen, setAnkiDialogOpen] = useState<boolean>(false);
     const [ankiDialogDisabled, setAnkiDialogDisabled] = useState<boolean>(false);
     const [ankiDialogCard, setAnkiDialogCard] = useState<CardModel>();
-    const [jitenDialogAutoMineMode, setJitenDialogAutoMineMode] = useState<'all' | 'single'>();
+    const [jitenDialogMineMode, setJitenDialogMineMode] = useState<'all' | 'single'>();
     const miningContext = useMemo(() => new MiningContext(), []);
     const [settingsDialogOpen, setSettingsDialogOpen] = useState<boolean>(false);
     const [settingsDialogScrollToId, setSettingsDialogScrollToId] = useState<string>();
@@ -546,14 +546,14 @@ function App({
     );
 
     const handleAnkiDialogRequest = useCallback(
-        (ankiDialogItem?: CopyHistoryItem, autoMineMode?: 'all' | 'single') => {
+        (ankiDialogItem?: CopyHistoryItem, mineMode?: 'all' | 'single') => {
             if (!ankiDialogItem && copyHistoryItemsRef.current.length === 0) {
                 return;
             }
 
             const item = ankiDialogItem ?? copyHistoryItemsRef.current[copyHistoryItemsRef.current.length - 1];
             setAnkiDialogCard(item);
-            setJitenDialogAutoMineMode(autoMineMode);
+            setJitenDialogMineMode(mineMode);
             setAnkiDialogOpen(true);
             setAnkiDialogDisabled(false);
             setDisableKeyEvents(true);
@@ -754,6 +754,41 @@ function App({
                 void saveCopyHistoryItem(newCard);
             }
 
+            const buildExportParams = (sentence: string, mode: 'default' | 'updateLast'): ExportParams => {
+                let audioClip = AudioClip.fromCard(
+                    newCard,
+                    settingsRef.current.audioPaddingStart,
+                    settingsRef.current.audioPaddingEnd,
+                    settingsRef.current.recordWithAudioPlayback
+                );
+                if (audioClip && settingsRef.current.preferMp3) {
+                    audioClip = audioClip.toMp3(() => new mp3WorkerFactory());
+                }
+                return {
+                    text: sentence,
+                    track1: extractText(card.subtitle, card.surroundingSubtitles, 0),
+                    track2: extractText(card.subtitle, card.surroundingSubtitles, 1),
+                    track3: extractText(card.subtitle, card.surroundingSubtitles, 2),
+                    definition: newCard.definition ?? '',
+                    audioClip,
+                    image: MediaFragment.fromCard(
+                        newCard,
+                        settingsRef.current.maxImageWidth,
+                        settingsRef.current.maxImageHeight,
+                        settingsRef.current.mediaFragmentFormat,
+                        settingsRef.current.mediaFragmentTrimStart,
+                        settingsRef.current.mediaFragmentTrimEnd,
+                        settingsRef.current.mediaFragmentMaxClipLength
+                    ),
+                    word: newCard.word ?? '',
+                    source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
+                    url: '',
+                    customFieldValues: newCard.customFieldValues ?? {},
+                    tags: settingsRef.current.tags,
+                    mode,
+                };
+            };
+
             switch (postMineAction ?? PostMineAction.none) {
                 case PostMineAction.none:
                     setAlertSeverity('success');
@@ -773,9 +808,21 @@ function App({
                 case PostMineAction.jitenMineAllWords:
                     handleAnkiDialogRequest(newCard, 'all');
                     break;
-                case PostMineAction.jitenMineSingleWordOrDialog:
-                    handleAnkiDialogRequest(newCard, 'single');
+                case PostMineAction.jitenAttachLastOrMineSingleOrDialog: {
+                    const sentence = extractText(card.subtitle, card.surroundingSubtitles);
+                    const target = jitenTargetStore.current;
+                    if (
+                        settingsRef.current.miningProvider === 'jiten' &&
+                        target &&
+                        jitenSentenceContainsWordForm(sentence, target.spelling, target.reading, target.sentence)
+                    ) {
+                        miningContext.started();
+                        void handleAnkiDialogProceed(buildExportParams(sentence, 'default'));
+                    } else {
+                        handleAnkiDialogRequest(newCard, 'single');
+                    }
                     break;
+                }
                 case PostMineAction.exportCard:
                 case PostMineAction.jitenUpdateLastCardOrDialog:
                 case PostMineAction.updateLastCard: {
@@ -813,40 +860,12 @@ function App({
                         break;
                     }
                     miningContext.started();
-                    let audioClip = AudioClip.fromCard(
-                        newCard,
-                        settingsRef.current.audioPaddingStart,
-                        settingsRef.current.audioPaddingEnd,
-                        settingsRef.current.recordWithAudioPlayback
+                    void handleAnkiDialogProceed(
+                        buildExportParams(
+                            sentence,
+                            postMineAction === PostMineAction.updateLastCard ? 'updateLast' : 'default'
+                        )
                     );
-
-                    if (audioClip && settingsRef.current.preferMp3) {
-                        audioClip = audioClip.toMp3(() => new mp3WorkerFactory());
-                    }
-
-                    void handleAnkiDialogProceed({
-                        text: sentence,
-                        track1: extractText(card.subtitle, card.surroundingSubtitles, 0),
-                        track2: extractText(card.subtitle, card.surroundingSubtitles, 1),
-                        track3: extractText(card.subtitle, card.surroundingSubtitles, 2),
-                        definition: newCard.definition ?? '',
-                        audioClip: audioClip,
-                        image: MediaFragment.fromCard(
-                            newCard,
-                            settingsRef.current.maxImageWidth,
-                            settingsRef.current.maxImageHeight,
-                            settingsRef.current.mediaFragmentFormat,
-                            settingsRef.current.mediaFragmentTrimStart,
-                            settingsRef.current.mediaFragmentTrimEnd,
-                            settingsRef.current.mediaFragmentMaxClipLength
-                        ),
-                        word: newCard.word ?? '',
-                        source: `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`,
-                        url: '',
-                        customFieldValues: newCard.customFieldValues ?? {},
-                        tags: settingsRef.current.tags,
-                        mode: postMineAction === PostMineAction.updateLastCard ? 'updateLast' : 'default',
-                    });
                     break;
                 }
                 default:
@@ -2077,7 +2096,7 @@ function App({
                                         )
                                     }
                                     jitenDeckId={settings.jitenStudyDeckId}
-                                    jitenAutoMineMode={jitenDialogAutoMineMode}
+                                    jitenMineMode={jitenDialogMineMode}
                                     jitenMineAllExistingBehavior={settings.jitenMineAllExistingBehavior}
                                     {...profilesContext}
                                 />
@@ -2146,7 +2165,7 @@ function App({
                                         )
                                     }
                                     jitenDeckId={settings.jitenStudyDeckId}
-                                    jitenAutoMineMode={jitenDialogAutoMineMode}
+                                    jitenMineMode={jitenDialogMineMode}
                                     jitenMineAllExistingBehavior={settings.jitenMineAllExistingBehavior}
                                     {...profilesContext}
                                 />

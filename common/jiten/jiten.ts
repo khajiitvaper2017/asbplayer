@@ -66,7 +66,7 @@ const VOCABULARY_INFO_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 export class JitenClient {
     constructor(
         private readonly settings: Pick<JitenSettings, 'jitenApiKey'>,
-        private readonly fetcher: typeof fetch = fetch
+        private readonly fetcher: typeof fetch = globalThis.fetch.bind(globalThis)
     ) {}
 
     async ping() {
@@ -391,7 +391,7 @@ export const jitenSentenceContainsWordForm = (
     reading: string,
     minedSentence?: string
 ) => {
-    return sentence.includes('**') || findWordMarker(sentence, spelling, reading, minedSentence) !== undefined;
+    return findWordMarker(sentence, spelling, reading, minedSentence) !== undefined;
 };
 
 const addWordMarker = (sentence: string, spelling: string, reading: string, minedSentence?: string) => {

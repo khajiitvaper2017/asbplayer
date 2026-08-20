@@ -355,7 +355,7 @@
         "title": "Jiten",
         "updateLastCardOrDialog": "Try update last card, open dialog on fail",
         "mineAllWords": "Mine all words from sentence",
-        "updateOrMineSingleOrDialog": "Auto-mine if exactly one new word; otherwise open dialog",
+        "attachLastOrMineSingleOrDialog": "Attach to last mined word, mine one new word, or open dialog",
         "mineAllExistingBehavior": "When batch mining, for words that are not new",
         "mineAllExistingAttach": "Attach media only",
         "mineAllExistingAddAndAttach": "Add to mining list and attach media",

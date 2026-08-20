@@ -203,18 +203,19 @@ const MiningSettingsTab: React.FC<Props> = ({
                                 control={
                                     <Radio
                                         checked={
-                                            jitenDefaultMiningAction === PostMineAction.jitenMineSingleWordOrDialog
+                                            jitenDefaultMiningAction ===
+                                            PostMineAction.jitenAttachLastOrMineSingleOrDialog
                                         }
-                                        value={PostMineAction.jitenMineSingleWordOrDialog}
+                                        value={PostMineAction.jitenAttachLastOrMineSingleOrDialog}
                                         onChange={() =>
                                             void onSettingChanged(
                                                 'jitenDefaultMiningAction',
-                                                PostMineAction.jitenMineSingleWordOrDialog
+                                                PostMineAction.jitenAttachLastOrMineSingleOrDialog
                                             )
                                         }
                                     />
                                 }
-                                label={t('jiten.updateOrMineSingleOrDialog')}
+                                label={t('jiten.attachLastOrMineSingleOrDialog')}
                             />
                             <LabelWithHoverEffect
                                 control={

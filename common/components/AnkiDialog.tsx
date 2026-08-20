@@ -287,7 +287,7 @@ interface AnkiDialogProps {
         states: Record<string, number | undefined>
     ) => void;
     jitenDeckId?: number;
-    jitenAutoMineMode?: 'all' | 'single';
+    jitenMineMode?: 'all' | 'single';
     jitenMineAllExistingBehavior?: 'attach' | 'addAndAttach' | 'skip';
 }
 
@@ -325,7 +325,7 @@ const AnkiDialog = ({
     onJitenDeckMine,
     onJitenMineAllNew,
     jitenDeckId = 0,
-    jitenAutoMineMode,
+    jitenMineMode,
     jitenMineAllExistingBehavior = 'addAndAttach',
 }: AnkiDialogProps) => {
     const classes = useStyles();
@@ -339,7 +339,7 @@ const AnkiDialog = ({
     const [jitenVocabularyByWord, setJitenVocabularyByWord] = useState<Record<number, JitenVocabularyEntry>>({});
     const [jitenMediaByWord, setJitenMediaByWord] = useState<Record<string, JitenCardMediaStatus>>({});
     const [jitenMiningListByWord, setJitenMiningListByWord] = useState<Record<string, boolean>>({});
-    const autoMineAllDone = useRef(false);
+    const automaticMiningDone = useRef(false);
     const jitenVocabulary = selectedJitenTarget ? jitenVocabularyByWord[selectedJitenTarget.wordId] : undefined;
     const jitenWordInMiningDeck = selectedJitenTarget
         ? jitenMiningListByWord[`${selectedJitenTarget.wordId}/${selectedJitenTarget.readingIndex}`]
@@ -474,13 +474,13 @@ const AnkiDialog = ({
 
     useEffect(() => {
         if (!open) {
-            autoMineAllDone.current = false;
+            automaticMiningDone.current = false;
             return;
         }
-        if (provider !== 'jiten' || !jitenAutoMineMode || autoMineAllDone.current) return;
+        if (provider !== 'jiten' || !jitenMineMode || automaticMiningDone.current) return;
         if (!jitenDeckSelected || !onJitenMineAllNew) return;
         const targets =
-            jitenAutoMineMode === 'single'
+            jitenMineMode === 'single'
                 ? jitenMineWords.length === 1
                     ? jitenMineWords
                     : undefined
@@ -488,7 +488,7 @@ const AnkiDialog = ({
                   ? jitenMineTargets
                   : undefined;
         if (!targets) return;
-        autoMineAllDone.current = true;
+        automaticMiningDone.current = true;
         onJitenMineAllNew(
             buildExportParams('default'),
             targets,
@@ -499,7 +499,7 @@ const AnkiDialog = ({
     }, [
         open,
         provider,
-        jitenAutoMineMode,
+        jitenMineMode,
         jitenDeckSelected,
         jitenMineTargets,
         jitenMineAllExistingBehavior,
@@ -580,7 +580,7 @@ const AnkiDialog = ({
         setJitenMiningListByWord({});
         setJitenSentenceWords([]);
         setJitenWordForm(jitenTarget?.sentence?.match(/\*\*([^*]+)\*\*/)?.[1] ?? jitenTarget?.spelling ?? '');
-    }, [open]);
+    }, [open, provider, jitenTarget]);
 
     useEffect(() => {
         if (!open || provider !== 'jiten' || text.trim() === '') {
