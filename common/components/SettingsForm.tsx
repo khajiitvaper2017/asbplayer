@@ -15,6 +15,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import About from '@project/common/components/About';
 import { TutorialStep } from '@project/common/components/settings-model';
 import AnkiSettingsTab from '@project/common/components/AnkiSettingsTab';
+import JitenSettingsTab from '@project/common/components/JitenSettingsTab';
 import MiningSettingsTab from '@project/common/components/MiningSettingsTab';
 import DictionarySettingsTab from '@project/common/components/DictionarySettingsTab';
 import SubtitleAppearanceSettingsTab from '@project/common/components/SubtitleAppearanceSettingsTab';
@@ -156,6 +157,7 @@ const TabPanel = React.forwardRef<HTMLDivElement, TabPanelProps>(function TabPan
 
 type TabName =
     | 'anki-settings'
+    | 'jiten-settings'
     | 'mining-settings'
     | 'annotation'
     | 'subtitle-appearance'
@@ -212,6 +214,7 @@ interface Props {
     heightConstrained?: boolean;
     testCard?: () => Promise<CardModel>;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
+    onWarning?: (message: string) => void;
     onOpenChromeExtensionShortcuts: () => void;
     onUnlockLocalFonts: () => void;
 }
@@ -259,10 +262,12 @@ export default function SettingsForm({
     heightConstrained,
     testCard,
     onSettingsChanged,
+    onWarning,
     onOpenChromeExtensionShortcuts,
     onUnlockLocalFonts,
 }: Props) {
-    const supportsDictionary = !extensionInstalled || extensionSupportsDictionary;
+    const supportsDictionary =
+        settings.miningProvider === 'anki' && (!extensionInstalled || extensionSupportsDictionary);
     const supportsDictionaryBrowser = !extensionInstalled || extensionSupportsDictionaryBrowser;
     const supportsDictionaryWaniKani = !extensionInstalled || extensionSupportsDictionaryWaniKani;
     const supportsDictionaryMatchAcrossScripts = !extensionInstalled || extensionSupportsDictionaryMatchAcrossScripts;
@@ -301,8 +306,9 @@ export default function SettingsForm({
     const { noteType } = settings;
     const tabIndicesById = useMemo(() => {
         const tabs = [
-            'anki-settings',
             'mining-settings',
+            ...(settings.miningProvider === 'anki' ? ['anki-settings'] : []),
+            ...(settings.miningProvider === 'jiten' ? ['jiten-settings'] : []),
             'subtitle-appearance',
             'keyboard-shortcuts',
             'annotation',
@@ -315,7 +321,7 @@ export default function SettingsForm({
         if (!supportsDictionary) tabs.splice(tabs.indexOf('annotation'), 1);
 
         return Object.fromEntries(tabs.map((tab, i) => [tab, i]));
-    }, [extensionSupportsAppIntegration, supportsDictionary]);
+    }, [extensionSupportsAppIntegration, settings.miningProvider, supportsDictionary]);
 
     useEffect(() => {
         if (!scrollToId) {
@@ -330,6 +336,10 @@ export default function SettingsForm({
     const [tabIndex, setTabIndex] = useState<number>(0);
     const tabsOrientation = smallScreen ? 'horizontal' : 'vertical';
     const [tutorialStep, setTutorialStep] = useState<TutorialStep>(TutorialStep.ankiConnect);
+
+    useEffect(() => {
+        setTabIndex(tabIndicesById['mining-settings']);
+    }, [settings.miningProvider, tabIndicesById]);
 
     useEffect(() => {
         if (tutorialStep === TutorialStep.noteType && noteType) {
@@ -442,7 +452,7 @@ export default function SettingsForm({
                     scrollButtons={false}
                     onChange={(event, index) => {
                         setTabIndex(index);
-                        if (supportsDictionary && inAnnotationTutorial && index === 4) {
+                        if (supportsDictionary && inAnnotationTutorial && index === tabIndicesById['annotation']) {
                             onAnnotationTutorialSeen?.();
                         }
                     }}
@@ -452,81 +462,104 @@ export default function SettingsForm({
                         marginRight: smallScreen ? 'auto' : 0,
                     }}
                 >
-                    <Tab tabIndex={0} label={t('settings.anki')} id="anki-settings" />
-                    <Tab tabIndex={1} label={t('settings.mining')} id="mining-settings" />
-                    <Tab tabIndex={2} label={t('settings.subtitleAppearance')} id="subtitle-appearance" />
-                    <Tab tabIndex={3} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
+                    <Tab
+                        tabIndex={tabIndicesById['mining-settings']}
+                        label={t('settings.mining')}
+                        id="mining-settings"
+                    />
+                    {settings.miningProvider === 'anki' && (
+                        <Tab tabIndex={tabIndicesById['anki-settings']} label={t('settings.anki')} id="anki-settings" />
+                    )}
+                    {settings.miningProvider === 'jiten' && (
+                        <Tab tabIndex={tabIndicesById['jiten-settings']} label="Jiten" id="jiten-settings" />
+                    )}
+                    <Tab
+                        tabIndex={tabIndicesById['subtitle-appearance']}
+                        label={t('settings.subtitleAppearance')}
+                        id="subtitle-appearance"
+                    />
+                    <Tab
+                        tabIndex={tabIndicesById['keyboard-shortcuts']}
+                        label={t('settings.keyboardShortcuts')}
+                        id="keyboard-shortcuts"
+                    />
                     {supportsDictionary && (
                         <Tab
                             ref={handleAnnotationTabRef}
-                            tabIndex={4}
+                            tabIndex={tabIndicesById['annotation']}
                             label={t('settings.annotation')}
                             id="annotation"
                         />
                     )}
                     {extensionSupportsAppIntegration && (
                         <Tab
-                            tabIndex={4 + Number(supportsDictionary)}
+                            tabIndex={tabIndicesById['streaming-video']}
                             label={t('settings.streamingVideo')}
                             id="streaming-video"
                         />
                     )}
-                    <Tab
-                        tabIndex={4 + Number(supportsDictionary) + Number(extensionSupportsAppIntegration)}
-                        label={t('settings.misc')}
-                        id="misc-settings"
-                    />
-                    <Tab
-                        tabIndex={5 + Number(supportsDictionary) + Number(extensionSupportsAppIntegration)}
-                        label={t('about.title')}
-                        id="about"
-                    />
+                    <Tab tabIndex={tabIndicesById['misc-settings']} label={t('settings.misc')} id="misc-settings" />
+                    <Tab tabIndex={tabIndicesById['about']} label={t('about.title')} id="about" />
                 </Tabs>
-                <TabPanel
-                    ref={ankiPanelRef}
-                    value={tabIndex}
-                    index={tabIndicesById['anki-settings']}
-                    tabsOrientation={tabsOrientation}
-                >
-                    <AnkiSettingsTab
-                        settings={settings}
-                        extensionInstalled={extensionInstalled}
-                        extensionSupportsOrderableAnkiFields={extensionSupportsOrderableAnkiFields}
-                        isMobile={isMobile}
-                        insideApp={insideApp}
-                        inTutorial={inTutorial}
-                        onSettingChanged={handleSettingChanged}
-                        onSettingsChanged={onSettingsChanged}
-                        tutorialStep={tutorialStep}
-                        onTutorialStepChanged={setTutorialStep}
-                        anki={anki}
-                        testCard={testCard}
-                    />
-                </TabPanel>
+                {settings.miningProvider === 'anki' && (
+                    <TabPanel
+                        ref={ankiPanelRef}
+                        value={tabIndex}
+                        index={tabIndicesById['anki-settings']}
+                        tabsOrientation={tabsOrientation}
+                    >
+                        <AnkiSettingsTab
+                            settings={settings}
+                            extensionInstalled={extensionInstalled}
+                            extensionSupportsOrderableAnkiFields={extensionSupportsOrderableAnkiFields}
+                            isMobile={isMobile}
+                            insideApp={insideApp}
+                            inTutorial={inTutorial}
+                            onSettingChanged={handleSettingChanged}
+                            onSettingsChanged={onSettingsChanged}
+                            tutorialStep={tutorialStep}
+                            onTutorialStepChanged={setTutorialStep}
+                            anki={anki}
+                            testCard={testCard}
+                        />
+                    </TabPanel>
+                )}
+                {settings.miningProvider === 'jiten' && (
+                    <TabPanel
+                        value={tabIndex}
+                        index={tabIndicesById['jiten-settings']}
+                        tabsOrientation={tabsOrientation}
+                    >
+                        <JitenSettingsTab settings={settings} onSettingChanged={handleSettingChanged} />
+                    </TabPanel>
+                )}
                 <TabPanel value={tabIndex} index={tabIndicesById['mining-settings']} tabsOrientation={tabsOrientation}>
                     <MiningSettingsTab
                         settings={settings}
                         onSettingChanged={handleSettingChanged}
+                        onWarning={onWarning}
                         showWebmMediaFragmentSettings={Boolean(insideApp)}
                     />
                 </TabPanel>
-                <TabPanel value={tabIndex} index={tabIndicesById['annotation']} tabsOrientation={tabsOrientation}>
-                    <DictionarySettingsTab
-                        anki={anki}
-                        dictionaryProvider={dictionaryProvider}
-                        settings={settings}
-                        profiles={profiles}
-                        activeProfile={activeProfile}
-                        extensionInstalled={extensionInstalled}
-                        supportsDictionaryBrowser={supportsDictionaryBrowser}
-                        supportsDictionaryWaniKani={supportsDictionaryWaniKani}
-                        supportsDictionaryMatchAcrossScripts={supportsDictionaryMatchAcrossScripts}
-                        supportsDictionaryTokenStatusDisplayAlpha={supportsDictionaryTokenStatusDisplayAlpha}
-                        supportsDictionaryYomitanMecab={supportsDictionaryYomitanMecab}
-                        onSettingChanged={handleSettingChanged}
-                        onViewKeyboardShortcuts={() => viewKeyboardShortcutSection('annotation')}
-                    />
-                </TabPanel>
+                {supportsDictionary && (
+                    <TabPanel value={tabIndex} index={tabIndicesById['annotation']} tabsOrientation={tabsOrientation}>
+                        <DictionarySettingsTab
+                            anki={anki}
+                            dictionaryProvider={dictionaryProvider}
+                            settings={settings}
+                            profiles={profiles}
+                            activeProfile={activeProfile}
+                            extensionInstalled={extensionInstalled}
+                            supportsDictionaryBrowser={supportsDictionaryBrowser}
+                            supportsDictionaryWaniKani={supportsDictionaryWaniKani}
+                            supportsDictionaryMatchAcrossScripts={supportsDictionaryMatchAcrossScripts}
+                            supportsDictionaryTokenStatusDisplayAlpha={supportsDictionaryTokenStatusDisplayAlpha}
+                            supportsDictionaryYomitanMecab={supportsDictionaryYomitanMecab}
+                            onSettingChanged={handleSettingChanged}
+                            onViewKeyboardShortcuts={() => viewKeyboardShortcutSection('annotation')}
+                        />
+                    </TabPanel>
+                )}
                 <TabPanel
                     value={tabIndex}
                     index={tabIndicesById['subtitle-appearance']}

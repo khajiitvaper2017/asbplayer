@@ -3,6 +3,7 @@ export * from './src/image-transformer';
 export * from './src/media-fragment';
 export type * from './src/command';
 export * from './src/model';
+export * from './jiten';
 export * from './src/message';
 export * from './src/fetcher';
 export { default as OffscreenDomCache } from './src/offscreen-dom-cache';

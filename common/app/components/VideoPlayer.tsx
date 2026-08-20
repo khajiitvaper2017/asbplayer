@@ -1981,7 +1981,10 @@ export default function VideoPlayer({
             nextSubtitleTimestamp:
                 adjacentSubtitle(true, timestamp, subtitles, miscSettings.seekableTracks)?.originalStart ?? undefined,
             currentTimestamp: timestamp,
-            postMineAction: settings.clickToMineDefaultAction,
+            postMineAction:
+                settings.miningProvider === 'jiten'
+                    ? settings.jitenDefaultMiningAction
+                    : settings.clickToMineDefaultAction,
             subtitleDisplaying: showSubtitles.length > 0,
             subtitlesAreVisible: displaySubtitles,
             playModes: Array.from(playModes),
@@ -2051,7 +2054,13 @@ export default function VideoPlayer({
                 initialControlType={lastControlType}
                 flexDirection="column"
                 onScrollToControlType={setLastControlType}
-                onMineSubtitle={() => inferAndExecuteMiningBehavior(settings.clickToMineDefaultAction)}
+                onMineSubtitle={() =>
+                    inferAndExecuteMiningBehavior(
+                        settings.miningProvider === 'jiten'
+                            ? settings.jitenDefaultMiningAction
+                            : settings.clickToMineDefaultAction
+                    )
+                }
                 onOffset={handleOffsetChange}
                 onPlaybackRate={handlePlaybackRateChange}
                 onPlayModeSelected={handlePlayMode}

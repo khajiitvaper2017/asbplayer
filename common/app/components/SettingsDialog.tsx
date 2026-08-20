@@ -52,6 +52,7 @@ interface Props {
     settings: AsbplayerSettings;
     scrollToId?: string;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
+    onWarning?: (message: string) => void;
     onClose: () => void;
     profiles: Profile[];
     activeProfile?: string;
@@ -68,6 +69,7 @@ export default function SettingsDialog({
     settings,
     scrollToId,
     onSettingsChanged,
+    onWarning,
     onClose,
     ...profilesContext
 }: Props) {
@@ -113,7 +115,7 @@ export default function SettingsDialog({
                     extensionSupportsPlaybackEngine={extension.supportsPlaybackEngine}
                     extensionSupportsExportCardBind={extension.supportsExportCardBind}
                     extensionSupportsPageSettings={extension.supportsPageSettings}
-                    extensionSupportsDictionary={extension.supportsDictionary}
+                    extensionSupportsDictionary={extension.supportsDictionary && settings.miningProvider === 'anki'}
                     extensionSupportsDictionaryBrowser={extension.supportsDictionaryBrowser}
                     extensionSupportsDictionaryWaniKani={extension.supportsDictionaryWaniKani}
                     extensionSupportsDictionaryMatchAcrossScripts={extension.supportsDictionaryMatchAcrossScripts}
@@ -130,6 +132,7 @@ export default function SettingsDialog({
                     chromeKeyBinds={extension.extensionCommands}
                     onOpenChromeExtensionShortcuts={extension.openShortcuts}
                     onSettingsChanged={onSettingsChanged}
+                    onWarning={onWarning}
                     dictionaryProvider={dictionaryProvider}
                     settings={settings}
                     profiles={profilesContext.profiles}

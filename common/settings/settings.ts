@@ -79,6 +79,8 @@ export interface MiscSettings {
     readonly miningHistoryStorageLimit: number;
     readonly language: string;
     readonly clickToMineDefaultAction: PostMineAction;
+    readonly jitenDefaultMiningAction: PostMineAction;
+    readonly jitenMineAllExistingBehavior: 'attach' | 'addAndAttach' | 'skip';
     readonly postMiningPlaybackState: PostMinePlayback;
     readonly lastSubtitleOffset: number;
     readonly lastSelectedAnkiExportMode: AnkiExportMode;
@@ -667,6 +669,23 @@ export interface AnkiSettings {
     readonly customAnkiFieldSettings: CustomAnkiFieldSettings;
 }
 
+export type MiningProvider = 'anki' | 'jiten';
+
+export interface JitenSettings {
+    readonly miningProvider: MiningProvider;
+    readonly jitenApiKey: string;
+    readonly jitenStudyDeckId: number;
+}
+
+export interface JitenMinedWord {
+    readonly wordId: number;
+    readonly readingIndex: number;
+    readonly spelling: string;
+    readonly reading: string;
+    readonly source?: string;
+    readonly sentence?: string;
+}
+
 export interface AnkiField {
     readonly order: number;
     readonly display: boolean;
@@ -1032,6 +1051,7 @@ export type KeyBindName = keyof KeyBindSet;
 export interface AsbplayerSettings
     extends MiscSettings,
         AnkiSettings,
+        JitenSettings,
         SubtitleSettings,
         DictionarySettings,
         StreamingVideoSettings,

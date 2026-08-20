@@ -577,6 +577,8 @@ export class SubtitleAnnotations extends SubtitleCollection<IndexedSubtitleModel
 
     private async _refreshAnki() {
         if (this.profile === null || !this.trackStates.length) return;
+        const settings = await this.settingsProvider.getAll();
+        if (settings.miningProvider !== 'anki') return;
         const profile = this.profile;
 
         if (this.ankiState.refreshing) return;
@@ -584,7 +586,6 @@ export class SubtitleAnnotations extends SubtitleCollection<IndexedSubtitleModel
             this.ankiState.refreshing = true;
             if (!this.anki) {
                 try {
-                    const settings = await this.settingsProvider.getAll();
                     this.anki = new Anki(settings, this.fetcher);
                     const permission = (await this.anki.requestPermission()).permission;
                     if (permission !== 'granted') throw new Error(`permission ${permission}`);

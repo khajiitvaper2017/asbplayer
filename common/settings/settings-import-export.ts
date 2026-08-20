@@ -298,6 +298,16 @@ const settingsSchema = {
     id: '/Settings',
     type: 'object',
     properties: {
+        miningProvider: {
+            type: 'string',
+            enum: ['anki', 'jiten'],
+        },
+        jitenApiKey: {
+            type: 'string',
+        },
+        jitenStudyDeckId: {
+            type: 'integer',
+        },
         ankiConnectUrl: {
             type: 'string',
         },
@@ -580,6 +590,12 @@ const settingsSchema = {
         },
         clickToMineDefaultAction: {
             type: 'number',
+        },
+        jitenDefaultMiningAction: {
+            type: 'number',
+        },
+        jitenMineAllExistingBehavior: {
+            type: 'string',
         },
         postMiningPlaybackState: {
             type: 'number',

@@ -1151,7 +1151,7 @@ function PlayerComponent(
             forceUseGivenSubtitle?: boolean,
             cardTextFieldValues?: CardTextFieldValues
         ) => {
-            if (videoFileUrl) {
+            if (videoFileUrl && settings.miningProvider === 'anki') {
                 if (forceUseGivenSubtitle) {
                     channel?.copy(postMineAction, subtitle, surroundingSubtitles, cardTextFieldValues);
                 } else {
@@ -1181,7 +1181,17 @@ function PlayerComponent(
                 );
             }
         },
-        [channel, onCopy, clock, videoFile, videoFileUrl, subtitleFiles, selectedAudioTrack, playbackRate]
+        [
+            channel,
+            onCopy,
+            clock,
+            videoFile,
+            videoFileUrl,
+            subtitleFiles,
+            selectedAudioTrack,
+            playbackRate,
+            settings.miningProvider,
+        ]
     );
 
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -1380,7 +1390,9 @@ function PlayerComponent(
                     settings.surroundingSubtitlesCountRadius,
                     settings.surroundingSubtitlesTimeRadius
                 ),
-                settings.clickToMineDefaultAction,
+                settings.miningProvider === 'jiten'
+                    ? settings.jitenDefaultMiningAction
+                    : settings.clickToMineDefaultAction,
                 true
             );
         });

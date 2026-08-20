@@ -1,4 +1,12 @@
-import { asbError, asbWarn, humanReadableTime, download, extractText, timeDurationDisplay } from '@project/common/util';
+import {
+    asbError,
+    asbInfo,
+    asbWarn,
+    humanReadableTime,
+    download,
+    extractText,
+    timeDurationDisplay,
+} from '@project/common/util';
 import type { ComponentProps } from 'react';
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { makeStyles } from '@mui/styles';
@@ -26,6 +34,14 @@ import type {
     ConfirmedVideoDataSubtitleTrack,
 } from '@project/common';
 import { MediaFragment, PostMineAction, MediaFragmentErrorCode, VideoDataUiOpenReason } from '@project/common';
+import {
+    JitenClient,
+    JitenTargetStore,
+    isJitenPageEvent,
+    jitenSentenceContainsWordForm,
+    targetFromJitenEvent,
+} from '@project/common/jiten';
+import type { JitenCardMediaStatus, JitenMinedWord } from '@project/common/jiten';
 import { createTheme } from '@project/common/theme';
 import type { AsbplayerSettings, DictionaryTrack, Profile, SettingsProvider } from '@project/common/settings';
 import { AudioClip, Mp3Encoder } from '@project/common/audio-clip';
@@ -35,6 +51,7 @@ import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
 import Alert from '@project/common/app/components/Alert';
 import AnkiDialog from '@project/common/components/AnkiDialog';
+import ConfirmJitenDialog from '@project/common/components/ConfirmJitenDialog';
 import Paper from '@mui/material/Paper';
 import DragOverlay from '@project/common/app/components/DragOverlay';
 import Bar from '@project/common/app/components/Bar';
@@ -52,6 +69,7 @@ import type { AlertColor } from '@mui/material/Alert';
 import type VideoChannel from '@project/common/app/services/video-channel';
 import { addBlobUrl, createBlobUrl, revokeBlobUrl } from '@project/common/blob-url';
 import { useTranslation } from 'react-i18next';
+
 import { LocalizedError } from '@project/common/app/components/localized-error';
 import { useCopyHistory } from '@project/common/app/hooks/use-copy-history';
 import { useFileSession } from '@project/common/app/hooks/use-file-session';
@@ -88,6 +106,7 @@ import VideoDataSyncDialog, { useVideoDataSyncDialogState } from '@project/commo
 import type { FileWithId } from '@project/common/file-selector';
 import { DefaultFileSelector } from '@project/common/file-selector';
 
+const jitenTargetStore = new JitenTargetStore();
 const latestExtensionVersion = '1.16.0';
 const extensionUrl =
     'https://chromewebstore.google.com/detail/asbplayer-language-learni/hkledmpjpaehamkiehglnbelcpdflcab';
@@ -369,7 +388,8 @@ function App({
         settings.convertNetflixRuby,
     ]);
     const webSocketClient = useAppWebSocketClient({ settings });
-    const supportsDictionaryStatistics = !extension.installed || extension.supportsDictionaryStatistics;
+    const supportsDictionaryStatistics =
+        settings.miningProvider === 'anki' && (!extension.installed || extension.supportsDictionaryStatistics);
     const [subtitles, setSubtitles] = useState<DisplaySubtitleModel[]>([]);
     const playbackPreferences = usePlaybackPreferences();
     const theme = useMemo<Theme>(() => createTheme(settings.themeType), [settings.themeType]);
@@ -419,6 +439,7 @@ function App({
     const [ankiDialogOpen, setAnkiDialogOpen] = useState<boolean>(false);
     const [ankiDialogDisabled, setAnkiDialogDisabled] = useState<boolean>(false);
     const [ankiDialogCard, setAnkiDialogCard] = useState<CardModel>();
+    const [jitenDialogAutoMineMode, setJitenDialogAutoMineMode] = useState<'all' | 'single'>();
     const miningContext = useMemo(() => new MiningContext(), []);
     const [settingsDialogOpen, setSettingsDialogOpen] = useState<boolean>(false);
     const [settingsDialogScrollToId, setSettingsDialogScrollToId] = useState<string>();
@@ -440,6 +461,39 @@ function App({
     } = useFileSession();
 
     const [lastError, setLastError] = useState<any>();
+    const [jitenConfirmationOpen, setJitenConfirmationOpen] = useState(false);
+    const [jitenConfirmationBody, setJitenConfirmationBody] = useState('');
+    const jitenConfirmationResolver = useRef<(result: 'cancel' | 'confirm' | 'open') => void>();
+    const confirmJitenAction = useCallback(
+        (body: string) =>
+            new Promise<'cancel' | 'confirm' | 'open'>((resolve) => {
+                jitenConfirmationResolver.current = resolve;
+                setJitenConfirmationBody(body);
+                setJitenConfirmationOpen(true);
+            }),
+        []
+    );
+
+    useEffect(() => {
+        const handleJitenMessage = (event: MessageEvent) => {
+            if (event.source !== window || !isJitenPageEvent(event.data)) return;
+            if (event.data.type !== 'card-mined') return;
+            asbInfo('jiten/events', 'Received page event', {
+                type: event.data.type,
+                wordId: event.data.wordId,
+                readingIndex: event.data.readingIndex,
+                spelling: event.data.spelling,
+                reading: event.data.reading,
+            });
+            const target = targetFromJitenEvent(event.data);
+            if (target) {
+                jitenTargetStore.set(target);
+                asbInfo('jiten/events', 'Stored mined target', target);
+            }
+        };
+        window.addEventListener('message', handleJitenMessage);
+        return () => window.removeEventListener('message', handleJitenMessage);
+    }, []);
     const playerRef = useRef<PlayerRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const bufferedFileInputRef = useRef<HTMLInputElement>(null);
@@ -466,6 +520,12 @@ function App({
         [t]
     );
 
+    const handleWarning = useCallback((message: string) => {
+        setAlertSeverity('warning');
+        setAlert(message);
+        setAlertOpen(true);
+    }, []);
+
     const handleCopyLastError = useCallback(
         (error: string) => {
             setAlertSeverity('info');
@@ -486,13 +546,14 @@ function App({
     );
 
     const handleAnkiDialogRequest = useCallback(
-        (ankiDialogItem?: CopyHistoryItem) => {
+        (ankiDialogItem?: CopyHistoryItem, autoMineMode?: 'all' | 'single') => {
             if (!ankiDialogItem && copyHistoryItemsRef.current.length === 0) {
                 return;
             }
 
             const item = ankiDialogItem ?? copyHistoryItemsRef.current[copyHistoryItemsRef.current.length - 1];
             setAnkiDialogCard(item);
+            setJitenDialogAutoMineMode(autoMineMode);
             setAnkiDialogOpen(true);
             setAnkiDialogDisabled(false);
             setDisableKeyEvents(true);
@@ -537,6 +598,44 @@ function App({
             setAnkiDialogDisabled(true);
 
             try {
+                if (settingsRef.current.miningProvider === 'jiten') {
+                    const target = jitenTargetStore.current;
+                    if (!target) throw new Error(t('jiten.noTarget'));
+                    const targetWithSelectedForm = params.word ? { ...target, sentence: `**${params.word}**` } : target;
+                    const client = new JitenClient({ jitenApiKey: settingsRef.current.jitenApiKey });
+                    const mediaStatus = await client
+                        .cardMediaStatus(
+                            targetWithSelectedForm.spelling,
+                            targetWithSelectedForm.wordId,
+                            targetWithSelectedForm.readingIndex
+                        )
+                        .catch(() => undefined);
+                    const result = await client.attach(
+                        targetWithSelectedForm,
+                        params.text ?? '',
+                        mediaStatus?.image ? undefined : params.image,
+                        mediaStatus?.audio ? undefined : params.audioClip,
+                        params.source
+                    );
+                    if (!result.sentenceSaved)
+                        throw new Error(t('jiten.sentenceNotSaved', { errors: result.errors.join('; ') }));
+                    const media = [result.imageSaved ? t('jiten.image') : '', result.audioSaved ? t('jiten.audio') : '']
+                        .filter(Boolean)
+                        .join(' and ');
+                    setAlertSeverity(result.errors.length ? 'warning' : 'success');
+                    setAlert(
+                        result.errors.length
+                            ? t('jiten.sentenceSavedWithIssue', {
+                                  media: media ? ` ${t('jiten.withMedia', { media })}` : '',
+                                  errors: result.errors.join('; '),
+                              })
+                            : t('jiten.cardUpdated', { media: media ? ` ${t('jiten.withMedia', { media })}` : '' })
+                    );
+                    setAlertOpen(true);
+                    setAnkiDialogOpen(false);
+                    if (miningContext.mining) miningContext.stopped();
+                    return;
+                }
                 const result = await anki.export(params);
 
                 if (params.mode !== 'gui') {
@@ -580,6 +679,59 @@ function App({
         ]
     );
 
+    const handleJitenDeckMine = useCallback(
+        async (params: ExportParams, media?: JitenCardMediaStatus, inMiningList = false) => {
+            const target = jitenTargetStore.current;
+            const deckId = settingsRef.current.jitenStudyDeckId;
+            if (!target || !deckId) return;
+            const client = new JitenClient({ jitenApiKey: settingsRef.current.jitenApiKey });
+            await client.attach(
+                target,
+                params.text ?? '',
+                media?.image ? undefined : params.image,
+                media?.audio ? undefined : params.audioClip,
+                params.source
+            );
+            if (!inMiningList) await client.addToStudyDeck(deckId, target, params.text ?? '', params.source);
+            setAlertSeverity('success');
+            setAlert(t('jiten.minedToDeck'));
+            setAlertOpen(true);
+            setAnkiDialogOpen(false);
+        },
+        [t]
+    );
+
+    const handleJitenMineAllNew = useCallback(
+        async (
+            params: ExportParams,
+            targets: JitenMinedWord[],
+            mediaByWord: Record<string, JitenCardMediaStatus>,
+            miningListByWord: Record<string, boolean>,
+            statesByWord: Record<string, number | undefined>,
+            existingBehavior: 'attach' | 'addAndAttach' | 'skip' = 'addAndAttach'
+        ) => {
+            const deckId = settingsRef.current.jitenStudyDeckId;
+            if (!deckId) return;
+            const client = new JitenClient({ jitenApiKey: settingsRef.current.jitenApiKey });
+            for (const target of targets) {
+                const key = `${target.wordId}/${target.readingIndex}`;
+                const media = mediaByWord[key];
+                const hasBothMedia = Boolean(media?.image && media?.audio);
+                if (!hasBothMedia) {
+                    await client.attach(target, params.text ?? '', params.image, params.audioClip, params.source);
+                }
+                if (!miningListByWord[key] && (existingBehavior !== 'attach' || statesByWord[key] === 0)) {
+                    await client.addToStudyDeck(deckId, target, params.text ?? '', params.source);
+                }
+            }
+            setAlertSeverity('success');
+            setAlert(t('jiten.minedToDeck'));
+            setAlertOpen(true);
+            setAnkiDialogOpen(false);
+        },
+        [t]
+    );
+
     // Avoid unnecessary re-renders by having handleCopy operate on a ref to settings
     const settingsRef = useRef(settings);
     settingsRef.current = settings;
@@ -596,7 +748,7 @@ function App({
                 id: id || uuidv4(),
             };
 
-            if (extension.supportsSidePanel) {
+            if (extension.supportsSidePanel && settingsRef.current.miningProvider === 'anki') {
                 extension.publishCard(newCard);
             } else {
                 void saveCopyHistoryItem(newCard);
@@ -618,8 +770,48 @@ function App({
                 case PostMineAction.showUpdateCardDialog:
                     handleAnkiDialogRequest(newCard);
                     break;
+                case PostMineAction.jitenMineAllWords:
+                    handleAnkiDialogRequest(newCard, 'all');
+                    break;
+                case PostMineAction.jitenMineSingleWordOrDialog:
+                    handleAnkiDialogRequest(newCard, 'single');
+                    break;
                 case PostMineAction.exportCard:
+                case PostMineAction.jitenUpdateLastCardOrDialog:
                 case PostMineAction.updateLastCard: {
+                    const sentence = extractText(card.subtitle, card.surroundingSubtitles);
+                    const jitenTarget = jitenTargetStore.current;
+                    let confirmationResult: 'cancel' | 'confirm' | 'open' = 'confirm';
+                    if (
+                        settingsRef.current.miningProvider === 'jiten' &&
+                        (postMineAction === PostMineAction.updateLastCard ||
+                            postMineAction === PostMineAction.jitenUpdateLastCardOrDialog) &&
+                        jitenTarget &&
+                        !jitenSentenceContainsWordForm(
+                            sentence,
+                            jitenTarget.spelling,
+                            jitenTarget.reading,
+                            jitenTarget.sentence
+                        )
+                    ) {
+                        if (postMineAction === PostMineAction.jitenUpdateLastCardOrDialog) {
+                            handleAnkiDialogRequest(newCard, undefined);
+                            break;
+                        }
+                        confirmationResult = await confirmJitenAction(
+                            `${t('jiten.sentenceMissingWordConfirmation')}\n\n${t('jiten.sentenceMissingWordDetails', {
+                                sentence,
+                                form: jitenTarget.sentence?.match(/\*\*([^*]+)\*\*/)?.[1] ?? jitenTarget.spelling,
+                            })}`
+                        );
+                        if (confirmationResult === 'open') {
+                            handleAnkiDialogRequest(newCard);
+                            break;
+                        }
+                    }
+                    if (confirmationResult !== 'confirm') {
+                        break;
+                    }
                     miningContext.started();
                     let audioClip = AudioClip.fromCard(
                         newCard,
@@ -633,7 +825,7 @@ function App({
                     }
 
                     void handleAnkiDialogProceed({
-                        text: extractText(card.subtitle, card.surroundingSubtitles),
+                        text: sentence,
                         track1: extractText(card.subtitle, card.surroundingSubtitles, 0),
                         track2: extractText(card.subtitle, card.surroundingSubtitles, 1),
                         track3: extractText(card.subtitle, card.surroundingSubtitles, 2),
@@ -661,7 +853,15 @@ function App({
                     throw new Error('Unknown post mine action: ' + postMineAction);
             }
         },
-        [extension, miningContext, saveCopyHistoryItem, handleAnkiDialogProceed, handleAnkiDialogRequest, t]
+        [
+            extension,
+            miningContext,
+            saveCopyHistoryItem,
+            handleAnkiDialogProceed,
+            handleAnkiDialogRequest,
+            t,
+            confirmJitenAction,
+        ]
     );
 
     const handleOpenCopyHistory = useCallback(async () => {
@@ -919,6 +1119,7 @@ function App({
 
     const handleAnkiDialogCancel = useCallback(() => {
         setAnkiDialogOpen(false);
+        setJitenDialogAutoMineMode(undefined);
         setAnkiDialogDisabled(false);
         setDisableKeyEvents(false);
 
@@ -1824,11 +2025,9 @@ function App({
                     onDragEnter={handleDragEnter}
                     onDragLeave={handleDragLeave}
                 >
-                    {!sources.videoFile && !inVideoPlayer && (
-                        <Alert open={alertOpen} useAppLogo={false} onClose={handleAlertClosed} severity={alertSeverity}>
-                            {alert}
-                        </Alert>
-                    )}
+                    <Alert open={alertOpen} useAppLogo={false} onClose={handleAlertClosed} severity={alertSeverity}>
+                        {alert}
+                    </Alert>
                     {inVideoPlayer ? (
                         <>
                             <RenderVideo
@@ -1857,8 +2056,29 @@ function App({
                                     onProceed={handleAnkiDialogProceed}
                                     onCopyToClipboard={handleCopyToClipboard}
                                     mp3Encoder={mp3Encoder}
-                                    showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
+                                    showQuickSelectFtue={
+                                        settings.miningProvider === 'anki' && showAnkiDialogQuickSelectFtue
+                                    }
                                     onDismissShowQuickSelectFtue={handleDismissShowAnkiDialogQuickSelectFtue}
+                                    provider={settings.miningProvider}
+                                    jitenTarget={jitenTargetStore.current}
+                                    onJitenTargetChanged={(target) => jitenTargetStore.set(target)}
+                                    onJitenDeckMine={(params, media, inMiningList) =>
+                                        void handleJitenDeckMine(params, media, inMiningList)
+                                    }
+                                    onJitenMineAllNew={(params, targets, media, miningList, states) =>
+                                        void handleJitenMineAllNew(
+                                            params,
+                                            targets,
+                                            media,
+                                            miningList,
+                                            states,
+                                            settings.jitenMineAllExistingBehavior
+                                        )
+                                    }
+                                    jitenDeckId={settings.jitenStudyDeckId}
+                                    jitenAutoMineMode={jitenDialogAutoMineMode}
+                                    jitenMineAllExistingBehavior={settings.jitenMineAllExistingBehavior}
                                     {...profilesContext}
                                 />
                             )}
@@ -1905,8 +2125,29 @@ function App({
                                     onOpenSettings={handleOpenSettings}
                                     onCopyToClipboard={handleCopyToClipboard}
                                     mp3Encoder={mp3Encoder}
-                                    showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
+                                    showQuickSelectFtue={
+                                        settings.miningProvider === 'anki' && showAnkiDialogQuickSelectFtue
+                                    }
                                     onDismissShowQuickSelectFtue={handleDismissShowAnkiDialogQuickSelectFtue}
+                                    provider={settings.miningProvider}
+                                    jitenTarget={jitenTargetStore.current}
+                                    onJitenTargetChanged={(target) => jitenTargetStore.set(target)}
+                                    onJitenDeckMine={(params, media, inMiningList) =>
+                                        void handleJitenDeckMine(params, media, inMiningList)
+                                    }
+                                    onJitenMineAllNew={(params, targets, media, miningList, states) =>
+                                        void handleJitenMineAllNew(
+                                            params,
+                                            targets,
+                                            media,
+                                            miningList,
+                                            states,
+                                            settings.jitenMineAllExistingBehavior
+                                        )
+                                    }
+                                    jitenDeckId={settings.jitenStudyDeckId}
+                                    jitenAutoMineMode={jitenDialogAutoMineMode}
+                                    jitenMineAllExistingBehavior={settings.jitenMineAllExistingBehavior}
                                     {...profilesContext}
                                 />
                             )}
@@ -1915,6 +2156,7 @@ function App({
                                 extension={extension}
                                 open={settingsDialogOpen}
                                 onSettingsChanged={onSettingsChanged}
+                                onWarning={handleWarning}
                                 onClose={handleCloseSettings}
                                 dictionaryProvider={dictionaryProvider}
                                 settings={settings}
@@ -2107,6 +2349,25 @@ function App({
                         </Paper>
                     )}
                 </div>
+                <ConfirmJitenDialog
+                    open={jitenConfirmationOpen}
+                    body={jitenConfirmationBody}
+                    onOpen={() => {
+                        setJitenConfirmationOpen(false);
+                        jitenConfirmationResolver.current?.('open');
+                        jitenConfirmationResolver.current = undefined;
+                    }}
+                    onClose={() => {
+                        setJitenConfirmationOpen(false);
+                        jitenConfirmationResolver.current?.('cancel');
+                        jitenConfirmationResolver.current = undefined;
+                    }}
+                    onConfirm={() => {
+                        setJitenConfirmationOpen(false);
+                        jitenConfirmationResolver.current?.('confirm');
+                        jitenConfirmationResolver.current = undefined;
+                    }}
+                />
             </ThemeProvider>
         </StyledEngineProvider>
     );

@@ -1280,7 +1280,9 @@ export default function SubtitlePlayer({
         onCopyRef.current(
             currentSubtitles[index],
             calculateSurroundingSubtitlesForIndexRef.current(index),
-            settingsRef.current.clickToMineDefaultAction,
+            settingsRef.current.miningProvider === 'jiten'
+                ? settingsRef.current.jitenDefaultMiningAction
+                : settingsRef.current.clickToMineDefaultAction,
             true
         );
     }, []);

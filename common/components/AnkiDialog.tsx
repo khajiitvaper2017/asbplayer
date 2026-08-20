@@ -12,12 +12,20 @@ import { useTranslation } from 'react-i18next';
 import makeStyles from '@mui/styles/makeStyles';
 import type { SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
 import { MediaFragment } from '@project/common';
-import type { AnkiSettings, Profile } from '@project/common/settings';
+import type { AnkiSettings, MiningProvider, Profile } from '@project/common/settings';
+import { JitenClient, jitenSentenceContainsWordForm } from '@project/common/jiten';
+import type {
+    JitenCardMediaStatus,
+    JitenMinedWord,
+    JitenVocabularyEntry,
+    JitenVocabularyResult,
+} from '@project/common/jiten';
 import { sortedAnkiFieldModels } from '@project/common/settings';
 import { AudioClip } from '@project/common/audio-clip';
 import Badge from '@mui/material/Badge';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -52,8 +60,63 @@ import type { Theme } from '@mui/material';
 import TutorialBubble from '@project/common/components/TutorialBubble';
 import AnkiDialogTutorialBubble from '@project/common/components/AnkiDialogTutorialBubble';
 import CardSelectView from '@project/common/components/CardSelectView';
+import Link from '@mui/material/Link';
 
 const quickSelectShortcut = isMacOs ? '⌘+⇧+Enter' : 'Alt+Shift+Enter';
+
+const formatJitenPercentage = (value?: number) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return '?';
+    return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(value)}%`;
+};
+
+const jitenStateLabel = (state?: number, loading = false) =>
+    loading
+        ? 'Loading…'
+        : ({
+              0: 'New',
+              1: 'Young',
+              2: 'Mature',
+              3: 'Blacklisted',
+              4: 'Due',
+              5: 'Mastered',
+              6: 'Redundant',
+              7: 'Suspended',
+          }[state ?? -1] ?? 'Unknown');
+
+const jitenHiddenMiningStates = new Set([3, 5, 6]);
+
+const renderJitenRuby = (text: string) => {
+    const parts: React.ReactNode[] = [];
+    const pattern = /([^[]+)\[([^\]]+)\]/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(text))) {
+        if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+        parts.push(
+            <ruby key={match.index}>
+                {match[1]}
+                <rt>{match[2]}</rt>
+            </ruby>
+        );
+        lastIndex = pattern.lastIndex;
+    }
+    if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+    return parts.length ? parts : text;
+};
+
+const stripJitenRuby = (text: string) => text.replace(/\[([^\]]+)\]/g, '');
+
+const replaceJitenFormInSentence = (sentence: string, oldSurface: string, oldLemma: string, newForm: string) => {
+    const lemma = stripJitenRuby(oldLemma);
+    const replacement = stripJitenRuby(newForm);
+    const oldStem = lemma.replace(/[うくぐすつぬぶむる]$/, '');
+    const newStem = replacement.replace(/[うくぐすつぬぶむる]$/, '');
+    const surfaceIndex = sentence.indexOf(oldSurface);
+    if (surfaceIndex < 0) return sentence;
+    const suffix = oldSurface.startsWith(oldStem) ? oldSurface.slice(oldStem.length) : '';
+    const nextSurface = suffix ? `${newStem}${suffix}` : replacement;
+    return `${sentence.slice(0, surfaceIndex)}${nextSurface}${sentence.slice(surfaceIndex + oldSurface.length)}`;
+};
 
 const useStyles = makeStyles<Theme>((theme) => ({
     root: {
@@ -212,6 +275,20 @@ interface AnkiDialogProps {
     showQuickSelectFtue?: boolean;
     onDismissShowQuickSelectFtue?: () => void;
     inTutorial?: boolean;
+    provider?: MiningProvider;
+    jitenTarget?: JitenMinedWord;
+    onJitenTargetChanged?: (target: JitenMinedWord) => void;
+    onJitenDeckMine?: (params: ExportParams, media?: JitenCardMediaStatus, inMiningList?: boolean) => void;
+    onJitenMineAllNew?: (
+        params: ExportParams,
+        targets: JitenMinedWord[],
+        media: Record<number, JitenCardMediaStatus>,
+        miningList: Record<number, boolean>,
+        states: Record<string, number | undefined>
+    ) => void;
+    jitenDeckId?: number;
+    jitenAutoMineMode?: 'all' | 'single';
+    jitenMineAllExistingBehavior?: 'attach' | 'addAndAttach' | 'skip';
 }
 
 const AnkiDialog = ({
@@ -242,10 +319,93 @@ const AnkiDialog = ({
     showQuickSelectFtue,
     onDismissShowQuickSelectFtue,
     inTutorial,
+    provider = 'anki',
+    jitenTarget,
+    onJitenTargetChanged,
+    onJitenDeckMine,
+    onJitenMineAllNew,
+    jitenDeckId = 0,
+    jitenAutoMineMode,
+    jitenMineAllExistingBehavior = 'addAndAttach',
 }: AnkiDialogProps) => {
     const classes = useStyles();
+    const jitenDeckSelected = jitenDeckId > 0;
     const [definition, setDefinition] = useState<string>('');
     const [text, setText] = useState<string>('');
+    const [jitenWordForm, setJitenWordForm] = useState<string>('');
+    const [jitenSentenceWords, setJitenSentenceWords] = useState<JitenVocabularyResult[]>([]);
+    const [jitenSentenceEligibility, setJitenSentenceEligibility] = useState<Record<string, boolean>>({});
+    const [selectedJitenTarget, setSelectedJitenTarget] = useState<JitenMinedWord | undefined>(jitenTarget);
+    const [jitenVocabularyByWord, setJitenVocabularyByWord] = useState<Record<number, JitenVocabularyEntry>>({});
+    const [jitenMediaByWord, setJitenMediaByWord] = useState<Record<string, JitenCardMediaStatus>>({});
+    const [jitenMiningListByWord, setJitenMiningListByWord] = useState<Record<string, boolean>>({});
+    const autoMineAllDone = useRef(false);
+    const jitenVocabulary = selectedJitenTarget ? jitenVocabularyByWord[selectedJitenTarget.wordId] : undefined;
+    const jitenWordInMiningDeck = selectedJitenTarget
+        ? jitenMiningListByWord[`${selectedJitenTarget.wordId}/${selectedJitenTarget.readingIndex}`]
+        : undefined;
+    const jitenWordAlreadyMined =
+        jitenWordInMiningDeck === true || jitenVocabulary?.knownStates?.some((state) => state !== 0) === true;
+    const jitenSelectableSentenceWords = jitenSentenceWords.filter(
+        (word, index, words) =>
+            word.wordId > 0 &&
+            jitenSentenceEligibility[`${word.wordId}/${word.readingIndex}`] === true &&
+            words.findIndex(
+                (item) => `${item.wordId}/${item.readingIndex}` === `${word.wordId}/${word.readingIndex}`
+            ) === index
+    );
+    const jitenMineTargets = jitenSelectableSentenceWords
+        .filter((word) => {
+            const isNew = jitenVocabularyByWord[word.wordId]?.knownStates?.[0] === 0;
+            const key = `${word.wordId}/${word.readingIndex}`;
+            const media = jitenMediaByWord[key];
+            if (isNew && !jitenMiningListByWord[key]) return true;
+            if (jitenMineAllExistingBehavior === 'skip') return false;
+            if (jitenMineAllExistingBehavior === 'addAndAttach' && !isNew && !jitenMiningListByWord[key]) {
+                return true;
+            }
+            return Boolean(media && (!media.image || !media.audio));
+        })
+        .map((word) => ({
+            ...(selectedJitenTarget ?? { source: undefined }),
+            wordId: word.wordId,
+            readingIndex: word.readingIndex,
+            spelling: word.originalText ?? '',
+            reading: word.originalText ?? '',
+        }));
+    const jitenMineWords = jitenMineTargets.filter(
+        (target) =>
+            !jitenMiningListByWord[`${target.wordId}/${target.readingIndex}`] &&
+            (jitenVocabularyByWord[target.wordId]?.knownStates?.[0] === 0 ||
+                (jitenMineAllExistingBehavior === 'addAndAttach' &&
+                    jitenVocabularyByWord[target.wordId]?.knownStates?.[0] !== undefined))
+    );
+    const jitenAttachmentWords = jitenMineTargets.filter((target) => {
+        const media = jitenMediaByWord[`${target.wordId}/${target.readingIndex}`];
+        return !media || !media.image || !media.audio;
+    });
+    const jitenStatesByWord = Object.fromEntries(
+        jitenSelectableSentenceWords.map((word) => [
+            `${word.wordId}/${word.readingIndex}`,
+            jitenVocabularyByWord[word.wordId]?.knownStates?.[0],
+        ])
+    );
+    const jitenSentenceWarning =
+        provider === 'jiten' &&
+        selectedJitenTarget !== undefined &&
+        text.trim().length > 0 &&
+        !jitenSentenceContainsWordForm(
+            text,
+            selectedJitenTarget.spelling,
+            selectedJitenTarget.reading,
+            `**${jitenWordForm}**`
+        );
+    const selectedSentenceWord = selectedJitenTarget
+        ? jitenSelectableSentenceWords.find((word) => word.wordId === selectedJitenTarget.wordId)
+        : undefined;
+    const selectedSentenceWordKey = selectedSentenceWord
+        ? `${selectedSentenceWord.wordId}/${selectedSentenceWord.readingIndex}`
+        : '';
     const [word, setWord] = useState<string>('');
     const [source, setSource] = useState<string>('');
     const [tags, setTags] = useState<string[]>(settings.tags);
@@ -286,7 +446,7 @@ const AnkiDialog = ({
             definition,
             audioClip,
             image,
-            word,
+            word: provider === 'jiten' ? jitenWordForm : word,
             source,
             url,
             customFieldValues,
@@ -294,8 +454,62 @@ const AnkiDialog = ({
             mode,
             noteId,
         }),
-        [text, track1, track2, track3, definition, audioClip, image, word, source, url, customFieldValues, tags]
+        [
+            text,
+            track1,
+            track2,
+            track3,
+            definition,
+            audioClip,
+            image,
+            word,
+            jitenWordForm,
+            source,
+            url,
+            customFieldValues,
+            tags,
+            provider,
+        ]
     );
+
+    useEffect(() => {
+        if (!open) {
+            autoMineAllDone.current = false;
+            return;
+        }
+        if (provider !== 'jiten' || !jitenAutoMineMode || autoMineAllDone.current) return;
+        if (!jitenDeckSelected || !onJitenMineAllNew) return;
+        const targets =
+            jitenAutoMineMode === 'single'
+                ? jitenMineWords.length === 1
+                    ? jitenMineWords
+                    : undefined
+                : jitenMineTargets.length > 0
+                  ? jitenMineTargets
+                  : undefined;
+        if (!targets) return;
+        autoMineAllDone.current = true;
+        onJitenMineAllNew(
+            buildExportParams('default'),
+            targets,
+            jitenMediaByWord,
+            jitenMiningListByWord,
+            jitenStatesByWord
+        );
+    }, [
+        open,
+        provider,
+        jitenAutoMineMode,
+        jitenDeckSelected,
+        jitenMineTargets,
+        jitenMineAllExistingBehavior,
+        jitenMineWords,
+        jitenMediaByWord,
+        jitenMiningListByWord,
+        jitenStatesByWord,
+        onJitenMineAllNew,
+        buildExportParams,
+    ]);
 
     if (stateRef) {
         stateRef.current = {
@@ -359,6 +573,148 @@ const AnkiDialog = ({
     ]);
 
     useEffect(() => {
+        if (!open || provider !== 'jiten') return;
+        setSelectedJitenTarget(jitenTarget);
+        setJitenVocabularyByWord({});
+        setJitenMediaByWord({});
+        setJitenMiningListByWord({});
+        setJitenSentenceWords([]);
+        setJitenWordForm(jitenTarget?.sentence?.match(/\*\*([^*]+)\*\*/)?.[1] ?? jitenTarget?.spelling ?? '');
+    }, [open]);
+
+    useEffect(() => {
+        if (!open || provider !== 'jiten' || text.trim() === '') {
+            setJitenSentenceWords([]);
+            setJitenSentenceEligibility({});
+            return;
+        }
+        setJitenSentenceWords([]);
+        setJitenSentenceEligibility({});
+        setJitenVocabularyByWord({});
+        setJitenMediaByWord({});
+        setJitenMiningListByWord({});
+        const timer = window.setTimeout(() => {
+            const parserText = text.replace(/\s+/g, '');
+            void new JitenClient({ jitenApiKey: settings.jitenApiKey })
+                .parseNormalised(parserText)
+                .then((words) => {
+                    setJitenSentenceWords(words);
+                    setJitenSentenceEligibility({});
+                    setJitenVocabularyByWord({});
+                })
+                .catch(() => {
+                    setJitenSentenceWords([]);
+                    setJitenSentenceEligibility({});
+                    setJitenVocabularyByWord({});
+                });
+        }, 300);
+        return () => window.clearTimeout(timer);
+    }, [open, text, provider, settings.jitenApiKey]);
+
+    useEffect(() => {
+        if (provider !== 'jiten' || !jitenSentenceWords.length) return;
+        let current = true;
+        const client = new JitenClient({ jitenApiKey: settings.jitenApiKey });
+        const uniqueWords = jitenSentenceWords.filter(
+            (word, index, words) =>
+                word.wordId > 0 &&
+                words.findIndex(
+                    (item) => `${item.wordId}/${item.readingIndex}` === `${word.wordId}/${word.readingIndex}`
+                ) === index
+        );
+        const miningKeysPromise = jitenDeckId
+            ? client.studyDeckWordKeys(jitenDeckId)
+            : Promise.resolve(new Set<string>());
+        const statePromise = client
+            .lookupVocabulary(uniqueWords.map((word) => [word.wordId, word.readingIndex]))
+            .catch(() => new Map<string, number[]>());
+        const mediaPromise = client
+            .cardMediaBatchStatus(uniqueWords.map((word) => [word.wordId, word.readingIndex]))
+            .catch(() => new Map<string, JitenCardMediaStatus>());
+        void Promise.all(
+            uniqueWords.map(async (word) => {
+                try {
+                    const [details, states, mediaByKey] = await Promise.all([
+                        client.vocabularyInfo(word.wordId, word.readingIndex),
+                        statePromise,
+                        mediaPromise,
+                    ]);
+                    const vocabulary = { ...details, knownStates: states.get(`${word.wordId}/${word.readingIndex}`) };
+                    const media = mediaByKey.get(`${word.wordId}/${word.readingIndex}`);
+                    const miningKeys = await miningKeysPromise;
+                    const inMiningList = miningKeys.has(`${word.wordId}/${word.readingIndex}`);
+                    const canSelect =
+                        vocabulary.knownStates?.every((state) => !jitenHiddenMiningStates.has(state)) ?? true;
+                    return {
+                        key: `${word.wordId}/${word.readingIndex}`,
+                        wordId: word.wordId,
+                        vocabulary,
+                        media,
+                        inMiningList,
+                        canSelect,
+                    };
+                } catch {
+                    return { key: `${word.wordId}/${word.readingIndex}`, wordId: word.wordId, canSelect: true };
+                }
+            })
+        ).then((entries) => {
+            if (current) {
+                setJitenSentenceEligibility(Object.fromEntries(entries.map(({ key, canSelect }) => [key, canSelect])));
+                setJitenVocabularyByWord(
+                    Object.fromEntries(
+                        entries.flatMap(({ wordId, vocabulary }) => (vocabulary ? [[wordId, vocabulary]] : []))
+                    )
+                );
+                setJitenMediaByWord(
+                    Object.fromEntries(entries.flatMap(({ key, media }) => (media ? [[key, media]] : [])))
+                );
+                setJitenMiningListByWord(
+                    Object.fromEntries(entries.map(({ key, inMiningList }) => [key, inMiningList ?? false]))
+                );
+            }
+        });
+        return () => {
+            current = false;
+        };
+    }, [jitenDeckId, jitenSentenceWords, provider, settings.jitenApiKey]);
+
+    useEffect(() => {
+        if (
+            provider !== 'jiten' ||
+            !jitenSelectableSentenceWords.length ||
+            !Object.keys(jitenSentenceEligibility).length
+        ) {
+            return;
+        }
+        if (selectedSentenceWord) return;
+        const firstNew = jitenSelectableSentenceWords.find(
+            (word) => jitenVocabularyByWord[word.wordId]?.knownStates?.[0] === 0
+        );
+        const firstYoung = jitenSelectableSentenceWords.find(
+            (word) => jitenVocabularyByWord[word.wordId]?.knownStates?.[0] === 1
+        );
+        const result = firstNew ?? firstYoung ?? jitenSelectableSentenceWords[0];
+        const target = {
+            ...selectedJitenTarget,
+            wordId: result.wordId,
+            readingIndex: result.readingIndex,
+            spelling: result.originalText ?? selectedJitenTarget?.spelling ?? '',
+            reading: selectedJitenTarget?.reading ?? result.originalText ?? '',
+            sentence: `**${result.originalText ?? selectedJitenTarget?.spelling ?? ''}**`,
+        };
+        setSelectedJitenTarget(target);
+        setJitenWordForm(result.originalText ?? '');
+    }, [
+        jitenSelectableSentenceWords,
+        jitenSentenceEligibility,
+        jitenVocabularyByWord,
+        provider,
+        selectedJitenTarget,
+        selectedSentenceWord,
+    ]);
+
+    useEffect(() => {
+        if (provider !== 'anki') return;
         anki.version()
             .then(() => {
                 setAnkiIsAvailable(true);
@@ -366,7 +722,7 @@ const AnkiDialog = ({
             .catch(() => {
                 setAnkiIsAvailable(false);
             });
-    }, [anki]);
+    }, [anki, provider]);
 
     useEffect(() => {
         setTags(settings.tags);
@@ -789,8 +1145,10 @@ const AnkiDialog = ({
         },
         [handleProceed]
     );
-    const handleExport = useCallback(() => handleProceed('default'), [handleProceed]);
-
+    const handleExport = useCallback(() => {
+        if (provider === 'jiten' && selectedJitenTarget) onJitenTargetChanged?.(selectedJitenTarget);
+        void handleProceed('default');
+    }, [handleProceed, onJitenTargetChanged, provider, selectedJitenTarget]);
     useEffect(() => {
         const listener = (e: KeyboardEvent) => {
             if ((e.metaKey || e.altKey) && e.shiftKey) {
@@ -827,7 +1185,7 @@ const AnkiDialog = ({
                         show={tutorialStep === TutorialStep.dialog}
                     >
                         <Typography variant="h6" className={classes.title}>
-                            {t('ankiDialog.title')}
+                            {provider === 'jiten' ? t('jiten.attach') : t('ankiDialog.title')}
                         </Typography>
                     </AnkiDialogTutorialBubble>
                     {profiles !== undefined && onSetActiveProfile && (
@@ -868,6 +1226,137 @@ const AnkiDialog = ({
                     )}
                 </Toolbar>
                 <DialogContent ref={dialogRefCallback}>
+                    {provider === 'jiten' && selectedJitenTarget && (
+                        <Typography
+                            variant="body1"
+                            sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mt: -2, mb: 1 }}
+                        >
+                            <Typography component="span" variant="body2" color="text.secondary">
+                                {t('jiten.attachingTo')}
+                            </Typography>
+                            <Link
+                                href={`https://jiten.moe/vocabulary/${selectedJitenTarget.wordId}/${selectedJitenTarget.readingIndex}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                underline="hover"
+                            >
+                                {selectedJitenTarget.spelling}
+                            </Link>
+                        </Typography>
+                    )}
+                    {provider === 'jiten' && jitenSelectableSentenceWords.length > 0 && (
+                        <TextField
+                            select
+                            fullWidth
+                            sx={{ mb: 2 }}
+                            label={t('jiten.selectSentenceWord')}
+                            value={selectedSentenceWordKey}
+                            onChange={(event) => {
+                                const result = jitenSentenceWords.find(
+                                    (item) => `${item.wordId}/${item.readingIndex}` === event.target.value
+                                );
+                                if (!result || !selectedJitenTarget) return;
+                                const target = {
+                                    ...selectedJitenTarget,
+                                    wordId: result.wordId,
+                                    readingIndex: result.readingIndex,
+                                    spelling: result.originalText ?? selectedJitenTarget.spelling,
+                                    sentence: `**${result.originalText ?? selectedJitenTarget.spelling}**`,
+                                };
+                                setSelectedJitenTarget(target);
+                                setJitenWordForm(result.originalText ?? '');
+                                onJitenTargetChanged?.(target);
+                            }}
+                        >
+                            {jitenSelectableSentenceWords.map((result) => (
+                                <MenuItem
+                                    key={`${result.wordId}/${result.readingIndex}`}
+                                    value={`${result.wordId}/${result.readingIndex}`}
+                                >
+                                    <span>{result.originalText ?? ''}</span>
+                                    <Typography
+                                        component="span"
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ ml: 1 }}
+                                    >
+                                        {t('jiten.status', {
+                                            status: jitenStateLabel(
+                                                jitenVocabularyByWord[result.wordId]?.knownStates?.[0]
+                                            ),
+                                        })}
+                                        {' · '}
+                                        {t('jiten.imageStatus', {
+                                            status: jitenMediaByWord[`${result.wordId}/${result.readingIndex}`]?.image
+                                                ? t('jiten.mediaAttached')
+                                                : t('jiten.mediaMissing'),
+                                        })}
+                                        {' · '}
+                                        {t('jiten.audioStatus', {
+                                            status: jitenMediaByWord[`${result.wordId}/${result.readingIndex}`]?.audio
+                                                ? t('jiten.mediaAttached')
+                                                : t('jiten.mediaMissing'),
+                                        })}
+                                        {' · '}
+                                        {t('jiten.miningListStatus', {
+                                            status: jitenMiningListByWord[`${result.wordId}/${result.readingIndex}`]
+                                                ? t('jiten.yes')
+                                                : t('jiten.no'),
+                                        })}
+                                    </Typography>
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    )}
+                    {provider === 'jiten' && selectedJitenTarget && jitenVocabulary && (
+                        <TextField
+                            select
+                            fullWidth
+                            sx={{ mb: 2 }}
+                            label={t('jiten.forms')}
+                            value={`${selectedJitenTarget.wordId}/${selectedJitenTarget.readingIndex}`}
+                            onChange={(event) => {
+                                const form = (
+                                    jitenVocabulary.alternativeReadings ?? [jitenVocabulary.mainReading]
+                                ).find(
+                                    (item) =>
+                                        item &&
+                                        `${selectedJitenTarget.wordId}/${item.readingIndex}` === event.target.value
+                                );
+                                if (!form?.text) return;
+                                const oldSurface = jitenWordForm;
+                                const oldLemma = jitenVocabulary.mainReading?.text ?? selectedJitenTarget.spelling;
+                                const oldStem = stripJitenRuby(oldLemma).replace(/[うくぐすつぬぶむる]$/, '');
+                                const newForm = stripJitenRuby(form.text);
+                                const newStem = newForm.replace(/[うくぐすつぬぶむる]$/, '');
+                                const suffix = oldSurface.startsWith(oldStem) ? oldSurface.slice(oldStem.length) : '';
+                                const nextSurface = suffix ? `${newStem}${suffix}` : newForm;
+                                const nextSentence = replaceJitenFormInSentence(text, oldSurface, oldLemma, form.text);
+                                const target = {
+                                    ...selectedJitenTarget,
+                                    readingIndex: form.readingIndex,
+                                    spelling: stripJitenRuby(form.text),
+                                    sentence: `**${nextSurface}**`,
+                                };
+                                setSelectedJitenTarget(target);
+                                setText(nextSentence);
+                                setJitenWordForm(nextSurface);
+                                onJitenTargetChanged?.(target);
+                            }}
+                        >
+                            {(jitenVocabulary.alternativeReadings ?? [jitenVocabulary.mainReading])
+                                .filter((form): form is NonNullable<typeof form> => Boolean(form?.text))
+                                .map((form) => (
+                                    <MenuItem
+                                        key={`${selectedJitenTarget.wordId}/${form.readingIndex}`}
+                                        value={`${selectedJitenTarget.wordId}/${form.readingIndex}`}
+                                    >
+                                        {renderJitenRuby(form.text)} ({formatJitenPercentage(form.frequencyPercentage)})
+                                    </MenuItem>
+                                ))}
+                        </TextField>
+                    )}
+                    {jitenSentenceWarning && <Alert severity="warning">{t('jiten.sentenceMissingWordWarning')}</Alert>}
                     <form className={classes.root}>
                         {ankiFieldModels.map((model) => {
                             const key = model.custom ? `custom_${model.key}` : `standard_${model.key}`;
@@ -883,21 +1372,27 @@ const AnkiDialog = ({
                                             selectedSubtitles={selectedSubtitles}
                                         />
                                     )}
-                                    {!model.custom && model.key === 'definition' && model.field.display && (
-                                        <DefinitionField text={definition} onTextChange={setDefinition} />
-                                    )}
-                                    {!model.custom && model.key === 'word' && model.field.display && (
-                                        <WordField
-                                            anki={anki}
-                                            disabled={disabled}
-                                            text={word}
-                                            onText={setWord}
-                                            wordField={settings.wordField}
-                                            disableTutorial={!effectiveInTutorial}
-                                            showTutorial={tutorialStep === TutorialStep.wordField}
-                                            onConfirmTutorial={() => setTutorialStep(TutorialStep.configure)}
-                                        />
-                                    )}
+                                    {provider === 'anki' &&
+                                        !model.custom &&
+                                        model.key === 'definition' &&
+                                        model.field.display && (
+                                            <DefinitionField text={definition} onTextChange={setDefinition} />
+                                        )}
+                                    {provider === 'anki' &&
+                                        !model.custom &&
+                                        model.key === 'word' &&
+                                        model.field.display && (
+                                            <WordField
+                                                anki={anki}
+                                                disabled={disabled}
+                                                text={word}
+                                                onText={setWord}
+                                                wordField={settings.wordField}
+                                                disableTutorial={!effectiveInTutorial}
+                                                showTutorial={tutorialStep === TutorialStep.wordField}
+                                                onConfirmTutorial={() => setTutorialStep(TutorialStep.configure)}
+                                            />
+                                        )}
                                     {image && !model.custom && model.key === 'image' && model.field.display && (
                                         <ImageField
                                             onViewImage={handleViewImage}
@@ -974,15 +1469,17 @@ const AnkiDialog = ({
                                 </React.Fragment>
                             );
                         })}
-                        <ListField
-                            variant="filled"
-                            label="Tags"
-                            helperText={t('ankiDialog.tagList')}
-                            fullWidth
-                            color="primary"
-                            items={tags}
-                            onItemsChange={setTags}
-                        />
+                        {provider === 'anki' && (
+                            <ListField
+                                variant="filled"
+                                label="Tags"
+                                helperText={t('ankiDialog.tagList')}
+                                fullWidth
+                                color="primary"
+                                items={tags}
+                                onItemsChange={setTags}
+                            />
+                        )}
                         {timestampInterval && timestampBoundaryInterval && timestampMarks && (
                             <Grid container direction="row">
                                 <Grid item style={{ flexGrow: 1 }}>
@@ -1078,38 +1575,79 @@ const AnkiDialog = ({
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Tooltip title={t('cardSelectUi.title')}>
+                    {provider === 'jiten' && jitenMineTargets.length > 0 && onJitenMineAllNew && (
+                        <Tooltip
+                            title={
+                                !jitenDeckSelected ? (
+                                    t('jiten.selectDeckInSettings')
+                                ) : (
+                                    <span style={{ whiteSpace: 'pre-line' }}>
+                                        {t('jiten.mineAllTooltip', {
+                                            words: jitenMineWords.map((target) => target.spelling).join(', ') || 'None',
+                                            attachments:
+                                                jitenAttachmentWords.map((target) => target.spelling).join(', ') ||
+                                                'None',
+                                        })}
+                                    </span>
+                                )
+                            }
+                        >
+                            <span>
+                                <AnkiDialogButton
+                                    disabled={disabled || !jitenDeckSelected}
+                                    onClick={() =>
+                                        onJitenMineAllNew(
+                                            buildExportParams('default'),
+                                            jitenMineTargets,
+                                            jitenMediaByWord,
+                                            jitenMiningListByWord,
+                                            jitenStatesByWord
+                                        )
+                                    }
+                                >
+                                    {t('jiten.mineAllNew')}
+                                </AnkiDialogButton>
+                            </span>
+                        </Tooltip>
+                    )}
+                    {provider === 'anki' && (
+                        <Tooltip title={t('cardSelectUi.title')}>
+                            <AnkiDialogButton
+                                ref={updateSpecificButtonRef}
+                                disabled={disabled}
+                                focusVisible={focusedAction === 'updateSpecific'}
+                                onBlurVisible={handleActionBlur}
+                                onClick={() => setCardSelectDialogOpen(true)}
+                                component={(props) => (
+                                    <IconButton color="primary" size="small" {...props}>
+                                        <SearchIcon />
+                                    </IconButton>
+                                )}
+                            />
+                        </Tooltip>
+                    )}
+                    {provider === 'anki' && (
                         <AnkiDialogButton
-                            ref={updateSpecificButtonRef}
+                            ref={openInAnkiButtonRef}
                             disabled={disabled}
-                            focusVisible={focusedAction === 'updateSpecific'}
+                            focusVisible={focusedAction === 'gui'}
                             onBlurVisible={handleActionBlur}
-                            onClick={() => setCardSelectDialogOpen(true)}
-                            component={(props) => (
-                                <IconButton color="primary" size="small" {...props}>
-                                    <SearchIcon />
-                                </IconButton>
-                            )}
-                        />
-                    </Tooltip>
-                    <AnkiDialogButton
-                        ref={openInAnkiButtonRef}
-                        disabled={disabled}
-                        focusVisible={focusedAction === 'gui'}
-                        onBlurVisible={handleActionBlur}
-                        onClick={handleOpenInAnki}
-                    >
-                        {t('ankiDialog.openInAnki')}
-                    </AnkiDialogButton>
-                    <AnkiDialogButton
-                        ref={updateLastButtonRef}
-                        disabled={disabled}
-                        focusVisible={focusedAction === 'updateLast'}
-                        onBlurVisible={handleActionBlur}
-                        onClick={handleUpdateLastCard}
-                    >
-                        {t('ankiDialog.updateLastCard')}
-                    </AnkiDialogButton>
+                            onClick={handleOpenInAnki}
+                        >
+                            {t('ankiDialog.openInAnki')}
+                        </AnkiDialogButton>
+                    )}
+                    {provider === 'anki' && (
+                        <AnkiDialogButton
+                            ref={updateLastButtonRef}
+                            disabled={disabled}
+                            focusVisible={focusedAction === 'updateLast'}
+                            onBlurVisible={handleActionBlur}
+                            onClick={handleUpdateLastCard}
+                        >
+                            {t('ankiDialog.updateLastCard')}
+                        </AnkiDialogButton>
+                    )}
                     <AnkiDialogButton
                         ref={exportButtonRef}
                         disabled={disabled}
@@ -1117,8 +1655,31 @@ const AnkiDialog = ({
                         onBlurVisible={handleActionBlur}
                         onClick={handleExport}
                     >
-                        {t('ankiDialog.export')}
+                        {provider === 'jiten' ? t('jiten.attach') : t('ankiDialog.export')}
                     </AnkiDialogButton>
+                    {provider === 'jiten' && !jitenWordAlreadyMined && (
+                        <Tooltip title={!jitenDeckSelected ? t('jiten.selectDeckInSettings') : ''}>
+                            <span>
+                                <AnkiDialogButton
+                                    disabled={disabled || !onJitenDeckMine || !jitenDeckSelected}
+                                    onClick={() => {
+                                        if (selectedJitenTarget) onJitenTargetChanged?.(selectedJitenTarget);
+                                        onJitenDeckMine?.(
+                                            buildExportParams('default'),
+                                            selectedJitenTarget
+                                                ? jitenMediaByWord[
+                                                      `${selectedJitenTarget.wordId}/${selectedJitenTarget.readingIndex}`
+                                                  ]
+                                                : undefined,
+                                            jitenWordInMiningDeck
+                                        );
+                                    }}
+                                >
+                                    {t('jiten.mineToDeck')}
+                                </AnkiDialogButton>
+                            </span>
+                        </Tooltip>
+                    )}
                 </DialogActions>
             </Dialog>
             <ImageDialog

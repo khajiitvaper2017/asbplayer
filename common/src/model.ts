@@ -289,6 +289,9 @@ export enum PostMineAction {
     updateLastCard = 2,
     exportCard = 3,
     showUpdateCardDialog = 4,
+    jitenUpdateLastCardOrDialog = 5,
+    jitenMineAllWords = 6,
+    jitenMineSingleWordOrDialog = 7,
 }
 
 export enum PostMinePlayback {

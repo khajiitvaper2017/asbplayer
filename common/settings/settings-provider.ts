@@ -106,6 +106,9 @@ const defaultDictionaryTrackSettings: DictionaryTrack = {
 };
 
 export const defaultSettings: AsbplayerSettings = {
+    miningProvider: 'anki',
+    jitenApiKey: '',
+    jitenStudyDeckId: 0,
     ankiConnectUrl: 'http://127.0.0.1:8765',
     ankiConnectApiKey: '',
     deck: '',
@@ -224,6 +227,8 @@ export const defaultSettings: AsbplayerSettings = {
     tabName: 'asbplayer',
     miningHistoryStorageLimit: 25,
     clickToMineDefaultAction: PostMineAction.showAnkiDialog,
+    jitenDefaultMiningAction: PostMineAction.showAnkiDialog,
+    jitenMineAllExistingBehavior: 'skip',
     postMiningPlaybackState: PostMinePlayback.remember,
     themeType: 'dark',
     videoSubtitleSplitBehavior: VideoSubtitleSplitBehavior.rememberSplitPosition,
