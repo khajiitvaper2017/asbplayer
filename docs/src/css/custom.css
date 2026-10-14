@@ -1,23 +1,45 @@
 :root {
-  --ifm-color-primary: #ff3f78;
-  --ifm-color-primary-dark: #ff1f62;
-  --ifm-color-primary-darker: #ff0f56;
-  --ifm-color-primary-darkest: #df0042;
-  --ifm-color-primary-light: #ff5f8e;
-  --ifm-color-primary-lighter: #ff6f9a;
-  --ifm-color-primary-lightest: #ff9ebb;
+  --ifm-color-primary: #a855f7;
+  --ifm-color-primary-dark: #9333ea;
+  --ifm-color-primary-darker: #7e22ce;
+  --ifm-color-primary-darkest: #6b21a8;
+  --ifm-color-primary-light: #c084fc;
+  --ifm-color-primary-lighter: #d8b4fe;
+  --ifm-color-primary-lightest: #f3e8ff;
+  --ifm-background-color: #fafafa;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-color-emphasis-100: #f8fafc;
+  --ifm-color-emphasis-200: #f1f5f9;
+  --ifm-color-emphasis-300: #e2e8f0;
+  --ifm-color-emphasis-400: #cbd5e1;
+  --ifm-color-emphasis-500: #94a3b8;
+  --ifm-color-emphasis-600: #64748b;
+  --ifm-color-emphasis-700: #475569;
+  --ifm-color-emphasis-800: #334155;
+  --ifm-color-emphasis-900: #1e293b;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] {
-  --ifm-color-primary: #ff3f78;
-  --ifm-color-primary-dark: #ff1f62;
-  --ifm-color-primary-darker: #ff0f56;
-  --ifm-color-primary-darkest: #df0042;
-  --ifm-color-primary-light: #ff5f8e;
-  --ifm-color-primary-lighter: #ff6f9a;
-  --ifm-color-primary-lightest: #ff9ebb;
+  --ifm-color-primary: #a855f7;
+  --ifm-color-primary-dark: #9333ea;
+  --ifm-color-primary-darker: #7e22ce;
+  --ifm-color-primary-darkest: #6b21a8;
+  --ifm-color-primary-light: #c084fc;
+  --ifm-color-primary-lighter: #d8b4fe;
+  --ifm-color-primary-lightest: #f3e8ff;
+  --ifm-background-color: #000;
+  --ifm-background-surface-color: #1d1d1d;
+  --ifm-color-emphasis-100: #fafafa;
+  --ifm-color-emphasis-200: #f5f5f5;
+  --ifm-color-emphasis-300: #e5e5e5;
+  --ifm-color-emphasis-400: #d4d4d4;
+  --ifm-color-emphasis-500: #a3a3a3;
+  --ifm-color-emphasis-600: #737373;
+  --ifm-color-emphasis-700: #525252;
+  --ifm-color-emphasis-800: #404040;
+  --ifm-color-emphasis-900: #262626;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
