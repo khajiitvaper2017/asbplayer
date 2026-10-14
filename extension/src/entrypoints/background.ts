@@ -72,16 +72,11 @@ import ClearCopyHistoryHandler from '@/handlers/asbplayerv2/clear-copy-history-h
 import SaveCopyHistoryHandler from '@/handlers/asbplayerv2/save-copy-history-handler';
 import PageConfigHandler from '@/handlers/asbplayerv2/page-config-handler';
 import EncodeMp3Handler from '@/handlers/video/encode-mp3-handler';
-import { DictionaryDB } from '@project/common/dictionary-db/dictionary-db';
-import DictionaryHandler from '@/handlers/dictionary/dictionary-handler';
 import SaveTokenLocalHandler from '@/handlers/asbplayerv2/save-token-local-handler';
 import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-provider';
 import { lt as semverLt } from 'semver';
 import { AnnotationTutorialState } from '@project/common/global-state';
 import BrowserFeaturesHandler from '@/handlers/asbplayerv2/browser-features-handler';
-import OpenStatisticsHandler from '@/handlers/video/open-statistics-handler';
-import StatisticsOverlayForwarderHandler from '@/handlers/statistics-overlay/statistics-overlay-forwarder-handler';
-import OpenStatisticsOverlayHandler from '@/handlers/open-statistics-overlay-handler';
 
 export default defineBackground(() => {
     const logStore = new SessionLogStorage();
@@ -185,7 +180,6 @@ export default defineBackground(() => {
     );
     const imageCapturer = new ImageCapturer(settings);
     const cardPublisher = new CardPublisher(settings);
-    const dictionaryDB = new DictionaryDB(settings);
 
     const handlers: CommandHandler[] = [
         new VideoHeartbeatHandler(tabRegistry),
@@ -199,12 +193,9 @@ export default defineBackground(() => {
         new HttpPostHandler(),
         new JitenRequestHandler(settings),
         new ToggleSidePanelHandler(tabRegistry),
-        new OpenStatisticsHandler(tabRegistry),
-        new OpenStatisticsOverlayHandler(tabRegistry),
         new OpenAsbplayerSettingsHandler(),
         new CopyToClipboardHandler(),
         new EncodeMp3Handler(),
-        new DictionaryHandler(dictionaryDB, tabRegistry),
         new VideoDisappearedHandler(tabRegistry),
         new RequestingActiveTabPermissionHandler(),
         new CopySubtitleHandler(tabRegistry),
@@ -239,7 +230,6 @@ export default defineBackground(() => {
         new RequestModelHandler(),
         new CurrentTabHandler(),
         new MobileOverlayForwarderHandler(),
-        new StatisticsOverlayForwarderHandler(),
     ];
 
     browser.runtime.onMessage.addListener((request: Command<Message>, sender, sendResponse) => {

@@ -67,7 +67,6 @@ export const useSettings = () => {
     }, [refreshSettings, notifySettingsUpdated]);
 
     const profileContext = useSettingsProfileContext({
-        dictionaryProvider,
         settingsProvider,
         onProfileChanged: handleProfileChanged,
     });

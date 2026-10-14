@@ -5,7 +5,6 @@ import type {
     AsbplayerInstance,
     Command,
     Message,
-    OpenStatisticsOverlayMessage,
     AsbPlayerToTabCommand,
     AsbPlayerToVideoCommandV2,
     CopyHistoryItem,
@@ -56,11 +55,8 @@ import { IndexedDBCopyHistoryRepository } from '@project/common/copy-history';
 import { mp3WorkerFactory } from '@project/extension/src/services/mp3-worker-factory';
 import { pgsParserWorkerFactory } from '@project/extension/src/services/pgs-parser-worker-factory';
 import type { DictionaryProvider } from '@project/common/dictionary-db';
-import StatisticsDrawer from '@project/common/components/StatisticsDrawer';
 import { useSidePanelRequestedLocation } from '@project/extension/src/ui/hooks/use-side-panel-requested-location';
 import { clearExtensionRequestedLocation } from '@/services/side-panel';
-import { uiTabRegistry } from '@project/extension/src/ui/hooks/use-media-id';
-import { createStatisticsPopup } from '@/services/statistics-util';
 
 interface Props {
     dictionaryProvider: DictionaryProvider;
@@ -590,38 +586,6 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
 
     const { initialized: i18nInitialized } = useI18n({ language: settings.language });
 
-    const [statisticsOpen, setStatisticsOpen] = useState<boolean>(false);
-    const handleShowStatistics = useCallback(() => setStatisticsOpen(true), []);
-    const handleCloseStatistics = useCallback(() => {
-        setStatisticsOpen(false);
-        void clearExtensionRequestedLocation().catch((error) =>
-            asbError('side-panel', 'Failed to clear the requested panel location:', error)
-        );
-    }, []);
-    const handleOpenStatisticsOverlay = useCallback(
-        (mediaId: string) => {
-            if (currentTabId === undefined) {
-                return;
-            }
-            const command: Command<OpenStatisticsOverlayMessage> = {
-                sender: 'asbplayerv2',
-                message: {
-                    command: 'open-statistics-overlay',
-                    mediaId,
-                    force: true,
-                },
-            };
-            void browser.runtime.sendMessage(command);
-        },
-        [currentTabId]
-    );
-    const handleViewAnnotationSettings = useCallback(() => {
-        void browser.tabs.create({
-            url: `${browser.runtime.getURL('/options.html')}#annotation`,
-            active: true,
-        });
-    }, []);
-
     useEffect(() => {
         if (syncedVideoTab === undefined || currentTabId !== syncedVideoTab.id) {
             return;
@@ -701,21 +665,6 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                     onSelect={handleJumpToSubtitle}
                 />
             )}
-            {viewingAsbplayer && appRequestedLocation === 'statistics' && (
-                <StatisticsDrawer
-                    mediaId={viewingAsbplayer.syncedVideoElement?.src ?? viewingAsbplayer.id}
-                    open
-                    hasSubtitles={viewingAsbplayer.loadedSubtitles}
-                    settings={settings}
-                    showBackButton={false}
-                    dictionaryProvider={dictionaryProvider}
-                    onClose={noOp} // Cannot close when in-app
-                    onViewAnnotationSettings={handleViewAnnotationSettings}
-                    onOpenOverlay={handleOpenStatisticsOverlay}
-                    onOpenInNewWindow={createStatisticsPopup}
-                    sx={{ p: 2 }}
-                />
-            )}
             {!viewingAsbplayer && (
                 <>
                     <CopyHistory
@@ -748,7 +697,6 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                                 showCopyButton={true}
                                 forceCompressedMode={true}
                                 subtitleReader={subtitleReader}
-                                dictionaryProvider={dictionaryProvider}
                                 settingsProvider={settingsProvider}
                                 settings={settings}
                                 playbackPreferences={playbackPreferences}
@@ -798,20 +746,6 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                                 miningContext={miningContext}
                                 keyBinder={keyBinder}
                             />
-                            <StatisticsDrawer
-                                mediaId={syncedVideoTab?.src}
-                                open={statisticsOpen || extensionRequestedLocation === 'statistics'}
-                                settings={settings}
-                                showBackButton
-                                hasSubtitles={subtitles !== undefined && subtitles.length > 0}
-                                dictionaryProvider={dictionaryProvider}
-                                onClose={handleCloseStatistics}
-                                onMineWasRequested={uiTabRegistry.focusTabForMediaId}
-                                onViewAnnotationSettings={handleViewAnnotationSettings}
-                                onOpenOverlay={handleOpenStatisticsOverlay}
-                                onOpenInNewWindow={createStatisticsPopup}
-                                sx={{ p: 2 }}
-                            />
                             <SidePanelTopControls
                                 ref={topControlsRef}
                                 show={showTopControls}
@@ -823,7 +757,6 @@ export default function SidePanel({ dictionaryProvider, settingsProvider, settin
                                 disableBulkExport={recordingAudio}
                                 onShowMiningHistory={handleShowCopyHistory}
                                 miningHistoryCount={copyHistoryItems.length}
-                                onShowStatistics={handleShowStatistics}
                             />
                             <SidePanelBottomControls
                                 disabled={currentTabId !== syncedVideoTab?.id}

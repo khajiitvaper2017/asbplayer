@@ -118,7 +118,6 @@ export function PopupUi({ commands }: Props) {
     }, [settingsProvider]);
 
     const profilesContext = useSettingsProfileContext({
-        dictionaryProvider,
         settingsProvider,
         onProfileChanged: handleProfileChanged,
     });

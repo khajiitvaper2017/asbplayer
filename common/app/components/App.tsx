@@ -2312,7 +2312,6 @@ function App({
                                     subtitles={subtitles}
                                     mediaId={extension.id}
                                     settings={settings}
-                                    dictionaryProvider={dictionaryProvider}
                                     settingsProvider={settingsProvider}
                                     onSettingsChanged={onSettingsChanged}
                                     profile={profile}
@@ -2331,18 +2330,6 @@ function App({
                                         setSubtitles as React.Dispatch<
                                             React.SetStateAction<DisplaySubtitleModel[] | undefined>
                                         >
-                                    }
-                                    statisticsOverlay={
-                                        <AppStatisticsOverlay
-                                            open={statisticsOverlayOpen}
-                                            mediaId={extension.id}
-                                            dictionaryProvider={dictionaryProvider}
-                                            dictionaryTracks={settings.dictionaryTracks}
-                                            onOpenStatistics={handleOpenStatistics}
-                                            onReceivedSnapshot={handleReceivedStatisticsSnapshot}
-                                            onSnapshotCleared={handleStatisticsOverlaySnapshotCleared}
-                                            onClose={handleCloseStatisticsOverlay}
-                                        />
                                     }
                                     onLoadFiles={handleFileSelector}
                                     onLoadSubtitles={openSubtitleTrackSelector}

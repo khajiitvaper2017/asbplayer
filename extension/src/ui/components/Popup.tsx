@@ -1,7 +1,7 @@
 import Grid from '@mui/material/Grid';
-import type { Command, HttpPostMessage, OpenStatisticsOverlayMessage, PopupToExtensionCommand } from '@project/common';
+import type { HttpPostMessage, PopupToExtensionCommand } from '@project/common';
 import type { AsbplayerSettings, Profile } from '@project/common/settings';
-import { chromeCommandBindsToKeyBinds, dictionaryTrackEnabled } from '@project/common/settings';
+import { chromeCommandBindsToKeyBinds } from '@project/common/settings';
 import SettingsForm from '@project/common/components/SettingsForm';
 import PanelIcon from '@project/common/components/PanelIcon';
 import LaunchIcon from '@mui/icons-material/Launch';
@@ -22,18 +22,12 @@ import SettingsProfileSelectMenu from '@project/common/components/SettingsProfil
 import { settingsPageConfigs } from '@/services/pages';
 import Stack from '@mui/material/Stack';
 import TutorialIcon from '@project/common/components/TutorialIcon';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import Paper from '@mui/material/Paper';
 import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
 import { useAnnotationTutorial } from '@project/common/hooks/use-annotation-tutorial';
 import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-provider';
-import { uiTabRegistry, useMediaId, useLastMediaIdOnce } from '@project/extension/src/ui/hooks/use-media-id';
-import Statistics from '@project/common/components/Statistics';
-import Box from '@mui/material/Box';
-import { createStatisticsPopup } from '@/services/statistics-util';
 import Tooltip from '@project/common/components/Tooltip';
-import { useCurrentTabId } from '@project/extension/src/ui/hooks/use-current-tab-id';
 
 const globalStateProvider = new ExtensionGlobalStateProvider();
 
@@ -119,47 +113,6 @@ const Popup = ({
     const theme = useTheme();
     const { handleAnnotationTutorialSeen, inAnnotationTutorial } = useAnnotationTutorial({ globalStateProvider });
     const [scrollToId, setScrollToId] = useState<string>();
-    const handleViewAnnotationSettings = useCallback(() => {
-        setScrollToId('annotation');
-        setStatisticsOpen(false);
-    }, []);
-    const handleOpenStatisticsOverlay = useCallback((mediaId: string) => {
-        const command: Command<OpenStatisticsOverlayMessage> = {
-            sender: 'asbplayer-popup',
-            message: {
-                command: 'open-statistics-overlay',
-                mediaId,
-                force: true,
-            },
-        };
-        void browser.runtime.sendMessage(command);
-    }, []);
-
-    const [statisticsOpen, setStatisticsOpen] = useState<boolean>(false);
-
-    const settingsRef = useRef<AsbplayerSettings>(settings);
-    settingsRef.current = settings;
-
-    const currentTabId = useCurrentTabId();
-    const currentMediaIdWithSubtitles = useMediaId({
-        whereAsbplayer: (a) => a.tab?.id === currentTabId,
-        whereVideoElement: (v) => v.id === currentTabId,
-    });
-    const fallbackMediaIdWithSubtitles = useLastMediaIdOnce();
-    const mediaIdWithSubtitles = currentMediaIdWithSubtitles ?? fallbackMediaIdWithSubtitles;
-
-    useEffect(() => {
-        const annotationsEnabled =
-            settingsRef.current?.dictionaryTracks.some((dt) => dictionaryTrackEnabled(dt)) ?? false;
-        setStatisticsOpen(mediaIdWithSubtitles !== undefined && annotationsEnabled);
-    }, [mediaIdWithSubtitles]);
-
-    const handleToggleStatistics = useCallback(() => setStatisticsOpen((v) => !v), []);
-    const fetchStatisticsMediaInfo = useCallback(async (mediaId: string) => {
-        const sourceString = (await uiTabRegistry.activeVideoElements()).find((v) => v.src === mediaId)?.title;
-        return { sourceString: sourceString ?? '' };
-    }, []);
-
     if (!i18nInitialized) {
         return null;
     }
@@ -179,24 +132,6 @@ const Popup = ({
                         },
                     }}
                 >
-                    {mediaIdWithSubtitles !== undefined && (
-                        <>
-                            {statisticsOpen && (
-                                <NavButton
-                                    startIcon={<SettingsIcon />}
-                                    onClick={handleToggleStatistics}
-                                    label={t('bar.settings')}
-                                />
-                            )}
-                            {!statisticsOpen && (
-                                <NavButton
-                                    startIcon={<BarChartIcon />}
-                                    onClick={handleToggleStatistics}
-                                    label={t('statistics.title')}
-                                />
-                            )}
-                        </>
-                    )}
                     <NavButton startIcon={<LaunchIcon />} onClick={onOpenApp} label={t('action.openApp')} />
                     {!isMobile && (
                         <NavButton
@@ -213,78 +148,57 @@ const Popup = ({
                         height: isMobile ? 'auto' : 390,
                     }}
                 >
-                    {!statisticsOpen && (
-                        <SettingsForm
-                            heightConstrained
-                            extensionInstalled
-                            extensionVersion={browser.runtime.getManifest().version}
-                            extensionSupportsAppIntegration
-                            extensionSupportsOverlay
-                            extensionSupportsSidePanel
-                            extensionSupportsOrderableAnkiFields
-                            extensionSupportsTrackSpecificSettings
-                            extensionSupportsSubtitlesWidthSetting
-                            extensionSupportsSubtitlesWidthInPixels
-                            extensionSupportsPauseOnHover
-                            extensionSupportsPlaybackEngine
-                            extensionSupportsAutoPauseResume
-                            extensionSupportsExportCardBind
-                            extensionSupportsPageSettings
-                            extensionSupportsDictionary
-                            extensionSupportsDictionaryBrowser
-                            extensionSupportsDictionaryWaniKani
-                            extensionSupportsDictionaryMatchAcrossScripts
-                            extensionSupportsSeekableTrackSetting
-                            extensionSupportsAutoCopyableTrackSetting
-                            extensionSupportsDictionaryTokenStatusDisplayAlpha
-                            extensionSupportsDictionaryYomitanMecab
-                            extensionSupportsSubtitleTrackSelectorInWebApp
-                            extensionSupportsSubtitleListCustomization
-                            extensionSupportsUpdateLastWithSameSubtitleText
-                            forceVerticalTabs={false}
-                            anki={anki}
-                            chromeKeyBinds={chromeCommandBindsToKeyBinds(commands)}
-                            dictionaryProvider={dictionaryProvider}
-                            logProvider={logProvider}
-                            settings={settings}
-                            profiles={profilesContext.profiles}
-                            activeProfile={profilesContext.activeProfile}
-                            pageConfigs={settingsPageConfigs}
-                            localFontsAvailable={localFontsAvailable}
-                            localFontsPermission={localFontsPermission}
-                            localFontFamilies={localFontFamilies}
-                            supportedLanguages={supportedLanguages}
-                            onSettingsChanged={onSettingsChanged}
-                            onOpenChromeExtensionShortcuts={onOpenExtensionShortcuts}
-                            onUnlockLocalFonts={handleUnlockLocalFonts}
-                            inAnnotationTutorial={inAnnotationTutorial}
-                            onAnnotationTutorialSeen={handleAnnotationTutorialSeen}
-                            scrollToId={scrollToId}
-                        />
-                    )}
-                    {statisticsOpen && (
-                        <Box sx={{ display: 'flex', width: '100%', height: '100%', overflowY: 'scroll' }}>
-                            <Statistics
-                                mediaId={mediaIdWithSubtitles}
-                                dictionaryProvider={dictionaryProvider}
-                                settings={settings}
-                                hasSubtitles={mediaIdWithSubtitles !== undefined}
-                                onViewAnnotationSettings={handleViewAnnotationSettings}
-                                onOpenOverlay={handleOpenStatisticsOverlay}
-                                onSeekWasRequested={uiTabRegistry.focusTabForMediaId}
-                                onMineWasRequested={uiTabRegistry.focusTabForMediaId}
-                                onOpenInNewWindow={createStatisticsPopup}
-                                mediaInfoFetcher={fetchStatisticsMediaInfo}
-                                sx={{ m: 1 }}
-                            />
-                        </Box>
-                    )}
+                    <SettingsForm
+                        heightConstrained
+                        extensionInstalled
+                        extensionVersion={browser.runtime.getManifest().version}
+                        extensionSupportsAppIntegration
+                        extensionSupportsOverlay
+                        extensionSupportsSidePanel
+                        extensionSupportsOrderableAnkiFields
+                        extensionSupportsTrackSpecificSettings
+                        extensionSupportsSubtitlesWidthSetting
+                        extensionSupportsSubtitlesWidthInPixels
+                        extensionSupportsPauseOnHover
+                        extensionSupportsPlaybackEngine
+                        extensionSupportsAutoPauseResume
+                        extensionSupportsExportCardBind
+                        extensionSupportsPageSettings
+                        extensionSupportsDictionary
+                        extensionSupportsDictionaryBrowser
+                        extensionSupportsDictionaryWaniKani
+                        extensionSupportsDictionaryMatchAcrossScripts
+                        extensionSupportsSeekableTrackSetting
+                        extensionSupportsAutoCopyableTrackSetting
+                        extensionSupportsDictionaryTokenStatusDisplayAlpha
+                        extensionSupportsDictionaryYomitanMecab
+                        extensionSupportsSubtitleTrackSelectorInWebApp
+                        extensionSupportsSubtitleListCustomization
+                        extensionSupportsUpdateLastWithSameSubtitleText
+                        forceVerticalTabs={false}
+                        anki={anki}
+                        chromeKeyBinds={chromeCommandBindsToKeyBinds(commands)}
+                        dictionaryProvider={dictionaryProvider}
+                        logProvider={logProvider}
+                        settings={settings}
+                        profiles={profilesContext.profiles}
+                        activeProfile={profilesContext.activeProfile}
+                        pageConfigs={settingsPageConfigs}
+                        localFontsAvailable={localFontsAvailable}
+                        localFontsPermission={localFontsPermission}
+                        localFontFamilies={localFontFamilies}
+                        supportedLanguages={supportedLanguages}
+                        onSettingsChanged={onSettingsChanged}
+                        onOpenChromeExtensionShortcuts={onOpenExtensionShortcuts}
+                        onUnlockLocalFonts={handleUnlockLocalFonts}
+                        inAnnotationTutorial={inAnnotationTutorial}
+                        onAnnotationTutorialSeen={handleAnnotationTutorialSeen}
+                        scrollToId={scrollToId}
+                    />
                 </Grid>
-                {!statisticsOpen && (
-                    <Grid item>
-                        <SettingsProfileSelectMenu {...profilesContext} />
-                    </Grid>
-                )}
+                <Grid item>
+                    <SettingsProfileSelectMenu {...profilesContext} />
+                </Grid>
             </Stack>
         </Paper>
     );

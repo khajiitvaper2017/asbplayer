@@ -17,7 +17,6 @@ import { TutorialStep } from '@project/common/components/settings-model';
 import AnkiSettingsTab from '@project/common/components/AnkiSettingsTab';
 import MiningSettingsTab from '@project/common/components/MiningSettingsTab';
 import JitenSettingsTab from '@project/common/components/JitenSettingsTab';
-import DictionarySettingsTab from '@project/common/components/DictionarySettingsTab';
 import SubtitleAppearanceSettingsTab from '@project/common/components/SubtitleAppearanceSettingsTab';
 import KeyboardShortcutsSettingsTab, {
     keyboardShortcutSectionId,
@@ -274,7 +273,7 @@ export default function SettingsForm({
     onOpenChromeExtensionShortcuts,
     onUnlockLocalFonts,
 }: Props) {
-    const supportsDictionary = !extensionInstalled || extensionSupportsDictionary;
+    const supportsDictionary = false;
     const supportsDictionaryBrowser = !extensionInstalled || extensionSupportsDictionaryBrowser;
     const supportsDictionaryWaniKani = !extensionInstalled || extensionSupportsDictionaryWaniKani;
     const supportsDictionaryMatchAcrossScripts = !extensionInstalled || extensionSupportsDictionaryMatchAcrossScripts;
@@ -533,23 +532,6 @@ export default function SettingsForm({
                         supportsUpdateLastWithSameSubtitleText={
                             !extensionInstalled || extensionSupportsUpdateLastWithSameSubtitleText
                         }
-                    />
-                </TabPanel>
-                <TabPanel value={tabIndex} index={tabIndicesById['annotation']} tabsOrientation={tabsOrientation}>
-                    <DictionarySettingsTab
-                        anki={anki}
-                        dictionaryProvider={dictionaryProvider}
-                        settings={settings}
-                        profiles={profiles}
-                        activeProfile={activeProfile}
-                        extensionInstalled={extensionInstalled}
-                        supportsDictionaryBrowser={supportsDictionaryBrowser}
-                        supportsDictionaryWaniKani={supportsDictionaryWaniKani}
-                        supportsDictionaryMatchAcrossScripts={supportsDictionaryMatchAcrossScripts}
-                        supportsDictionaryTokenStatusDisplayAlpha={supportsDictionaryTokenStatusDisplayAlpha}
-                        supportsDictionaryYomitanMecab={supportsDictionaryYomitanMecab}
-                        onSettingChanged={handleSettingChanged}
-                        onViewKeyboardShortcuts={() => viewKeyboardShortcutSection('annotation')}
                     />
                 </TabPanel>
                 <TabPanel

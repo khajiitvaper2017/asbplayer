@@ -225,8 +225,8 @@ interface SubtitleRowContext {
     currentSubtitleIndexes: ReadonlySet<number>;
     onClickSubtitle: (index: number) => void;
     onCopySubtitle: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, index: number) => void;
-    onMouseOver: (e: React.MouseEvent) => void;
-    onMouseOut: (e: React.MouseEvent) => void;
+    onMouseOver?: (e: React.MouseEvent) => void;
+    onMouseOut?: (e: React.MouseEvent) => void;
     lastScrollTimestampRef: React.MutableRefObject<number>;
     userScrollActiveRef: React.MutableRefObject<boolean>;
 }
@@ -417,8 +417,8 @@ interface SubtitleRowCellsProps {
     tokenAnnotationConfig?: TokenAnnotationConfig;
     rendered?: RenderedRichText;
     onCopySubtitle: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, index: number) => void;
-    onMouseOver: (e: React.MouseEvent) => void;
-    onMouseOut: (e: React.MouseEvent) => void;
+    onMouseOver?: (e: React.MouseEvent) => void;
+    onMouseOut?: (e: React.MouseEvent) => void;
 }
 
 // Memoized so that frequently-changing context state does not re-render the row content.
@@ -664,12 +664,12 @@ interface SubtitlePlayerProps {
     onOffsetChange: (offset: number) => void;
     onToggleSubtitleTrack: (track: number) => void;
     onSubtitlesHighlighted: (subtitles: SubtitleModel[]) => void;
-    onMouseOver: (e: React.MouseEvent) => void;
-    onMouseOut: (e: React.MouseEvent) => void;
+    onMouseOver?: (e: React.MouseEvent) => void;
+    onMouseOut?: (e: React.MouseEvent) => void;
     onResizeStart?: () => void;
     onResizeEnd?: (width: number) => void;
     subtitles: DisplaySubtitleModel[];
-    subtitleCollection: SubtitleAnnotations | SubtitleCollection<DisplaySubtitleModel>;
+    subtitleCollection: SubtitleCollection<DisplaySubtitleModel>;
     playbackState?: PlaybackState;
     length: number;
     jumpToSubtitle?: SubtitleModel;

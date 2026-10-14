@@ -64,7 +64,6 @@ const RootApp = ({
         refreshSettings();
     }, [refreshSettings]);
     const { refreshProfileContext, ...profilesContext } = useSettingsProfileContext({
-        dictionaryProvider,
         settingsProvider,
         onProfileChanged: handleProfileChanged,
     });

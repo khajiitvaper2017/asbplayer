@@ -120,7 +120,7 @@ const defaultDictionaryTrackSettings: DictionaryTrack = {
 };
 
 export const defaultSettings: AsbplayerSettings = {
-    miningDestination: 'anki',
+    miningDestination: 'jiten',
     jitenApiKey: '',
     jitenMiningDeckId: 0,
     jitenAutoAttach: true,

@@ -15,7 +15,6 @@ import type {
     PlaybackState,
     SubtitleModel,
     DisplaySubtitleModel,
-    TokenizedSubtitleModel,
     VideoTabModel,
 } from '@project/common';
 import type { JitenTarget } from '@project/common/jiten/jiten';
@@ -23,10 +22,8 @@ import { useJitenTarget } from '@project/common/app/hooks/use-jiten-target';
 import { readJitenWords } from '@project/common/jiten/reader-words';
 import { AutoPausePreference, PlayMode, PostMinePlayback, PostMineAction } from '@project/common';
 import type { AsbplayerSettings, SettingsProvider } from '@project/common/settings';
-import { ApplyStrategy, isTrackAutoCopyable, TokenState, VideoSubtitleSplitBehavior } from '@project/common/settings';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
+import { isTrackAutoCopyable, VideoSubtitleSplitBehavior } from '@project/common/settings';
 import { SubtitleCollection } from '@project/common/subtitle-collection';
-import { HoveredToken, SubtitleAnnotations } from '@project/common/annotations';
 import type { SubtitleReader } from '@project/common/subtitle-reader';
 import type { KeyBinder } from '@project/common/key-binder';
 import { asbTrace } from '@project/common/util/log';
@@ -36,7 +33,6 @@ import {
     formatAsSignedMs,
     surroundingSubtitles,
     timeDurationDisplay,
-    ensureStoragePersisted,
 } from '@project/common/util';
 import BroadcastChannelVideoProtocol from '@project/common/app/services/broadcast-channel-video-protocol';
 import ChromeTabVideoProtocol from '@project/common/app/services/chrome-tab-video-protocol';
@@ -142,7 +138,6 @@ interface PlayerProps {
     subtitles: DisplaySubtitleModel[];
     mediaId?: string;
     subtitleReader: SubtitleReader;
-    dictionaryProvider: DictionaryProvider;
     settingsProvider: SettingsProvider;
     settings: AsbplayerSettings;
     onSettingsChanged?: (settings: Partial<AsbplayerSettings>) => void;
@@ -162,7 +157,6 @@ interface PlayerProps {
     availableTabs: VideoTabModel[];
     miningContext: MiningContext;
     origin: string;
-    statisticsOverlay?: React.ReactNode;
     onError: (error: any) => void;
     onUnloadVideo: (url: string) => void;
     onCopy: (card: CardModel, postMineAction: PostMineAction | undefined, id: string | undefined) => void;
@@ -200,7 +194,6 @@ function PlayerComponent(
         subtitles,
         mediaId,
         subtitleReader,
-        dictionaryProvider,
         settingsProvider,
         settings,
         onSettingsChanged,
@@ -220,7 +213,6 @@ function PlayerComponent(
         availableTabs,
         miningContext,
         origin,
-        statisticsOverlay,
         onError,
         onUnloadVideo,
         onCopy,
@@ -253,12 +245,10 @@ function PlayerComponent(
     const [subtitlesSentThroughChannel, setSubtitlesSentThroughChannel] = useState<boolean>();
     const subtitlesRef = useRef<DisplaySubtitleModel[]>(undefined);
     subtitlesRef.current = subtitles;
-    const [subtitleCollection, setSubtitleCollection] = useState<
-        SubtitleAnnotations | SubtitleCollection<DisplaySubtitleModel>
-    >(SubtitleCollection.empty<DisplaySubtitleModel>());
-    const subtitleCollectionRef = useRef<SubtitleAnnotations | SubtitleCollection<DisplaySubtitleModel>>(
-        subtitleCollection
+    const [subtitleCollection, setSubtitleCollection] = useState<SubtitleCollection<DisplaySubtitleModel>>(
+        SubtitleCollection.empty<DisplaySubtitleModel>()
     );
+    const subtitleCollectionRef = useRef<SubtitleCollection<DisplaySubtitleModel>>(subtitleCollection);
     subtitleCollectionRef.current = subtitleCollection;
 
     const subtitleFiles = sources?.subtitleFiles;
@@ -584,9 +574,6 @@ function PlayerComponent(
         if (profileRef.current === profile) return;
         profileRef.current = profile;
         syntheticPlaybackEngineRef.current?.profileChanged(profile);
-        if (subtitleCollectionRef.current instanceof SubtitleAnnotations) {
-            subtitleCollectionRef.current.profileChanged();
-        }
     }, [profile]);
 
     useEffect(() => {
@@ -767,45 +754,12 @@ function PlayerComponent(
             subtitleCollectionRef.current = newCol;
             return; // Handled by extension
         }
-        if (!mediaId) return;
-
-        const subtitleAnnotations = new SubtitleAnnotations(
-            dictionaryProvider,
-            settingsProvider,
-            subtitleCollectionOptions,
-            mediaId,
-            (updatedSubtitles) => {
-                const playerSubtitles = subtitlesForPlayer(updatedSubtitles);
-                if (channel) channel.subtitlesUpdated(updatedSubtitles);
-                onSubtitles((prevSubtitles) => {
-                    if (!prevSubtitles?.length) return prevSubtitles;
-                    const allSubtitles = prevSubtitles.slice();
-                    for (const s of playerSubtitles) {
-                        allSubtitles[s.index] = {
-                            ...allSubtitles[s.index],
-                            text: s.text,
-                            tokenization: s.tokenization,
-                        };
-                    }
-                    return allSubtitles;
-                });
-            },
-            () => clockRef.current.time({ maxMs: calculateLengthMs(videoDurationRef) })
-        );
-        if (subtitlesRef.current) subtitleAnnotations.setSubtitles(subtitlesRef.current);
-        subtitleAnnotations.bind();
-        asbTrace('playback/player', 'Bound subtitle annotation collection', {
-            subtitleCount: subtitlesRef.current?.length ?? 0,
-            hasMediaId: mediaId !== undefined,
-        });
-        setSubtitleCollection(subtitleAnnotations);
-        subtitleCollectionRef.current = subtitleAnnotations;
-        return () => {
-            if (!(subtitleCollectionRef.current instanceof SubtitleAnnotations)) return;
-            asbTrace('playback/player', 'Unbinding subtitle annotation collection');
-            subtitleCollectionRef.current.unbind();
-        };
-    }, [channel, dictionaryProvider, settingsProvider, mediaId, tab, onSubtitles]);
+        if (!tab && !mediaId) return;
+        const newCol = new SubtitleCollection<DisplaySubtitleModel>(subtitleCollectionOptions);
+        newCol.setSubtitles(subtitlesRef.current ?? []);
+        setSubtitleCollection(newCol);
+        subtitleCollectionRef.current = newCol;
+    }, [mediaId, tab]);
 
     useEffect(() => {
         if (!subtitleCollectionRef.current) return;
@@ -813,29 +767,12 @@ function PlayerComponent(
     }, [subtitles]);
 
     useEffect(() => {
-        if (!(subtitleCollectionRef.current instanceof SubtitleAnnotations)) return;
-        subtitleCollectionRef.current.settingsUpdated(settings, { force: false });
-    }, [settings]);
-
-    useEffect(() => {
         return channel?.onSubtitlesUpdated((updatedSubtitles) => {
-            const playerSubtitles = subtitlesForPlayer(updatedSubtitles);
             onSubtitles((prevSubtitles) => {
                 if (!prevSubtitles?.length) return prevSubtitles;
                 const allSubtitles = prevSubtitles.slice();
-                for (const s of playerSubtitles) {
-                    // FIXME: Primitive check to ensure we don't apply a color update from a completely different subtitle or subtitle file.
-                    // We should probably have a hash or ID associated with the subtitle file this color update is for.
-                    const updatedText = (s as TokenizedSubtitleModel).originalText ?? s.text;
-                    const prevText =
-                        (allSubtitles[s.index] as TokenizedSubtitleModel)?.originalText ?? allSubtitles[s.index]?.text;
-                    if (updatedText === prevText) {
-                        allSubtitles[s.index] = {
-                            ...allSubtitles[s.index],
-                            text: s.text,
-                            tokenization: s.tokenization,
-                        };
-                    }
+                for (const s of subtitlesForPlayer(updatedSubtitles)) {
+                    allSubtitles[s.index] = { ...allSubtitles[s.index], ...s };
                 }
                 return allSubtitles;
             });
@@ -856,72 +793,6 @@ function PlayerComponent(
             if (removeCardExportedDialog) removeCardExportedDialog();
         };
     }, [channel, extension, tab, onSubtitles]);
-
-    const hoveredToken = useMemo(() => new HoveredToken(), []);
-
-    const handleMouseOver = useCallback(
-        (e: React.MouseEvent) => hoveredToken.handleMouseOver(e.nativeEvent),
-        [hoveredToken]
-    );
-
-    const handleMouseOut = useCallback(
-        (e: React.MouseEvent) => hoveredToken.handleMouseOut(e.nativeEvent),
-        [hoveredToken]
-    );
-
-    useEffect(() => {
-        return keyBinder.bindMarkHoveredToken(
-            (event, tokenStatus) => {
-                const res = hoveredToken.parse();
-                if (!res) return;
-                void ensureStoragePersisted();
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                const applyStates = ApplyStrategy.ADD;
-                if (subtitleCollectionRef.current instanceof SubtitleAnnotations) {
-                    void subtitleCollectionRef.current.saveTokenLocal(
-                        res.track,
-                        res.token,
-                        tokenStatus,
-                        [],
-                        applyStates
-                    );
-                    return;
-                }
-                if (!tab) return;
-                void extension.saveTokenLocal(tab.id, tab.src, res.track, res.token, tokenStatus, [], applyStates);
-            },
-            () => disableKeyEvents
-        );
-    }, [hoveredToken, keyBinder, disableKeyEvents, tab, extension]);
-
-    useEffect(() => {
-        return keyBinder.bindToggleHoveredTokenIgnored(
-            (event) => {
-                const res = hoveredToken.parse();
-                if (!res) return;
-                void ensureStoragePersisted();
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                const states = [TokenState.IGNORED];
-                const applyStates = ApplyStrategy.TOGGLE;
-                if (subtitleCollectionRef.current instanceof SubtitleAnnotations) {
-                    void subtitleCollectionRef.current.saveTokenLocal(res.track, res.token, null, states, applyStates);
-                    return;
-                }
-                if (!tab) return;
-                void extension.saveTokenLocal(tab.id, tab.src, res.track, res.token, null, states, applyStates);
-            },
-            () => disableKeyEvents
-        );
-    }, [hoveredToken, keyBinder, disableKeyEvents, tab, extension]);
-
-    useEffect(() => {
-        return channel?.onSaveTokenLocal((track, token, status, states, applyStates) => {
-            if (!(subtitleCollectionRef.current instanceof SubtitleAnnotations)) return;
-            void subtitleCollectionRef.current.saveTokenLocal(track, token, status, states, applyStates);
-        });
-    }, [channel]);
 
     useEffect(() => {
         setSubtitlesSentThroughChannel(false);
@@ -1533,35 +1404,6 @@ function PlayerComponent(
     }, [clock, rewindSubtitle?.start, mediaAdapter, seek]);
 
     useEffect(() => {
-        const unsubscribeSeek = dictionaryProvider.onRequestStatisticsSeek((timestamp) => {
-            void seek(timestamp, clock, true, { paused: !clock.running });
-        });
-        const unsubscribeMine = dictionaryProvider.onRequestStatisticsMineSentences((_mediaId, indexes) => {
-            const subtitleIndex = indexes[0];
-            if (subtitleIndex === undefined) return;
-            const subtitles = subtitlesRef.current;
-            const subtitle = subtitles?.[subtitleIndex];
-            if (!subtitle) return;
-            void handleCopyFromSubtitlePlayer(
-                subtitle,
-                surroundingSubtitles(
-                    subtitles,
-                    subtitle.index,
-                    settings.surroundingSubtitlesCountRadius,
-                    settings.surroundingSubtitlesTimeRadius
-                ),
-                settings.clickToMineDefaultAction,
-                true
-            );
-        });
-
-        return () => {
-            unsubscribeSeek();
-            unsubscribeMine();
-        };
-    }, [clock, dictionaryProvider, handleCopyFromSubtitlePlayer, seek, settings]);
-
-    useEffect(() => {
         if (!webSocketClient) {
             return;
         }
@@ -1628,11 +1470,9 @@ function PlayerComponent(
                 useAppLogo={false}
                 anchor="top"
             />
-            {!videoInWindow && statisticsOverlay}
             <Grid container direction="row" wrap="nowrap" className={classes.container}>
                 {videoInWindow && (
                     <Grid item style={{ flexGrow: 1, minWidth: minVideoPlayerWidth, position: 'relative' }}>
-                        {statisticsOverlay}
                         <iframe
                             ref={videoFrameRef}
                             className={classes.videoFrame}
@@ -1715,8 +1555,6 @@ function PlayerComponent(
                         disabledSubtitleTracks={disabledSubtitleTracks}
                         onSeek={handleSeekToTimestamp}
                         onCopy={handleCopyFromSubtitlePlayer}
-                        onMouseOver={handleMouseOver}
-                        onMouseOut={handleMouseOut}
                         onOffsetChange={handleOffsetChange}
                         onToggleSubtitleTrack={handleToggleSubtitleTrack}
                         onSubtitlesHighlighted={handleSubtitlesHighlighted}
