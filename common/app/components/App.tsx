@@ -919,7 +919,7 @@ function App({
             });
             setVideoFullscreen(false);
         },
-        [extension.id, sources]
+        [sources]
     );
 
     const handleDownloadAudio = useCallback(
