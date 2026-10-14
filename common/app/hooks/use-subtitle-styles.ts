@@ -58,7 +58,7 @@ export const useSubtitleStyles = (
             const s = textSubtitleSettingsForTrack(stableSettings, track) as TextSubtitleSettings;
             const dt = dictionaryTracks[track];
             const annotationStyleValues = tokenAnnotationStyleValues(
-                dt.dictionaryTokenAnnotationConfig[tokenAnnotationTarget]
+                dt?.dictionaryTokenAnnotationConfig?.[tokenAnnotationTarget]
             );
             tracks.push({
                 styles: computeStyles(s, annotationStyleValues),

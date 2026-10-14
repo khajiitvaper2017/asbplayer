@@ -370,6 +370,10 @@ export default function VideoPlayer({
     const profileRef = useRef(profile);
     const hiddenVideoRef = useRef<HTMLVideoElement | null>(null); // seek preview thumbnail
     const [hiddenVideoReady, setHiddenVideoReady] = useState(false);
+    const hiddenVideoRefCallback = useCallback((node: HTMLVideoElement | null) => {
+        hiddenVideoRef.current = node;
+        setHiddenVideoReady(node !== null);
+    }, []);
     const [windowWidth, windowHeight] = useWindowSize(true);
     if (videoRef.current) {
         videoRef.current.width = windowWidth;
@@ -2255,12 +2259,7 @@ export default function VideoPlayer({
                     preload="none"
                     autoPlay={false}
                     style={{ position: 'absolute', left: '-9999px' }}
-                    ref={(node) => {
-                        hiddenVideoRef.current = node;
-                        if (node) {
-                            setHiddenVideoReady(true);
-                        }
-                    }}
+                    ref={hiddenVideoRefCallback}
                 />
             )}
             {topSubtitleElements.length > 0 && (
