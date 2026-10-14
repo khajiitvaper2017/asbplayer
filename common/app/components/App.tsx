@@ -1973,7 +1973,7 @@ function App({
                             )}
                         </>
                     ) : (
-                        <Paper square>
+                        <Paper square sx={{ backgroundColor: 'background.default' }}>
                             <CopyHistory
                                 items={copyHistoryItems}
                                 open={effectiveDrawerOpen}
@@ -2070,7 +2070,7 @@ function App({
                                 onClose={handleCloseNeedRefreshDialog}
                             />
                             <Bar
-                                title={fileName || 'asbplayer'}
+                                title={fileName || 'asbplayer-jiten'}
                                 drawerWidth={drawerWidth}
                                 drawerOpen={effectiveDrawerOpen}
                                 hidden={appBarHidden}

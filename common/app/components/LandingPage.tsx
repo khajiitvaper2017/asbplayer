@@ -89,7 +89,7 @@ export default function LandingPage({
     }
 
     return (
-        <Paper square className={classes.background}>
+        <Paper square className={classes.background} sx={{ backgroundColor: 'background.default' }}>
             <Fade in={!loading && !dragging} timeout={500}>
                 <div style={{ minWidth: smallScreen ? window.innerWidth : 'auto' }}>
                     <Typography variant="h6">

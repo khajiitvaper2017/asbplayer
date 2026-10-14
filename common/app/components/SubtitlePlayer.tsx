@@ -186,7 +186,7 @@ const useSubtitleRowStyles = makeStyles<Theme>((theme) => ({
     },
     timestamp: {
         fontSize: 14,
-        color: '#aaaaaa',
+        color: theme.palette.grey[400],
         textAlign: 'right',
         paddingRight: 15,
         paddingLeft: 5,

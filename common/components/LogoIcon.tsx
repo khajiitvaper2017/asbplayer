@@ -5,7 +5,7 @@ const LogoIcon = ({ style, ...rest }: SvgIconProps) => {
     return (
         <SvgIcon
             viewBox="0 0 28 28"
-            style={{ background: 'linear-gradient(150deg, #ff1f62, #49007a 160%)', borderRadius: 3, ...style }}
+            style={{ background: 'linear-gradient(150deg, #a855f7, #a855f7 160%)', borderRadius: 3, ...style }}
             {...rest}
         >
             <path
