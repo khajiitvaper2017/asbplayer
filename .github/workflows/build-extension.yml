@@ -31,9 +31,10 @@ jobs:
             - name: Upload extension ZIPs
               uses: actions/upload-artifact@v4
               with:
-                  name: asbplayer-extensions
+                  name: asbplayer-jiten-extensions
                   path: |
                       extension/.output/*-chrome.zip
                       extension/.output/*-firefox.zip
                       extension/.output/*-firefox-android.zip
+                  include-hidden-files: true
                   if-no-files-found: error
