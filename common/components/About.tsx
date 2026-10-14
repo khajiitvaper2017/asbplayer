@@ -935,9 +935,7 @@ const About = ({ appVersionRepoPath, extensionVersion }: Props) => {
                 {extensionVersion && (
                     <Typography variant="caption">
                         {t('about.extensionVersion')}{' '}
-                        <Link href="https://github.com/khajiitvaper2017/asbplayer/releases">
-                            {extensionVersion}
-                        </Link>
+                        <Link href="https://github.com/khajiitvaper2017/asbplayer/releases">{extensionVersion}</Link>
                     </Typography>
                 )}
             </Box>

@@ -191,14 +191,14 @@ describe('convertPostFile', () => {
         assert.match(text, /@ShanaryS/);
         assert.match(
             text,
-            /\(\[read the full blog post\]\(https:\/\/docs\.asbplayer\.dev\/blog\/1\.21\.0-released\)\)$/
+            new RegExp(`\\(\\[read the full blog post\\]\\(${DOCS_BASE_URL}/blog/1\\.21\\.0-released\\)\\)$`)
         );
     });
 
     test('falls back to the filename when frontmatter has no slug', () => {
         const path = fixturePath('2025-05-31-first-post.mdx', '---\ntitle: Hi\n---\n\nBody\n');
         const payload = convertPostFile(path);
-        assert.match(textOf(payload), /https:\/\/docs\.asbplayer\.dev\/blog\/2025-05-31-first-post/);
+        assert.match(textOf(payload), new RegExp(`${DOCS_BASE_URL}/blog/2025-05-31-first-post`));
     });
 });
 
