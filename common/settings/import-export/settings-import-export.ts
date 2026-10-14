@@ -695,7 +695,8 @@ const validateAllKnownKeys = (object: any, path: string[]) => {
 
         // Empty string is sentinel value for 'additional properties' which can have any key
         if (schema === undefined || (schema !== '' && !(key in schema))) {
-            throw new Error(`Unknown key '${[...path, key].join('.')}'`);
+            delete object[key];
+            continue;
         }
 
         const value = object[key];
