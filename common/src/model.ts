@@ -4,16 +4,8 @@ import type { JitenTarget, JitenPending, JitenAttachmentResult } from '@project/
 
 type Profile = { name: string };
 
-export interface WaniKaniTokenStatusInfo {
-    subjectId: number;
-    subjectLevel: number;
-    assignmentId: number | undefined;
-    availableAt: string | null | undefined;
-}
-
 export interface TokenStatusInfo {
     cardId?: number;
-    waniKani?: WaniKaniTokenStatusInfo;
     status: TokenStatus;
     suspended: boolean;
 }
