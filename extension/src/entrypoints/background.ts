@@ -53,8 +53,6 @@ import CardUpdatedDialogHandler from '@/handlers/asbplayerv2/card-updated-dialog
 import CardExportedDialogHandler from '@/handlers/asbplayerv2/card-exported-dialog-handler';
 import AckMessageHandler from '@/handlers/video/ack-message-handler';
 import PublishCardHandler from '@/handlers/asbplayerv2/publish-card-handler';
-import BulkExportCancellationHandler from '@/handlers/asbplayerv2/bulk-export-cancellation-handler';
-import BulkExportStartedHandler from '@/handlers/asbplayerv2/bulk-export-started-handler';
 import { bindWebSocketClient, unbindWebSocketClient } from '@/services/web-socket-client-binding';
 import { isFirefoxBuild } from '@/services/build-flags';
 import { CaptureStreamAudioRecorder, OffscreenAudioRecorder } from '@/services/audio-recorder-delegate';
@@ -210,8 +208,6 @@ export default defineBackground(() => {
         new PublishCardHandler(cardPublisher),
         new CardUpdatedDialogHandler(),
         new CardExportedDialogHandler(),
-        new BulkExportCancellationHandler(cardPublisher),
-        new BulkExportStartedHandler(cardPublisher),
         new AckMessageHandler(tabRegistry),
         new AudioBase64Handler(audioRecorder),
         new UpdateMobileOverlayModelHandler(),

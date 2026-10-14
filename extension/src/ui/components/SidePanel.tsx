@@ -8,23 +8,20 @@ import type {
     AsbPlayerToTabCommand,
     AsbPlayerToVideoCommandV2,
     CopyHistoryItem,
+    ExtensionToAsbPlayerCommand,
     ExtensionToVideoCommand,
     LoadSubtitlesMessage,
     RequestSubtitlesMessage,
-    ShowAnkiUiMessage,
     VideoTabModel,
-    ExtensionToAsbPlayerCommand,
     CopySubtitleMessage,
     CardModel,
     RequestSubtitlesResponse,
     JumpToSubtitleMessage,
     DownloadImageMessage,
     DownloadAudioMessage,
-    CardExportedMessage,
     DisplaySubtitleModel,
     TokenizedSubtitleModel,
 } from '@project/common';
-import type { BulkExportStartedPayload } from '@project/extension/src/controllers/bulk-export-controller';
 import type { AsbplayerSettings, SettingsProvider } from '@project/common/settings';
 import { AudioClip } from '@project/common/audio-clip';
 import type { ChromeExtension } from '@project/common/app';
@@ -50,7 +47,6 @@ import SidePanelTopControls from '@project/extension/src/ui/components/SidePanel
 import CopyHistory from '@project/common/app/components/CopyHistory';
 import { useAppKeyBinder } from '@project/common/app/hooks/use-app-key-binder';
 import { MiningContext } from '@project/common/app/services/mining-context';
-import BulkExportModal from '@project/common/app/components/BulkExportModal';
 import { IndexedDBCopyHistoryRepository } from '@project/common/copy-history';
 import { mp3WorkerFactory } from '@project/extension/src/services/mp3-worker-factory';
 import { pgsParserWorkerFactory } from '@project/extension/src/services/pgs-parser-worker-factory';
@@ -339,60 +335,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
         playerRef.current?.downloadSubtitleTimeline();
     }, []);
 
-    const handleBulkExportSubtitles = useCallback(async () => {
-        if (!syncedVideoTab) return;
-        const startCommand: AsbPlayerToVideoCommandV2<Message> = {
-            sender: 'asbplayerv2',
-            message: { command: 'start-bulk-export' },
-            tabId: syncedVideoTab.id,
-            src: syncedVideoTab.src,
-        };
-        void browser.runtime.sendMessage(startCommand);
-    }, [syncedVideoTab]);
-
-    const handleBulkExportCancel = useCallback(async () => {
-        if (!syncedVideoTab) return;
-        const cancelCommand: AsbPlayerToVideoCommandV2<Message> = {
-            sender: 'asbplayerv2',
-            message: { command: 'cancel-bulk-export' },
-            tabId: syncedVideoTab.id,
-            src: syncedVideoTab.src,
-        };
-        void browser.runtime.sendMessage(cancelCommand);
-    }, [syncedVideoTab]);
-
-    // Local bulk export UI state
-    const [bulkOpen, setBulkOpen] = useState<boolean>(false);
-    const [bulkCurrent, setBulkCurrent] = useState<number>(0);
-    const [bulkTotal, setBulkTotal] = useState<number>(0);
-
-    // Listen for bulk export lifecycle messages from background
-    useEffect(() => {
-        const listener = (message: any) => {
-            if (message?.sender === 'asbplayerv2' && message?.message?.command === 'bulk-export-started') {
-                const total = (message.message as BulkExportStartedPayload).total ?? 0;
-                setBulkOpen(true);
-                setBulkTotal(total);
-                setBulkCurrent(0);
-            } else if (
-                message?.sender === 'asbplayer-extension-to-video' &&
-                message?.message?.command === 'card-exported'
-            ) {
-                const exported = message.message as CardExportedMessage;
-                if (exported.isBulkExport) {
-                    setBulkCurrent((c) => c + 1);
-                }
-            } else if (
-                message?.sender === 'asbplayerv2' &&
-                (message?.message?.command === 'bulk-export-completed' ||
-                    message?.message?.command === 'bulk-export-cancelled')
-            ) {
-                setBulkOpen(false);
-            }
-        };
-        browser.runtime.onMessage.addListener(listener);
-        return () => browser.runtime.onMessage.removeListener(listener);
-    }, []);
 
     const topControlsRef = useRef<HTMLDivElement>(null);
     const [showTopControls, setShowTopControls] = useState<boolean>(false);
@@ -524,30 +466,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
         },
         [currentTabId, viewingAsbplayer]
     );
-    const handleAnki = useCallback(
-        (copyHistoryItem: CopyHistoryItem) => {
-            if (currentTabId === undefined) {
-                return;
-            }
-
-            const message: ShowAnkiUiMessage = {
-                ...copyHistoryItem,
-                command: 'show-anki-ui',
-            };
-            const videoCommand: ExtensionToVideoCommand<ShowAnkiUiMessage> = {
-                sender: 'asbplayer-extension-to-video',
-                message,
-            };
-            const asbplayerCommand: ExtensionToAsbPlayerCommand<ShowAnkiUiMessage> = {
-                sender: 'asbplayer-extension-to-player',
-                message,
-            };
-            void browser.tabs.sendMessage(currentTabId, videoCommand);
-            void browser.tabs.sendMessage(currentTabId, asbplayerCommand);
-        },
-        [currentTabId]
-    );
-
     const recordingAudioRef = useRef(recordingAudio);
     recordingAudioRef.current = recordingAudio;
 
@@ -657,7 +575,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
                     onClose={noOp}
                     onDelete={deleteCopyHistoryItem}
                     onDeleteAll={deleteAllCopyHistoryItems}
-                    onAnki={handleAnki}
                     onClipAudio={handleClipAudio}
                     onDownloadImage={handleDownloadImage}
                     onSelect={handleJumpToSubtitle}
@@ -671,7 +588,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
                         onClose={handleCloseCopyHistory}
                         onDelete={deleteCopyHistoryItem}
                         onDeleteAll={deleteAllCopyHistoryItems}
-                        onAnki={handleAnki}
                         onClipAudio={handleClipAudio}
                         onDownloadImage={handleDownloadImage}
                     />
@@ -751,8 +667,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
                                 canDownloadSubtitles={canDownloadSubtitles}
                                 onDownloadSubtitles={handleDownloadSubtitles}
                                 onDownloadSubtitleTimeline={handleDownloadSubtitleTimeline}
-                                onBulkExportSubtitles={handleBulkExportSubtitles}
-                                disableBulkExport={recordingAudio}
                                 onShowMiningHistory={handleShowCopyHistory}
                                 miningHistoryCount={copyHistoryItems.length}
                             />
@@ -769,13 +683,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
                 </>
             )}
 
-            {/* Bulk Export Modal - rendered outside the main content to ensure it's always on top */}
-            <BulkExportModal
-                open={bulkOpen}
-                currentIndex={bulkCurrent}
-                totalItems={bulkTotal}
-                onCancel={handleBulkExportCancel}
-            />
         </div>
     );
 }

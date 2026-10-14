@@ -2,7 +2,6 @@ import IconButton from '@mui/material/IconButton';
 import HistoryIcon from '@mui/icons-material/History';
 import LoadSubtitlesIcon from '@project/common/components/LoadSubtitlesIcon';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
-import ImportExportIcon from '@mui/icons-material/ImportExport';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
@@ -25,10 +24,8 @@ interface Props {
     onLoadSubtitles: () => void;
     onDownloadSubtitles: () => void;
     onDownloadSubtitleTimeline: () => void;
-    onBulkExportSubtitles: () => void;
     onShowMiningHistory: () => void;
     miningHistoryCount: number;
-    disableBulkExport?: boolean;
 }
 
 const SidePanelTopControls = React.forwardRef(function SidePanelTopControls(
@@ -38,10 +35,8 @@ const SidePanelTopControls = React.forwardRef(function SidePanelTopControls(
         onLoadSubtitles,
         onDownloadSubtitles,
         onDownloadSubtitleTimeline,
-        onBulkExportSubtitles,
         onShowMiningHistory,
         miningHistoryCount,
-        disableBulkExport,
     }: Props,
     ref: ForwardedRef<HTMLDivElement>
 ) {
@@ -73,15 +68,6 @@ const SidePanelTopControls = React.forwardRef(function SidePanelTopControls(
                                         <IconButton onClick={(event) => setDownloadMenuAnchorEl(event.currentTarget)}>
                                             <SaveAltIcon />
                                         </IconButton>
-                                    </Tooltip>
-                                </Grid>
-                                <Grid item>
-                                    <Tooltip title={t('action.bulkExportSubtitles')} disabled={!!disableBulkExport}>
-                                        <span>
-                                            <IconButton onClick={onBulkExportSubtitles} disabled={!!disableBulkExport}>
-                                                <ImportExportIcon />
-                                            </IconButton>
-                                        </span>
                                     </Tooltip>
                                 </Grid>
                             </>

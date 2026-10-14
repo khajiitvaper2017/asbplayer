@@ -70,13 +70,6 @@ jest.mock('@project/extension/src/controllers/notification-controller', () => ({
         unbind() {}
     },
 }));
-jest.mock('@project/extension/src/controllers/bulk-export-controller', () => ({
-    __esModule: true,
-    default: class BulkExportController {
-        bind() {}
-        unbind() {}
-    },
-}));
 jest.mock('@project/extension/src/controllers/video-data-sync-controller', () => ({
     __esModule: true,
     default: class VideoDataSyncController {

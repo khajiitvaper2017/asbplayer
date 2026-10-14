@@ -97,7 +97,6 @@ import { MobileGestureController } from '@project/extension/src/controllers/mobi
 import { MobileVideoOverlayController } from '@project/extension/src/controllers/mobile-video-overlay-controller';
 import NotificationController from '@project/extension/src/controllers/notification-controller';
 import SubtitleController from '@project/extension/src/controllers/subtitle-controller';
-import BulkExportController from '@project/extension/src/controllers/bulk-export-controller';
 import VideoDataSyncController from '@project/extension/src/controllers/video-data-sync-controller';
 import AudioRecorder, { TimedRecordingInProgressError } from '@project/extension/src/services/audio-recorder';
 import { isMobile } from '@project/common/device-detection/mobile';
@@ -228,7 +227,6 @@ export default class Binding {
     readonly keyBindings: KeyBindings;
     readonly settings: SettingsProvider;
     private readonly _audioRecorder = new AudioRecorder();
-    readonly bulkExportController: BulkExportController;
 
     private copyToClipboardOnMine: boolean;
     private alwaysUseSubtitleForSentence: boolean;
@@ -297,7 +295,6 @@ export default class Binding {
             return this.mobileVideoOverlayController.updateModel();
         };
         this.mobileGestureController = new MobileGestureController(this);
-        this.bulkExportController = new BulkExportController(this);
         this._disablePauseOnHover = false;
         this.recordMedia = true;
         this.takeScreenshot = true;
@@ -711,7 +708,6 @@ export default class Binding {
         this.playbackEngine.bind();
         this.dragController.bind(this);
         this.mobileGestureController.bind();
-        this.bulkExportController.bind();
 
         const seek = (forward: boolean) => {
             const subtitle = adjacentSubtitle(
@@ -1014,12 +1010,6 @@ export default class Binding {
                         });
                         break;
                     }
-                    case 'start-bulk-export':
-                        void this.bulkExportController.start();
-                        break;
-                    case 'cancel-bulk-export':
-                        void this.bulkExportController.cancel();
-                        break;
                     case 'offset': {
                         const offsetMessage = request.message as OffsetToVideoMessage;
                         this.playbackEngine.subtitleOffsetChanged(offsetMessage.value, {
@@ -1506,7 +1496,6 @@ export default class Binding {
         this.mobileVideoOverlayController.unbind();
         this.mobileGestureController.unbind();
         this.notificationController.unbind();
-        this.bulkExportController.unbind();
         this.subscribed = false;
 
         this._notifyVideoDisappeared(this._registeredVideoSrc);
