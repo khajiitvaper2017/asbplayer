@@ -37,10 +37,6 @@ export const useLocalFontFamilies = () => {
         updateLocalFontsPermission();
     }, [updateLocalFontsPermission]);
 
-    useEffect(() => {
-        updateLocalFonts();
-    }, [updateLocalFonts]);
-
     return {
         updateLocalFontsPermission,
         updateLocalFonts,
