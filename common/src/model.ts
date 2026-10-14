@@ -1,10 +1,24 @@
 import type { AnkiSettings, JitenSettings, TokenState, TokenStatus } from '@project/common/settings';
 import type { GenericParseType, OnlineSubtitleSourceConfig } from '@project/common/global-state';
-import type { TokenStatusInfo } from '@project/common/dictionary-db';
 import type { JitenTarget, JitenPending, JitenAttachmentResult } from '@project/common/jiten/jiten';
-import type { PitchAccentPosition } from '@project/common/yomitan';
 
 type Profile = { name: string };
+
+export interface WaniKaniTokenStatusInfo {
+    subjectId: number;
+    subjectLevel: number;
+    assignmentId: number | undefined;
+    availableAt: string | null | undefined;
+}
+
+export interface TokenStatusInfo {
+    cardId?: number;
+    waniKani?: WaniKaniTokenStatusInfo;
+    status: TokenStatus;
+    suspended: boolean;
+}
+
+export type PitchAccentPosition = number | string;
 
 export interface RectModel {
     readonly left: number;

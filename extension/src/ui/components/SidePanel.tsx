@@ -54,12 +54,10 @@ import BulkExportModal from '@project/common/app/components/BulkExportModal';
 import { IndexedDBCopyHistoryRepository } from '@project/common/copy-history';
 import { mp3WorkerFactory } from '@project/extension/src/services/mp3-worker-factory';
 import { pgsParserWorkerFactory } from '@project/extension/src/services/pgs-parser-worker-factory';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
 import { useSidePanelRequestedLocation } from '@project/extension/src/ui/hooks/use-side-panel-requested-location';
 import { clearExtensionRequestedLocation } from '@/services/side-panel';
 
 interface Props {
-    dictionaryProvider: DictionaryProvider;
     settingsProvider: SettingsProvider;
     settings: AsbplayerSettings;
     extension: ChromeExtension;
@@ -97,7 +95,7 @@ const sameAsbplayerInstance = (a: AsbplayerInstance, b: AsbplayerInstance) => {
 const emptyArray: VideoTabModel[] = [];
 const miningContext = new MiningContext();
 
-export default function SidePanel({ dictionaryProvider, settingsProvider, settings, extension }: Props) {
+export default function SidePanel({ settingsProvider, settings, extension }: Props) {
     const { t } = useTranslation();
     const playbackPreferences = useMemo(() => new PlaybackPreferenceController(), []);
     const subtitleReader = useMemo(

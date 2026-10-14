@@ -16,7 +16,6 @@ jest.mock('ass-compiler', () => ({ compile: () => ({ dialogues: [] }) }));
 import SubtitleReader from '@project/common/subtitle-reader/subtitle-reader';
 import { SubtitleHtml } from '@project/common';
 import { defaultSettings } from '@project/common/settings';
-import { renderRichTextOntoSubtitles } from '@project/common/annotations/render-annotations';
 
 const createReader = (options: Partial<ConstructorParameters<typeof SubtitleReader>[0]> = {}) =>
     new SubtitleReader({
@@ -641,34 +640,6 @@ describe('SubtitleReader WebVTT timestamp stripping', () => {
 });
 
 describe('SubtitleReader Netflix ruby text conversion', () => {
-    it.each(['srt', 'vtt', 'nfvtt'])('renders imported ASCII and numeric readings from %s', async (extension) => {
-        const text = 'MIU(ミウ)、007(ゼロゼロセブン)、さっきTwitter(ツイッター)と5G通信(つうしん)';
-        const [subtitle] = await createReader({ convertNetflixRuby: true }).subtitles([
-            extension === 'srt' ? srtFile(text) : vttFile(text, extension),
-        ]);
-        const rendered = renderRichTextOntoSubtitles(
-            [{ ...subtitle, index: 0 }],
-            'video',
-            defaultSettings.dictionaryTracks
-        ).get(0);
-        const sink = document.createElement('div');
-        sink.innerHTML = rendered?.richText ?? '';
-
-        expect(subtitle.text).toBe('MIU、007、さっきTwitterと5G通信');
-        expect(Array.from(sink.querySelectorAll('ruby'), (ruby) => ruby.firstChild?.textContent)).toEqual([
-            'MIU',
-            '007',
-            'Twitter',
-            '通信',
-        ]);
-        expect(Array.from(sink.querySelectorAll('rt'), (reading) => reading.textContent)).toEqual([
-            'ミウ',
-            'ゼロゼロセブン',
-            'ツイッター',
-            'つうしん',
-        ]);
-    });
-
     it('attaches readings to the final script run and adjusts later SRT token offsets', async () => {
         const [subtitle] = await createReader({ convertNetflixRuby: true }).subtitles([
             srtFile('さっきTwitter(ツイッター)のトレンドに…と5G通信(つうしん)'),

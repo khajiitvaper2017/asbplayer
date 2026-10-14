@@ -20,7 +20,6 @@ import { testCard } from '@project/common/settings';
 import { useTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { settingsPageConfigs } from '@/services/pages';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
 import { useLocationHash } from '@project/common/hooks/use-location-hash';
 
@@ -40,15 +39,12 @@ const useStyles = makeStyles<Theme>((theme) => ({
 }));
 
 interface Props {
-    dictionaryProvider: DictionaryProvider;
     logProvider: LogProvider;
     settings: AsbplayerSettings;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
     profiles: Profile[];
     activeProfile?: string;
     inTutorial?: boolean;
-    inAnnotationTutorial?: boolean;
-    onAnnotationTutorialSeen?: () => void;
     onNewProfile: (name: string) => void;
     onRemoveProfile: (name: string) => void;
     onSetActiveProfile: (name: string | undefined) => void;
@@ -62,12 +58,9 @@ const extensionTestCard: () => Promise<CardModel> = () => {
 };
 
 const SettingsPage = ({
-    dictionaryProvider,
     logProvider,
     settings,
     inTutorial,
-    inAnnotationTutorial,
-    onAnnotationTutorialSeen,
     onSettingsChanged,
     ...profileContext
 }: Props) => {
@@ -127,21 +120,14 @@ const SettingsPage = ({
                         extensionSupportsAutoPauseResume
                         extensionSupportsExportCardBind
                         extensionSupportsPageSettings
-                        extensionSupportsDictionary
-                        extensionSupportsDictionaryBrowser
-                        extensionSupportsDictionaryWaniKani
-                        extensionSupportsDictionaryMatchAcrossScripts
                         extensionSupportsSeekableTrackSetting
                         extensionSupportsAutoCopyableTrackSetting
-                        extensionSupportsDictionaryTokenStatusDisplayAlpha
-                        extensionSupportsDictionaryYomitanMecab
                         extensionSupportsSubtitleTrackSelectorInWebApp
                         extensionSupportsSubtitleListCustomization
                         extensionSupportsUpdateLastWithSameSubtitleText
                         chromeKeyBinds={commands}
                         onOpenChromeExtensionShortcuts={handleOpenExtensionShortcuts}
                         onSettingsChanged={onSettingsChanged}
-                        dictionaryProvider={dictionaryProvider}
                         logProvider={logProvider}
                         settings={settings}
                         profiles={profileContext.profiles}
@@ -153,8 +139,6 @@ const SettingsPage = ({
                         supportedLanguages={supportedLanguages}
                         onUnlockLocalFonts={handleUnlockLocalFonts}
                         inTutorial={inTutorial}
-                        inAnnotationTutorial={inAnnotationTutorial}
-                        onAnnotationTutorialSeen={onAnnotationTutorialSeen}
                         testCard={extensionTestCard}
                         scrollToId={scrollToId}
                     />

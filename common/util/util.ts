@@ -11,12 +11,12 @@ import type {
     Token,
     Tokenization,
     TokenReading,
+    PitchAccentPosition,
 } from '@project/common/src/model';
 import type { SeekableTracks, TextSubtitleSettings } from '@project/common/settings';
 import { isTrackSeekable, TokenStatus } from '@project/common/settings';
 import type { Progress } from '..';
-import type { TokenStatusInfo } from '@project/common/dictionary-db';
-import type { PitchAccentPosition } from '@project/common/yomitan';
+import type { TokenStatusInfo } from '@project/common/src/model';
 
 export interface AnimationFrameRetryOptions {
     runImmediately?: boolean;

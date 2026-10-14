@@ -87,7 +87,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { StyledEngineProvider } from '@mui/material/styles';
 import { useServiceWorker } from '@project/common/app/hooks/use-service-worker';
 import NeedRefreshDialog from '@project/common/app/components/NeedRefreshDialog';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
 import { isFirefox } from '@project/common/browser-detection';
 import VideoDataSyncDialog, { useVideoDataSyncDialogState } from '@project/common/components/VideoDataSyncDialog';
@@ -273,7 +272,6 @@ interface Props {
     origin: string;
     logoUrl: string;
     settingsProvider: SettingsProvider;
-    dictionaryProvider: DictionaryProvider;
     logProvider: LogProvider;
     settings: AsbplayerSettings;
     globalState?: GlobalState;
@@ -292,7 +290,6 @@ interface Props {
 function App({
     origin,
     logoUrl,
-    dictionaryProvider,
     logProvider,
     settingsProvider,
     settings,
@@ -653,7 +650,6 @@ function App({
                     onSettingsChanged({ lastSelectedAnkiExportMode: params.mode });
                 }
 
-                dictionaryProvider.ankiCardWasModified();
             } catch (e) {
                 handleError(e);
             } finally {
@@ -673,7 +669,6 @@ function App({
             onSettingsChanged,
             handleError,
             t,
-            dictionaryProvider,
         ]
     );
 
@@ -925,7 +920,7 @@ function App({
             });
             setVideoFullscreen(false);
         },
-        [dictionaryProvider, extension.id, sources]
+        [extension.id, sources]
     );
 
     const handleDownloadAudio = useCallback(
@@ -2027,7 +2022,6 @@ function App({
                                 open={settingsDialogOpen}
                                 onSettingsChanged={onSettingsChanged}
                                 onClose={handleCloseSettings}
-                                dictionaryProvider={dictionaryProvider}
                                 logProvider={logProvider}
                                 settings={settings}
                                 activeProfile={profilesContext.activeProfile}

@@ -16,10 +16,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import type { Theme } from '@mui/material';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
-import { useAnnotationTutorial } from '@project/common/hooks/use-annotation-tutorial';
-import { AppExtensionGlobalStateProvider } from '@project/common/app/services/app-extension-global-state-provider';
 
 const appTestCard = () => {
     const basePath = window.location.pathname === '/' ? '' : window.location.pathname;
@@ -49,7 +46,6 @@ interface Props {
     anki: Anki;
     extension: ChromeExtension;
     open: boolean;
-    dictionaryProvider: DictionaryProvider;
     logProvider: LogProvider;
     settings: AsbplayerSettings;
     scrollToId?: string;
@@ -66,7 +62,6 @@ export default function SettingsDialog({
     anki,
     extension,
     open,
-    dictionaryProvider,
     logProvider,
     settings,
     scrollToId,
@@ -88,8 +83,6 @@ export default function SettingsDialog({
         updateLocalFontsPermission();
         updateLocalFonts();
     }, [updateLocalFontsPermission, updateLocalFonts]);
-    const globalStateProvider = useMemo(() => new AppExtensionGlobalStateProvider(extension), [extension]);
-    const { inAnnotationTutorial, handleAnnotationTutorialSeen } = useAnnotationTutorial({ globalStateProvider });
 
     return (
         <Dialog open={open} maxWidth="md" fullWidth className={classes.root} onClose={onClose}>
@@ -118,16 +111,8 @@ export default function SettingsDialog({
                     extensionSupportsAutoPauseResume={extension.supportsAutoPauseResume}
                     extensionSupportsExportCardBind={extension.supportsExportCardBind}
                     extensionSupportsPageSettings={extension.supportsPageSettings}
-                    extensionSupportsDictionary={extension.supportsDictionary}
-                    extensionSupportsDictionaryBrowser={extension.supportsDictionaryBrowser}
-                    extensionSupportsDictionaryWaniKani={extension.supportsDictionaryWaniKani}
-                    extensionSupportsDictionaryMatchAcrossScripts={extension.supportsDictionaryMatchAcrossScripts}
                     extensionSupportsSeekableTrackSetting={extension.supportsSeekableTrackSetting}
                     extensionSupportsAutoCopyableTrackSetting={extension.supportsAutoCopyableTrackSetting}
-                    extensionSupportsDictionaryTokenStatusDisplayAlpha={
-                        extension.supportsDictionaryTokenStatusDisplayAlpha
-                    }
-                    extensionSupportsDictionaryYomitanMecab={extension.supportsDictionaryYomitanMecab}
                     extensionSupportsSubtitleTrackSelectorInWebApp={extension.supportsSubtitleTrackSelectorInWebApp}
                     extensionSupportsSubtitleListCustomization={extension.supportsSubtitleListCustomization}
                     extensionSupportsUpdateLastWithSameSubtitleText={extension.supportsUpdateLastWithSameSubtitleText}
@@ -137,7 +122,6 @@ export default function SettingsDialog({
                     chromeKeyBinds={extension.extensionCommands}
                     onOpenChromeExtensionShortcuts={extension.openShortcuts}
                     onSettingsChanged={onSettingsChanged}
-                    dictionaryProvider={dictionaryProvider}
                     logProvider={logProvider}
                     settings={settings}
                     profiles={profilesContext.profiles}
@@ -149,8 +133,6 @@ export default function SettingsDialog({
                     supportedLanguages={supportedLanguages}
                     testCard={appTestCard}
                     onUnlockLocalFonts={handleUnlockLocalFonts}
-                    inAnnotationTutorial={inAnnotationTutorial}
-                    onAnnotationTutorialSeen={handleAnnotationTutorialSeen}
                 />
             </DialogContent>
             {(!extension.installed || extension.supportsSettingsProfiles) && (

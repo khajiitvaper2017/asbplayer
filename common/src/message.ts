@@ -10,7 +10,6 @@ import type {
     TokenStatus,
 } from '@project/common/settings';
 import type { GenericParseType, GlobalState, OnlineSubtitleSourceConfig } from '@project/common/global-state';
-import type { DictionaryStatisticsSnapshot } from '@project/common/dictionary-statistics';
 import type {
     RectModel,
     SubtitleModel,
@@ -33,12 +32,6 @@ import type {
 import type { AsbPlayerToVideoCommandV2 } from '@project/common/src/command';
 import type { LogLine, LogSnapshot } from '@project/common/util/log-utils';
 import type { JitenPending, JitenAttachmentResult } from '@project/common/jiten/jiten';
-import type {
-    DictionaryLocalTokenInput,
-    DictionaryTokenKey,
-    DictionaryTokenRecord,
-    DictionaryRecordUpdateInput,
-} from '@project/common/dictionary-db/dictionary-db';
 
 export interface Message {
     readonly command: string;
@@ -46,6 +39,12 @@ export interface Message {
 
 export interface MessageWithId extends Message {
     readonly messageId: string;
+}
+
+export interface Progress {
+    current: number;
+    total: number;
+    startedAt: number;
 }
 
 export interface AsbplayerInstance {
@@ -890,204 +889,6 @@ export interface ClearCopyHistoryMessage extends MessageWithId {
     readonly command: 'clear-copy-history';
 }
 
-export interface DictionaryGetBulkMessage extends MessageWithId {
-    readonly command: 'dictionary-get-bulk';
-    readonly profile: string | undefined;
-    readonly track: number;
-    readonly tokens: string[];
-}
-
-export interface DictionaryGetByLemmaBulkMessage extends MessageWithId {
-    readonly command: 'dictionary-get-by-lemma-bulk';
-    readonly profile: string | undefined;
-    readonly track: number;
-    readonly lemmas: string[];
-}
-
-export interface DictionarySaveRecordLocalBulkMessage extends MessageWithId {
-    readonly command: 'dictionary-save-record-local-bulk';
-    readonly profile: string | undefined;
-    readonly localTokenInputs: readonly DictionaryLocalTokenInput[];
-    readonly applyStates: ApplyStrategy;
-}
-
-export interface DictionaryDeleteRecordLocalBulkMessage extends MessageWithId {
-    readonly command: 'dictionary-delete-record-local-bulk';
-    readonly profile: string | undefined;
-    readonly tokens: string[];
-}
-
-export interface DictionaryDeleteProfileMessage extends MessageWithId {
-    readonly command: 'dictionary-delete-profile';
-    readonly profile: string;
-}
-
-export interface DictionaryExportRecordLocalBulkMessage extends MessageWithId {
-    readonly command: 'dictionary-export-record-local-bulk';
-}
-
-export interface DictionaryImportRecordLocalBulkMessage extends MessageWithId {
-    readonly command: 'dictionary-import-record-local-bulk';
-    readonly records: Partial<DictionaryTokenRecord>[];
-    readonly profiles: string[];
-}
-
-export interface DictionaryGetRecordsMessage extends MessageWithId {
-    readonly command: 'dictionary-get-records';
-    readonly profile: string | undefined;
-    readonly track: number | undefined;
-}
-
-export interface DictionaryUpdateRecordsMessage extends MessageWithId {
-    readonly command: 'dictionary-update-records';
-    readonly profile: string | undefined;
-    readonly updates: DictionaryRecordUpdateInput[];
-    readonly applyStates: ApplyStrategy;
-}
-
-export interface DictionaryDeleteRecordsMessage extends MessageWithId {
-    readonly command: 'dictionary-delete-records';
-    readonly profile: string | undefined;
-    readonly tokenKeys: DictionaryTokenKey[];
-}
-
-export interface DictionaryBuildAnkiCacheMessage extends MessageWithId {
-    readonly command: 'dictionary-build-anki-cache';
-    readonly profile: string | undefined;
-    readonly settings?: AsbplayerSettings;
-}
-
-export interface DictionaryBuildWaniKaniCacheMessage extends MessageWithId {
-    readonly command: 'dictionary-build-wanikani-cache';
-    readonly profile: string | undefined;
-}
-
-export interface DictionaryBuildAnkiCacheStateBody {
-    modifiedTokens?: string[];
-}
-
-export interface DictionaryBuildWaniKaniCacheStateBody extends DictionaryBuildAnkiCacheStateBody {
-    track: number;
-}
-
-export interface DictionaryBuildAnkiCacheState {
-    body?: DictionaryBuildAnkiCacheStateBody;
-    type: DictionaryBuildAnkiCacheStateType;
-}
-
-export interface DictionaryBuildAnkiCacheStateMessage extends DictionaryBuildAnkiCacheState, Message {
-    readonly command: 'dictionary-build-anki-cache-state';
-}
-
-export interface DictionaryBuildWaniKaniCacheState {
-    body: DictionaryBuildWaniKaniCacheStateBody;
-    type: DictionaryBuildWaniKaniCacheStateType;
-}
-
-export interface DictionaryBuildWaniKaniCacheStateMessage extends DictionaryBuildWaniKaniCacheState, Message {
-    readonly command: 'dictionary-build-wanikani-cache-state';
-}
-
-export enum DictionaryBuildAnkiCacheStateType {
-    start = 0,
-    unknown = 1,
-    error = 2,
-    stats = 3,
-    progress = 4,
-}
-
-export enum DictionaryBuildWaniKaniCacheStateType {
-    start = 0,
-    unknown = 1,
-    error = 2,
-    stats = 3,
-    progress = 4,
-}
-
-export interface DictionaryBuildAnkiCacheStart extends DictionaryBuildAnkiCacheStateBody {
-    buildTimestamp: number;
-}
-
-export interface DictionaryBuildWaniKaniCacheStart extends DictionaryBuildWaniKaniCacheStateBody {
-    buildTimestamp: number;
-}
-
-export interface Progress {
-    current: number;
-    total: number;
-    startedAt: number;
-}
-
-export interface DictionaryBuildAnkiCacheProgress extends DictionaryBuildAnkiCacheStateBody {
-    current: number;
-    total: number;
-    buildTimestamp: number;
-    forAnkiSync?: boolean;
-}
-
-export interface DictionaryBuildWaniKaniCacheProgress extends DictionaryBuildWaniKaniCacheStateBody {
-    current: number;
-    total: number;
-    buildTimestamp: number;
-}
-
-export interface DictionaryBuildAnkiCacheStats extends DictionaryBuildAnkiCacheStateBody {
-    buildTimestamp: number;
-    tracksToBuild?: number[];
-    tracksToClear?: number[];
-    orphanedCards?: number;
-    modifiedCards?: number;
-}
-
-export interface DictionaryBuildWaniKaniCacheStats extends DictionaryBuildWaniKaniCacheStateBody {
-    buildTimestamp: number;
-    numFetchedAssignments?: number;
-    numFetchedSubjects?: number;
-    numImportedTokens?: number;
-    isTokensCleared?: boolean;
-}
-
-export enum DictionaryBuildAnkiCacheStateErrorCode {
-    concurrentBuild = 1,
-    noAnki = 2,
-    noYomitan = 3,
-    failedToSyncTrackStates = 4,
-    failedToBuild = 5,
-}
-
-export enum DictionaryBuildWaniKaniCacheStateErrorCode {
-    concurrentBuild = 1,
-    invalidWaniKaniToken = 2,
-    noYomitan = 3,
-    failedToBuild = 4,
-}
-
-export interface DictionaryBuildAnkiCacheStateErrorTrackNumberData {
-    track: number;
-}
-
-export interface DictionaryBuildAnkiCacheStateErrorBuildExpirationData {
-    expiration: number;
-}
-
-export type DictionaryBuildAnkiCacheStateErrorData =
-    | DictionaryBuildAnkiCacheStateErrorTrackNumberData
-    | DictionaryBuildAnkiCacheStateErrorBuildExpirationData;
-
-export interface DictionaryBuildAnkiCacheStateError extends DictionaryBuildAnkiCacheStateBody {
-    code: DictionaryBuildAnkiCacheStateErrorCode;
-    msg?: string;
-    data?: DictionaryBuildAnkiCacheStateErrorData;
-}
-
-export type DictionaryBuildWaniKaniCacheStateErrorData = DictionaryBuildAnkiCacheStateErrorBuildExpirationData;
-
-export interface DictionaryBuildWaniKaniCacheStateError extends DictionaryBuildWaniKaniCacheStateBody {
-    code: DictionaryBuildWaniKaniCacheStateErrorCode;
-    msg?: string;
-    data?: DictionaryBuildWaniKaniCacheStateErrorData;
-}
-
 export interface SaveTokenLocalMessage extends Message {
     readonly command: 'save-token-local';
     readonly track: number;
@@ -1122,66 +923,4 @@ export interface SaveTokenLocalToVideoMessage extends Message {
     readonly status: TokenStatus | null;
     readonly states: TokenState[];
     readonly applyStates: ApplyStrategy;
-}
-
-export interface DictionaryGetAllTokensMessage extends MessageWithId {
-    readonly command: 'dictionary-get-all-tokens';
-    readonly profile: string | undefined;
-    readonly track: number;
-}
-
-export interface DictionaryStatisticsMessage extends Message {
-    readonly command: 'dictionary-statistics';
-    readonly mediaId: string;
-    readonly snapshot?: DictionaryStatisticsSnapshot;
-}
-
-export interface DictionaryRequestStatisticsGenerationMessage extends Message {
-    readonly command: 'dictionary-request-statistics-generation';
-    readonly mediaId?: string;
-}
-
-export interface DictionaryRequestStatisticsSnapshotMessage extends Message {
-    readonly command: 'dictionary-request-statistics-snapshot';
-    readonly mediaId?: string;
-}
-
-export interface DictionaryRequestStatisticsSeekMessage extends Message {
-    readonly command: 'dictionary-request-statistics-seek';
-    readonly mediaId: string;
-    readonly timestamp: number;
-}
-
-export interface DictionaryRequestStatisticsMineSentencesMessage extends Message {
-    readonly command: 'dictionary-request-statistics-mine-sentences';
-    readonly mediaId: string;
-    readonly indexes: number[];
-}
-
-export interface OpenStatisticsOverlayMessage extends Message {
-    readonly command: 'open-statistics-overlay';
-    readonly mediaId: string;
-    readonly force: boolean;
-}
-
-export interface ResizeStatisticsOverlayMessage extends Message {
-    readonly command: 'resize-statistics-overlay';
-    readonly width: number;
-    readonly height: number;
-}
-
-export interface MoveStatisticsOverlayMessage extends Message {
-    readonly command: 'move-statistics-overlay';
-    readonly deltaX: number;
-    readonly deltaY: number;
-}
-
-export interface CloseStatisticsOverlayMessage extends Message {
-    readonly command: 'close-statistics-overlay';
-    readonly mediaId: string;
-}
-
-export interface ElementExistsStatisticsOverlayMessage extends Message {
-    readonly command: 'element-exists';
-    readonly mediaId: string;
 }

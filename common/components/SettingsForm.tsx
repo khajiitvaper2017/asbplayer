@@ -24,16 +24,7 @@ import KeyboardShortcutsSettingsTab, {
 import type { KeyboardShortcutSection } from '@project/common/components/KeyboardShortcutsSettingsTab';
 import StreamingVideoSettingsTab from '@project/common/components/StreamingVideoSettingsTab';
 import MiscSettingsTab from '@project/common/components/MiscSettingsTab';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
-import TutorialBubble from '@project/common/components/TutorialBubble';
-import type { TutorialBubbleProps } from '@project/common/components/TutorialBubble';
-
-interface AnnotationTutorialPosition {
-    left: number;
-    top: number;
-    placement: TutorialBubbleProps['placement'];
-}
 
 interface StylesProps {
     smallScreen: boolean;
@@ -158,7 +149,6 @@ const TabPanel = React.forwardRef<HTMLDivElement, TabPanelProps>(function TabPan
 type TabName =
     | 'anki-settings'
     | 'mining-settings'
-    | 'annotation'
     | 'subtitle-appearance'
     | 'keyboard-shortcuts'
     | 'streaming-video'
@@ -186,20 +176,13 @@ interface Props {
     extensionSupportsAutoPauseResume: boolean;
     extensionSupportsExportCardBind: boolean;
     extensionSupportsPageSettings: boolean;
-    extensionSupportsDictionary: boolean;
-    extensionSupportsDictionaryBrowser: boolean;
-    extensionSupportsDictionaryWaniKani: boolean;
-    extensionSupportsDictionaryMatchAcrossScripts: boolean;
     extensionSupportsSeekableTrackSetting: boolean;
     extensionSupportsAutoCopyableTrackSetting: boolean;
-    extensionSupportsDictionaryTokenStatusDisplayAlpha: boolean;
-    extensionSupportsDictionaryYomitanMecab: boolean;
     extensionSupportsSubtitleTrackSelectorInWebApp: boolean;
     extensionSupportsSubtitleListCustomization: boolean;
     extensionSupportsUpdateLastWithSameSubtitleText: boolean;
     insideApp?: boolean;
     appVersionRepoPath?: string;
-    dictionaryProvider: DictionaryProvider;
     logProvider: LogProvider;
     settings: AsbplayerSettings;
     profiles: Profile[];
@@ -213,8 +196,6 @@ interface Props {
     supportedLanguages: string[];
     forceVerticalTabs?: boolean;
     inTutorial?: boolean;
-    inAnnotationTutorial?: boolean;
-    onAnnotationTutorialSeen?: () => void;
     heightConstrained?: boolean;
     testCard?: () => Promise<CardModel>;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
@@ -224,7 +205,6 @@ interface Props {
 
 export default function SettingsForm({
     anki,
-    dictionaryProvider,
     logProvider,
     settings,
     profiles,
@@ -246,14 +226,8 @@ export default function SettingsForm({
     extensionSupportsAutoPauseResume,
     extensionSupportsExportCardBind,
     extensionSupportsPageSettings,
-    extensionSupportsDictionary,
-    extensionSupportsDictionaryBrowser,
-    extensionSupportsDictionaryWaniKani,
-    extensionSupportsDictionaryMatchAcrossScripts,
     extensionSupportsSeekableTrackSetting,
     extensionSupportsAutoCopyableTrackSetting,
-    extensionSupportsDictionaryTokenStatusDisplayAlpha,
-    extensionSupportsDictionaryYomitanMecab,
     extensionSupportsUpdateLastWithSameSubtitleText,
     insideApp,
     appVersionRepoPath,
@@ -265,21 +239,12 @@ export default function SettingsForm({
     supportedLanguages,
     forceVerticalTabs,
     inTutorial,
-    inAnnotationTutorial,
-    onAnnotationTutorialSeen,
     heightConstrained,
     testCard,
     onSettingsChanged,
     onOpenChromeExtensionShortcuts,
     onUnlockLocalFonts,
 }: Props) {
-    const supportsDictionary = false;
-    const supportsDictionaryBrowser = !extensionInstalled || extensionSupportsDictionaryBrowser;
-    const supportsDictionaryWaniKani = !extensionInstalled || extensionSupportsDictionaryWaniKani;
-    const supportsDictionaryMatchAcrossScripts = !extensionInstalled || extensionSupportsDictionaryMatchAcrossScripts;
-    const supportsDictionaryTokenStatusDisplayAlpha =
-        !extensionInstalled || extensionSupportsDictionaryTokenStatusDisplayAlpha;
-    const supportsDictionaryYomitanMecab = !extensionInstalled || extensionSupportsDictionaryYomitanMecab;
     const supportsPlaybackEngine = !extensionInstalled || extensionSupportsPlaybackEngine;
     const supportsSubtitleListCustomization = !extensionInstalled || extensionSupportsSubtitleListCustomization;
     const supportsAutoPauseResume = !extensionInstalled || extensionSupportsAutoPauseResume;
@@ -318,17 +283,14 @@ export default function SettingsForm({
             'anki-settings',
             'subtitle-appearance',
             'keyboard-shortcuts',
-            'annotation',
             'streaming-video',
             'misc-settings',
             'about',
         ];
 
         if (!extensionSupportsAppIntegration) tabs.splice(tabs.indexOf('streaming-video'), 1);
-        if (!supportsDictionary) tabs.splice(tabs.indexOf('annotation'), 1);
-
         return Object.fromEntries(tabs.map((tab, i) => [tab, i]));
-    }, [extensionSupportsAppIntegration, supportsDictionary]);
+    }, [extensionSupportsAppIntegration]);
 
     useEffect(() => {
         if (!scrollToId) {
@@ -349,10 +311,6 @@ export default function SettingsForm({
             setTutorialStep(TutorialStep.ankiFields);
         }
     }, [tutorialStep, noteType]);
-
-    const handleAnnotationTutorialSeen = useCallback(() => {
-        onAnnotationTutorialSeen?.();
-    }, [onAnnotationTutorialSeen]);
 
     const ankiPanelRef = useRef<HTMLDivElement>(null);
     const keyboardShortcutsPanelRef = useRef<HTMLDivElement>(null);
@@ -377,76 +335,9 @@ export default function SettingsForm({
         }
     }, [tutorialStep]);
 
-    const rootRef = useRef<HTMLDivElement | null>(null);
-    const annotationTabRef = useRef<HTMLDivElement | null>(null);
-
-    const calculateAnnotationTutorialPosition = useCallback(() => {
-        if (!rootRef.current || !annotationTabRef.current) {
-            return;
-        }
-
-        const elm = annotationTabRef.current;
-        const height = elm.getBoundingClientRect().height;
-        const width = elm.getBoundingClientRect().width;
-
-        if (smallScreen) {
-            setAnnotationTutorialPosition({
-                left: Math.min(elm.offsetLeft + width / 2, rootRef.current.clientWidth / 2),
-                top: elm.offsetTop + height,
-                placement: 'bottom',
-            });
-        } else {
-            setAnnotationTutorialPosition({
-                left: elm.offsetLeft + width,
-                top: elm.offsetTop + height / 2,
-                placement: 'right',
-            });
-        }
-    }, [smallScreen]);
-
-    const handleRootRef = useCallback(
-        (ref: HTMLDivElement | null) => {
-            if (!ref) {
-                return;
-            }
-            rootRef.current = ref;
-            calculateAnnotationTutorialPosition();
-        },
-        [calculateAnnotationTutorialPosition]
-    );
-
-    const handleAnnotationTabRef = useCallback(
-        (ref: HTMLDivElement | null) => {
-            if (!ref) {
-                return;
-            }
-            annotationTabRef.current = ref;
-            calculateAnnotationTutorialPosition();
-        },
-        [calculateAnnotationTutorialPosition]
-    );
-
-    const [annotationTutorialPosition, setAnnotationTutorialPosition] = useState<AnnotationTutorialPosition>();
-
     return (
         <ThemeProvider theme={settingsTheme}>
-            <div ref={handleRootRef} className={classes.root}>
-                {annotationTutorialPosition && (
-                    <TutorialBubble
-                        show={inAnnotationTutorial}
-                        placement={annotationTutorialPosition.placement}
-                        text={t('settings.ftueAnnotation')}
-                        onConfirm={handleAnnotationTutorialSeen}
-                    >
-                        <div
-                            style={{
-                                position: 'absolute',
-                                left: annotationTutorialPosition.left,
-                                top: annotationTutorialPosition.top,
-                            }}
-                        />
-                    </TutorialBubble>
-                )}
+            <div className={classes.root}>
                 <Tabs
                     orientation={tabsOrientation}
                     variant="scrollable"
@@ -455,9 +346,6 @@ export default function SettingsForm({
                     scrollButtons={false}
                     onChange={(event, index) => {
                         setTabIndex(index);
-                        if (supportsDictionary && inAnnotationTutorial && index === 4) {
-                            onAnnotationTutorialSeen?.();
-                        }
                     }}
                     sx={{
                         maxWidth: '100vw',
@@ -473,28 +361,20 @@ export default function SettingsForm({
                     />
                     <Tab tabIndex={2} label={t('settings.subtitleAppearance')} id="subtitle-appearance" />
                     <Tab tabIndex={3} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
-                    {supportsDictionary && (
-                        <Tab
-                            ref={handleAnnotationTabRef}
-                            tabIndex={4}
-                            label={t('settings.annotation')}
-                            id="annotation"
-                        />
-                    )}
                     {extensionSupportsAppIntegration && (
                         <Tab
-                            tabIndex={4 + Number(supportsDictionary)}
+                            tabIndex={4}
                             label={t('settings.streamingVideo')}
                             id="streaming-video"
                         />
                     )}
                     <Tab
-                        tabIndex={4 + Number(supportsDictionary) + Number(extensionSupportsAppIntegration)}
+                        tabIndex={4 + Number(extensionSupportsAppIntegration)}
                         label={t('settings.misc')}
                         id="misc-settings"
                     />
                     <Tab
-                        tabIndex={5 + Number(supportsDictionary) + Number(extensionSupportsAppIntegration)}
+                        tabIndex={5 + Number(extensionSupportsAppIntegration)}
                         label={t('about.title')}
                         id="about"
                     />

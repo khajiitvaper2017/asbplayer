@@ -23,16 +23,11 @@ import { settingsPageConfigs } from '@/services/pages';
 import Stack from '@mui/material/Stack';
 import TutorialIcon from '@project/common/components/TutorialIcon';
 import Paper from '@mui/material/Paper';
-import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
-import { useAnnotationTutorial } from '@project/common/hooks/use-annotation-tutorial';
-import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-provider';
 import Tooltip from '@project/common/components/Tooltip';
 
-const globalStateProvider = new ExtensionGlobalStateProvider();
 
 interface Props {
-    dictionaryProvider: DictionaryProvider;
     logProvider: LogProvider;
     settings: AsbplayerSettings;
     commands: any;
@@ -88,7 +83,6 @@ const NavButton: React.FC<ButtonProps & { label: string }> = ({ label, ...button
 };
 
 const Popup = ({
-    dictionaryProvider,
     logProvider,
     settings,
     commands,
@@ -111,7 +105,6 @@ const Popup = ({
     const { supportedLanguages } = useSupportedLanguages();
     const { localFontsAvailable, localFontsPermission, localFontFamilies } = useLocalFontFamilies();
     const theme = useTheme();
-    const { handleAnnotationTutorialSeen, inAnnotationTutorial } = useAnnotationTutorial({ globalStateProvider });
     const [scrollToId, setScrollToId] = useState<string>();
     if (!i18nInitialized) {
         return null;
@@ -164,21 +157,14 @@ const Popup = ({
                         extensionSupportsAutoPauseResume
                         extensionSupportsExportCardBind
                         extensionSupportsPageSettings
-                        extensionSupportsDictionary
-                        extensionSupportsDictionaryBrowser
-                        extensionSupportsDictionaryWaniKani
-                        extensionSupportsDictionaryMatchAcrossScripts
                         extensionSupportsSeekableTrackSetting
                         extensionSupportsAutoCopyableTrackSetting
-                        extensionSupportsDictionaryTokenStatusDisplayAlpha
-                        extensionSupportsDictionaryYomitanMecab
                         extensionSupportsSubtitleTrackSelectorInWebApp
                         extensionSupportsSubtitleListCustomization
                         extensionSupportsUpdateLastWithSameSubtitleText
                         forceVerticalTabs={false}
                         anki={anki}
                         chromeKeyBinds={chromeCommandBindsToKeyBinds(commands)}
-                        dictionaryProvider={dictionaryProvider}
                         logProvider={logProvider}
                         settings={settings}
                         profiles={profilesContext.profiles}
@@ -191,8 +177,6 @@ const Popup = ({
                         onSettingsChanged={onSettingsChanged}
                         onOpenChromeExtensionShortcuts={onOpenExtensionShortcuts}
                         onUnlockLocalFonts={handleUnlockLocalFonts}
-                        inAnnotationTutorial={inAnnotationTutorial}
-                        onAnnotationTutorialSeen={handleAnnotationTutorialSeen}
                         scrollToId={scrollToId}
                     />
                 </Grid>

@@ -23,7 +23,6 @@ import type {
     AnkiSettings,
     AsbplayerSettings,
     SubtitleAlignment,
-    DictionaryTrack,
     SettingsProvider,
 } from '@project/common/settings';
 import {
@@ -32,8 +31,6 @@ import {
     textSubtitleSettingsForTrack,
     PauseOnHoverMode,
     allTextSubtitleSettings,
-    TokenState,
-    ApplyStrategy,
 } from '@project/common/settings';
 import {
     adjacentSubtitle,
@@ -43,7 +40,6 @@ import {
     mockSurroundingSubtitles,
     seekWithNudge,
     surroundingSubtitlesAroundInterval,
-    ensureStoragePersisted,
     subtitleTimestampWithDelay,
     errorMessageFromVideo,
     formatAsSignedMs,
@@ -51,13 +47,7 @@ import {
     timeDurationDisplay,
 } from '@project/common/util';
 import { asbTrace } from '@project/common/util/log';
-import {
-    HoveredToken,
-    renderRichTextOntoSubtitles,
-    getAnnotationsHtml,
-    ASB_SUBTITLE_INDEX_ATTRIBUTE,
-} from '@project/common/annotations';
-import type { TokenJumpMatch } from '@project/common/annotations/token-navigation';
+import { ASB_SUBTITLE_INDEX_ATTRIBUTE } from '@project/common/annotations';
 import Clock from '@project/common/playback/timing/clock';
 import {
     formatPlaybackModeNotifications,
@@ -87,8 +77,7 @@ import { useTranslation } from 'react-i18next';
 import { usePlaybackPreferences } from '@project/common/app/hooks/use-playback-preferences';
 import type { MiningContext } from '@project/common/app/services/mining-context';
 import useSnackbar from '@project/common/hooks/use-snackbar';
-import { useStableDictionaryTracks, useSubtitleStyles } from '@project/common/app/hooks/use-subtitle-styles';
-import { useTokenSelection } from '@project/common/app/hooks/use-token-selection';
+import { useSubtitleStyles } from '@project/common/app/hooks/use-subtitle-styles';
 import { useFullscreen } from '@project/common/app/hooks/use-fullscreen';
 import MobileVideoOverlay from '@project/common/components/MobileVideoOverlay';
 import BlurOverlay from '@project/common/app/components/BlurOverlay';
@@ -186,7 +175,6 @@ const showingSubtitleHtml = (
     subtitleStyles: string,
     subtitleClasses: string,
     imageBasedSubtitleScaleFactor: number,
-    dictionaryTracks: DictionaryTrack[]
 ) => {
     if (subtitle.textImage) {
         const imageScale =
@@ -205,12 +193,7 @@ const showingSubtitleHtml = (
 `;
     }
     const allSubtitleClasses = subtitleClasses ? `${subtitleClasses} asbplayer-subtitles` : 'asbplayer-subtitles';
-    const rendered = renderRichTextOntoSubtitles([subtitle], 'video', dictionaryTracks)?.get(subtitle.index);
-    return `<span class="${allSubtitleClasses}" style="${subtitleStyles}" data-track="${subtitle.track}" ${ASB_SUBTITLE_INDEX_ATTRIBUTE}="${subtitle.index}">${getAnnotationsHtml(
-        subtitle.text,
-        rendered?.richText,
-        rendered?.richTextOnHover
-    )}</span>`;
+    return `<span class="${allSubtitleClasses}" style="${subtitleStyles}" data-track="${subtitle.track}" ${ASB_SUBTITLE_INDEX_ATTRIBUTE}="${subtitle.index}">${subtitle.text}</span>`;
 };
 
 interface CachedShowingSubtitleProps {
@@ -1096,28 +1079,6 @@ export default function VideoPlayer({
         },
         [playerChannel]
     );
-
-    const tokenSelectionCurrentTime = useCallback(() => clock.time({ maxMs: lengthMs }), [clock, lengthMs]);
-    const tokenSelectionSeekableTracks = useCallback(() => miscSettings.seekableTracks, [miscSettings.seekableTracks]);
-    const tokenSelectionDisabled = useCallback(() => false, []);
-    const handleTokenSelectionMatch = useCallback(
-        (match: TokenJumpMatch) => {
-            handleSeekByTimestamp(match.subtitle.start);
-        },
-        [handleSeekByTimestamp]
-    );
-
-    useTokenSelection({
-        rootRef: containerRef,
-        maxAttempts: 60,
-        keyBinder,
-        subtitles,
-        getCurrentTime: tokenSelectionCurrentTime,
-        getSeekableTracks: tokenSelectionSeekableTracks,
-        onMatch: handleTokenSelectionMatch,
-        onTokenSelectionClaimed: playerChannel.tokenSelectionFocus,
-        disabledGetter: tokenSelectionDisabled,
-    });
 
     useEffect(() => {
         if (seekRequest !== undefined) {
@@ -2053,8 +2014,7 @@ export default function VideoPlayer({
         setAlertDisableAutoHide(false);
         setAlert((alert) => ({ ...alert, open: false }));
     }, []);
-    const renderDictionaryTracks = useStableDictionaryTracks(settings.dictionaryTracks);
-    const trackStyles = useSubtitleStyles(subtitleSettings, trackCount ?? 1, renderDictionaryTracks, 'video');
+    const trackStyles = useSubtitleStyles(subtitleSettings, trackCount ?? 1, [], 'video');
 
     const getSubtitleHtml = useCallback(
         (subtitle: IndexedSubtitleModel) =>
@@ -2064,9 +2024,8 @@ export default function VideoPlayer({
                 trackStyles[subtitle.track]?.styleString ?? trackStyles[0]?.styleString ?? '',
                 trackStyles[subtitle.track]?.classes ?? trackStyles[0]?.classes ?? '',
                 subtitleSettings.imageBasedSubtitleScaleFactor,
-                renderDictionaryTracks
             ),
-        [trackStyles, renderDictionaryTracks, subtitleSettings.imageBasedSubtitleScaleFactor]
+        [trackStyles, subtitleSettings.imageBasedSubtitleScaleFactor]
     );
 
     const { getSubtitleDomCache, updateSubtitleDomCache } = useSubtitleDomCache(subtitles, getSubtitleHtml);
@@ -2097,51 +2056,20 @@ export default function VideoPlayer({
 
     const isPausedDueToHoverRef = useRef<boolean>(undefined);
 
-    const hoveredToken = useMemo(() => new HoveredToken(), []);
-
     const handleSubtitleMouseOver = useCallback(
         (e: React.MouseEvent) => {
             if (miscSettings.pauseOnHoverMode !== PauseOnHoverMode.disabled && videoRef.current?.paused === false) {
                 playerChannel.pause();
                 isPausedDueToHoverRef.current = true;
             }
-            hoveredToken.handleMouseOver(e.nativeEvent);
         },
-        [hoveredToken, miscSettings.pauseOnHoverMode, playerChannel]
+        [miscSettings.pauseOnHoverMode, playerChannel]
     );
 
     const handleSubtitleMouseOut = useCallback(
-        (e: React.MouseEvent) => hoveredToken.handleMouseOut(e.nativeEvent),
-        [hoveredToken]
+        () => {},
+        []
     );
-
-    useEffect(() => {
-        return keyBinder.bindMarkHoveredToken(
-            (event, tokenStatus) => {
-                const res = hoveredToken.parse();
-                if (!res) return;
-                void ensureStoragePersisted();
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                playerChannel.saveTokenLocal(res.track, res.token, tokenStatus, [], ApplyStrategy.ADD);
-            },
-            () => false
-        );
-    }, [hoveredToken, keyBinder, playerChannel]);
-
-    useEffect(() => {
-        return keyBinder.bindToggleHoveredTokenIgnored(
-            (event) => {
-                const res = hoveredToken.parse();
-                if (!res) return;
-                void ensureStoragePersisted();
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                playerChannel.saveTokenLocal(res.track, res.token, null, [TokenState.IGNORED], ApplyStrategy.TOGGLE);
-            },
-            () => false
-        );
-    }, [hoveredToken, keyBinder, playerChannel]);
 
     const inBetweenMobileOverlayAndBottomSubtitles = (e: React.MouseEvent<HTMLVideoElement>) => {
         if (!mobileOverlayRef.current || !bottomSubtitleContainerRef.current || !videoRef.current) {

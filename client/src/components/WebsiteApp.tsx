@@ -2,12 +2,10 @@ import type { Fetcher } from '@project/common';
 import { useChromeExtension } from '@project/common/app';
 import RootApp from '@project/common/app/components/RootApp';
 import { useEffect, useMemo } from 'react';
-import { AppExtensionDictionaryStorage } from '@project/common/app/services/app-extension-dictionary-storage';
 import { AppExtensionSettingsStorage } from '@project/common/app/services/app-extension-settings-storage';
 import { AppExtensionGlobalStateProvider } from '@project/common/app/services/app-extension-global-state-provider';
 import { SettingsProvider } from '@project/common/settings';
 import { configureLogProvider, LogProvider } from '@project/common/util/log';
-import { LocalDictionaryStorage } from '@project/client/src/local-dictionary-storage';
 import { LocalSettingsStorage } from '@project/client/src/local-settings-storage';
 import { LocalLogStorage } from '@project/client/src/local-log-storage';
 import { AppExtensionLogStorage } from '@project/common/app/services/app-extension-log-storage';
@@ -36,16 +34,11 @@ const WebsiteApp = (props: Props) => {
     useEffect(() => {
         void configureLogProvider(logProvider);
     }, [logProvider]);
-    const dictionaryStorage = useMemo(() => {
-        if (extension.supportsDictionary) return new AppExtensionDictionaryStorage(extension);
-        return new LocalDictionaryStorage(settingsProvider);
-    }, [extension, settingsProvider]);
     const globalStateProvider = useMemo(() => new AppExtensionGlobalStateProvider(extension), [extension]);
     return (
         <RootApp
             {...props}
             extension={extension}
-            dictionaryStorage={dictionaryStorage}
             settingsStorage={settingsStorage}
             settingsProvider={settingsProvider}
             globalStateProvider={globalStateProvider}

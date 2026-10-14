@@ -2,14 +2,7 @@ import type { MutableRefObject, RefObject } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ListRange, TableVirtuosoHandle } from 'react-virtuoso';
 import type { DisplaySubtitleModel } from '@project/common';
-import { dictionaryTrackEnabled } from '@project/common/settings';
-import type { DictionaryTrack } from '@project/common/settings';
 import { normalizedLookupTerms, normalizeSearchText } from '@project/common/util';
-import { Yomitan } from '@project/common/yomitan';
-import { findTokenContainingSearch } from '@project/common/annotations/token-navigation';
-import type { TokenSelectionLocation } from '@project/common/annotations/token-navigation';
-import type { TokenSelectionRequestOptions } from '@project/common/app/hooks/use-token-selection';
-import { asbTrace } from '@project/common/util/log';
 
 const findDelayMs = 300;
 
@@ -37,7 +30,6 @@ const subtitleSearchableText = (subtitle: DisplaySubtitleModel): string => {
 
 interface UseSubtitleFindParams {
     subtitles?: DisplaySubtitleModel[];
-    dictionaryTracks: DictionaryTrack[];
     disableKeyEventsRef: MutableRefObject<boolean>;
     hiddenRef: MutableRefObject<boolean>;
     lastScrollTimestampRef: MutableRefObject<number>;
@@ -45,13 +37,10 @@ interface UseSubtitleFindParams {
     virtuosoRef: RefObject<TableVirtuosoHandle | null>;
     visibleRangeRef: MutableRefObject<ListRange>;
     setHighlightedJumpToSubtitleIndex: (index: number | undefined) => void;
-    requestTokenSelection?: (target: TokenSelectionLocation, options?: TokenSelectionRequestOptions) => void;
-    clearTokenSelection?: () => void;
 }
 
 export const useSubtitleFind = ({
     subtitles,
-    dictionaryTracks,
     disableKeyEventsRef,
     hiddenRef,
     lastScrollTimestampRef,
@@ -59,97 +48,12 @@ export const useSubtitleFind = ({
     virtuosoRef,
     visibleRangeRef,
     setHighlightedJumpToSubtitleIndex,
-    requestTokenSelection,
-    clearTokenSelection,
 }: UseSubtitleFindParams) => {
     const [open, setOpen] = useState<boolean>(false);
     const [query, setQuery] = useState<string>('');
     const [expansion, setExpansion] = useState<{ query: string; terms: string[] }>({ query: '', terms: [] });
     const [currentMatchPosition, setCurrentMatchPosition] = useState<number>(0);
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const yomitans = useMemo(
-        () =>
-            dictionaryTracks
-                .filter((dictionaryTrack) => dictionaryTrackEnabled(dictionaryTrack))
-                .map((dictionaryTrack) => new Yomitan(dictionaryTrack)),
-        [dictionaryTracks]
-    );
-    const yomitanVersionPromisesRef = useRef<WeakMap<Yomitan, Promise<unknown>>>(new WeakMap());
-    const ensureYomitanVersion = useCallback(async () => {
-        await Promise.allSettled(
-            yomitans.map((yomitan) => {
-                const cached = yomitanVersionPromisesRef.current.get(yomitan);
-                if (cached) return cached;
-                const promise = yomitan.version().catch((e) => {
-                    yomitanVersionPromisesRef.current.delete(yomitan);
-                    throw e;
-                });
-                yomitanVersionPromisesRef.current.set(yomitan, promise);
-                return promise;
-            })
-        );
-    }, [yomitans]);
-
-    useEffect(() => {
-        const trimmed = query.trim();
-        if (!open || !trimmed || parseRegexQuery(query) !== undefined || !yomitans.length) return;
-
-        let cancelled = false;
-        const timeout = setTimeout(() => {
-            void (async () => {
-                await ensureYomitanVersion();
-                if (cancelled) return;
-                const queryForms = new Set<string>([trimmed]);
-
-                const tokenizeResults = await Promise.allSettled(
-                    yomitans.map((yt) => {
-                        try {
-                            return yt.tokenize(trimmed);
-                        } catch (e) {
-                            yomitanVersionPromisesRef.current.delete(yt);
-                            throw e;
-                        }
-                    })
-                );
-                for (const result of tokenizeResults) {
-                    if (result.status !== 'fulfilled') continue;
-                    for (const tokenParts of result.value) {
-                        const tokenText = tokenParts
-                            .map((part) => part.text)
-                            .join('')
-                            .trim();
-                        if (tokenText) queryForms.add(tokenText);
-                    }
-                }
-
-                const lemmaTerms = new Set<string>();
-                for (const queryForm of queryForms) {
-                    const lemmaResults = await Promise.allSettled(
-                        yomitans.map((yt) => {
-                            try {
-                                return yt.lemmatize(queryForm);
-                            } catch (e) {
-                                yomitanVersionPromisesRef.current.delete(yt);
-                                throw e;
-                            }
-                        })
-                    );
-                    for (const result of lemmaResults) {
-                        if (result.status !== 'fulfilled') continue;
-                        for (const lemma of result.value ?? []) lemmaTerms.add(lemma);
-                    }
-                }
-
-                if (cancelled) return;
-                setExpansion({ query: trimmed, terms: normalizedLookupTerms(...queryForms, ...lemmaTerms) });
-            })();
-        }, findDelayMs);
-
-        return () => {
-            cancelled = true;
-            clearTimeout(timeout);
-        };
-    }, [query, open, yomitans, ensureYomitanVersion]);
 
     const matches = useMemo(() => {
         const trimmed = query.trim();
@@ -174,40 +78,6 @@ export const useSubtitleFind = ({
     const matchesRef = useRef(matches);
     matchesRef.current = matches;
 
-    const findSearchTerms = useMemo(() => {
-        const trimmed = query.trim();
-        if (!trimmed || parseRegexQuery(query) !== undefined) return [];
-        return normalizedLookupTerms(trimmed).concat(expansion.query === trimmed ? expansion.terms : []);
-    }, [query, expansion]);
-
-    const highlightTokenIfPresent = useCallback(
-        (subtitleIndex: number) => {
-            if (!requestTokenSelection) return;
-            const subtitle = subtitleListRef.current?.[subtitleIndex];
-            const tokenSelection = findTokenContainingSearch(subtitle, findSearchTerms, parseRegexQuery(query));
-            asbTrace('annotations/find', 'Resolved search token highlight', {
-                subtitleIndex,
-                searchTermCount: findSearchTerms.length,
-                regex: parseRegexQuery(query) !== undefined,
-                hasTokenization: subtitle?.tokenization !== undefined,
-                tokenStart: tokenSelection?.tokenStart,
-            });
-
-            if (tokenSelection) {
-                const findInputIsFocused = inputRef.current?.ownerDocument.activeElement === inputRef.current;
-                requestTokenSelection(tokenSelection, {
-                    focusContainer: false,
-                    selectText: !findInputIsFocused, // Using the browser's native text selection steals focus
-                    claimOwner: true,
-                });
-                return;
-            }
-
-            clearTokenSelection?.();
-        },
-        [clearTokenSelection, findSearchTerms, inputRef, query, requestTokenSelection, subtitleListRef]
-    );
-
     const scrollToMatch = useCallback(
         (subtitleIndex: number) => {
             lastScrollTimestampRef.current = Date.now();
@@ -219,21 +89,19 @@ export const useSubtitleFind = ({
                 });
             }
             setHighlightedJumpToSubtitleIndex(subtitleIndex);
-            highlightTokenIfPresent(subtitleIndex);
         },
-        [hiddenRef, highlightTokenIfPresent, lastScrollTimestampRef, setHighlightedJumpToSubtitleIndex, virtuosoRef]
+        [hiddenRef, lastScrollTimestampRef, setHighlightedJumpToSubtitleIndex, virtuosoRef]
     );
 
     useEffect(() => {
         if (!open) return;
         const trimmed = query.trim();
         const searchCompleted =
-            !trimmed || parseRegexQuery(query) !== undefined || !yomitans.length || expansion.query === trimmed;
+            !trimmed || parseRegexQuery(query) !== undefined || expansion.query === trimmed;
         if (!searchCompleted) return;
         if (!matches.length) {
             setHighlightedJumpToSubtitleIndex(undefined);
             setCurrentMatchPosition(0);
-            clearTokenSelection?.();
             return;
         }
         const firstVisibleIndex = visibleRangeRef.current.startIndex;
@@ -248,9 +116,7 @@ export const useSubtitleFind = ({
         open,
         query,
         expansion.query,
-        yomitans.length,
         scrollToMatch,
-        clearTokenSelection,
         setHighlightedJumpToSubtitleIndex,
         visibleRangeRef,
     ]);
@@ -276,8 +142,7 @@ export const useSubtitleFind = ({
         setQuery('');
         setCurrentMatchPosition(0);
         setHighlightedJumpToSubtitleIndex(undefined);
-        clearTokenSelection?.();
-    }, [clearTokenSelection, setHighlightedJumpToSubtitleIndex]);
+    }, [setHighlightedJumpToSubtitleIndex]);
 
     useEffect(() => {
         const handleGlobalKeyDown = (event: KeyboardEvent) => {

@@ -3,11 +3,6 @@ import type {
     AsbPlayerToVideoCommandV2,
     AsbplayerInstance,
     CardModel,
-    DictionaryRequestStatisticsGenerationMessage,
-    DictionaryRequestStatisticsSnapshotMessage,
-    DictionaryRequestStatisticsMineSentencesMessage,
-    DictionaryRequestStatisticsSeekMessage,
-    DictionaryStatisticsMessage,
     ExtensionToAsbPlayerCommand,
     ExtensionToAsbPlayerCommandTabsCommand,
     AppendLogsMessage,
@@ -40,19 +35,6 @@ import type {
     ClearCopyHistoryMessage,
     SetGlobalStateMessage,
     GetGlobalStateMessage,
-    DictionaryBuildAnkiCacheMessage,
-    DictionaryBuildWaniKaniCacheMessage,
-    DictionaryGetAllTokensMessage,
-    DictionaryGetRecordsMessage,
-    DictionaryGetBulkMessage,
-    DictionaryGetByLemmaBulkMessage,
-    DictionarySaveRecordLocalBulkMessage,
-    DictionaryDeleteRecordLocalBulkMessage,
-    DictionaryDeleteRecordsMessage,
-    DictionaryDeleteProfileMessage,
-    DictionaryExportRecordLocalBulkMessage,
-    DictionaryImportRecordLocalBulkMessage,
-    DictionaryUpdateRecordsMessage,
     CardUpdatedDialogMessage,
     CardExportedDialogMessage,
     SaveTokenLocalFromAppMessage,
@@ -62,23 +44,6 @@ import type {
 } from '@project/common';
 import { asbError } from '@project/common/util/log';
 import { buildSubtitleTracks } from '@project/common/util';
-import type { DictionaryStatisticsSnapshot } from '@project/common/dictionary-statistics';
-import type {
-    DictionaryLocalTokenInput,
-    DictionaryTokenKey,
-    DictionaryTokenRecord,
-    DictionaryExportRecordLocalResult,
-    DictionaryImportRecordLocalResult,
-    LemmaResults,
-    DictionarySaveRecordLocalResult,
-    TokenResults,
-    DictionaryDeleteRecordLocalResult,
-    DictionaryDeleteProfileResult,
-    DictionaryRecordDeleteResult,
-    DictionaryRecordUpdateInput,
-    DictionaryRecordUpdateResult,
-    DictionaryRecordsResult,
-} from '@project/common/dictionary-db';
 import type {
     ApplyStrategy,
     AsbplayerSettings,
@@ -232,44 +197,12 @@ export default class ChromeExtension {
         return this.installed && gte(this.version, '1.20.0');
     }
 
-    get supportsDictionaryTokenAnnotationConfig() {
-        return this.installed && gte(this.version, '1.19.0');
-    }
-
-    get supportsDictionaryMatchAcrossScripts() {
-        return this.installed && gte(this.version, '1.18.0');
-    }
-
-    get supportsDictionaryWaniKani() {
-        return this.installed && gte(this.version, '1.18.0');
-    }
-
     get supportsAutoCopyableTrackSetting() {
         return this.installed && gte(this.version, '1.17.0');
     }
 
     get supportsSeekableTrackSetting() {
         return this.installed && gte(this.version, '1.17.0');
-    }
-
-    get supportsDictionaryBrowser() {
-        return this.installed && gte(this.version, '1.17.0');
-    }
-
-    get supportsDictionaryStatistics() {
-        return this.installed && gte(this.version, '1.16.0');
-    }
-
-    get supportsDictionaryYomitanMecab() {
-        return this.installed && gte(this.version, '1.15.0');
-    }
-
-    get supportsDictionaryTokenStatusDisplayAlpha() {
-        return this.installed && gte(this.version, '1.15.0');
-    }
-
-    get supportsDictionary() {
-        return this.installed && gte(this.version, '1.14.0');
     }
 
     get supportsPageSettings() {
@@ -767,269 +700,6 @@ export default class ChromeExtension {
         };
         window.postMessage(command);
         return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryGetBulk(profile: string | undefined, track: number, tokens: string[]): Promise<TokenResults> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryGetBulkMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-get-bulk',
-                profile,
-                track,
-                tokens,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryGetAllTokens(profile: string | undefined, track: number): Promise<TokenResults> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryGetAllTokensMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-get-all-tokens',
-                profile,
-                track,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryGetByLemmaBulk(
-        profile: string | undefined,
-        track: number,
-        lemmas: string[]
-    ): Promise<LemmaResults> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryGetByLemmaBulkMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-get-by-lemma-bulk',
-                profile,
-                track,
-                lemmas,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionarySaveRecordLocalBulk(
-        profile: string | undefined,
-        localTokenInputs: readonly DictionaryLocalTokenInput[],
-        applyStates: ApplyStrategy
-    ): Promise<DictionarySaveRecordLocalResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionarySaveRecordLocalBulkMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-save-record-local-bulk',
-                profile,
-                localTokenInputs,
-                applyStates,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryDeleteRecordLocalBulk(
-        profile: string | undefined,
-        tokens: string[]
-    ): Promise<DictionaryDeleteRecordLocalResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryDeleteRecordLocalBulkMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-delete-record-local-bulk',
-                profile,
-                tokens,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryDeleteProfile(profile: string): Promise<DictionaryDeleteProfileResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryDeleteProfileMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-delete-profile',
-                profile,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryExportRecordLocalBulk(): Promise<DictionaryExportRecordLocalResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryExportRecordLocalBulkMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-export-record-local-bulk',
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryImportRecordLocalBulk(
-        records: Partial<DictionaryTokenRecord>[],
-        profiles: string[]
-    ): Promise<DictionaryImportRecordLocalResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryImportRecordLocalBulkMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-import-record-local-bulk',
-                records,
-                profiles,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId);
-    }
-
-    async dictionaryGetRecords(
-        profile: string | undefined,
-        track: number | undefined
-    ): Promise<DictionaryRecordsResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryGetRecordsMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-get-records',
-                profile,
-                track,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId, 60000); // Usually a few seconds
-    }
-
-    async dictionaryUpdateRecords(
-        profile: string | undefined,
-        updates: DictionaryRecordUpdateInput[],
-        applyStates: ApplyStrategy
-    ): Promise<DictionaryRecordUpdateResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryUpdateRecordsMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-update-records',
-                profile,
-                updates,
-                applyStates,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId, 60000); // Usually a few seconds
-    }
-
-    async dictionaryDeleteRecords(
-        profile: string | undefined,
-        tokenKeys: DictionaryTokenKey[]
-    ): Promise<DictionaryRecordDeleteResult> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryDeleteRecordsMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-delete-records',
-                profile,
-                tokenKeys,
-                messageId,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId, 60000); // Usually a few seconds
-    }
-
-    buildAnkiCache(profile: string | undefined, settings?: AsbplayerSettings): Promise<void> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryBuildAnkiCacheMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-build-anki-cache',
-                messageId,
-                profile,
-                ...(this.supportsDictionaryWaniKani ? {} : { settings }),
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId, 300000); // Usually <10s
-    }
-
-    buildWaniKaniCache(profile: string | undefined): Promise<void> {
-        const messageId = uuidv4();
-        const command: AsbPlayerCommand<DictionaryBuildWaniKaniCacheMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-build-wanikani-cache',
-                messageId,
-                profile,
-            },
-        };
-        window.postMessage(command);
-        return this._createResponsePromise(messageId, 300000); // Usually <10s
-    }
-
-    publishStatisticsSnapshot(mediaId: string, snapshot?: DictionaryStatisticsSnapshot) {
-        const command: AsbPlayerCommand<DictionaryStatisticsMessage> = {
-            sender: 'asbplayerv2',
-            message: { command: 'dictionary-statistics', mediaId, snapshot },
-        };
-        window.postMessage(command);
-    }
-
-    requestStatisticsSnapshot(mediaId?: string) {
-        const command: AsbPlayerCommand<DictionaryRequestStatisticsSnapshotMessage> = {
-            sender: 'asbplayerv2',
-            message: { command: 'dictionary-request-statistics-snapshot', mediaId },
-        };
-        window.postMessage(command);
-    }
-
-    requestStatisticsGeneration(mediaId?: string) {
-        const command: AsbPlayerCommand<DictionaryRequestStatisticsGenerationMessage> = {
-            sender: 'asbplayerv2',
-            message: { command: 'dictionary-request-statistics-generation', mediaId },
-        };
-        window.postMessage(command);
-    }
-
-    requestStatisticsSeek(mediaId: string, timestamp: number) {
-        const command: AsbPlayerCommand<DictionaryRequestStatisticsSeekMessage> = {
-            sender: 'asbplayerv2',
-            message: {
-                command: 'dictionary-request-statistics-seek',
-                mediaId,
-                timestamp,
-            },
-        };
-        window.postMessage(command);
-    }
-
-    requestStatisticsMineSentences(mediaId: string, indexes: number[]) {
-        const command: AsbPlayerCommand<DictionaryRequestStatisticsMineSentencesMessage> = {
-            sender: 'asbplayerv2',
-            message: { command: 'dictionary-request-statistics-mine-sentences', mediaId, indexes },
-        };
-        window.postMessage(command);
     }
 
     private _createResponsePromise<T>(messageId: string, timeout = 5000) {

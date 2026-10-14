@@ -1,6 +1,5 @@
 import type { IndexedSubtitleModel } from '@project/common';
 import { OffscreenDomCache } from '@project/common';
-import { needsReset } from '@project/common/annotations';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const useSubtitleDomCache = (
@@ -16,7 +15,8 @@ export const useSubtitleDomCache = (
         const previousSubtitles = previousSubtitlesRef.current;
         const shouldReset =
             previousSubtitles === undefined ||
-            needsReset(subtitles, previousSubtitles) ||
+            subtitles.length !== previousSubtitles.length ||
+            subtitles.some((subtitle, index) => subtitle.index !== previousSubtitles[index]?.index) ||
             previousRenderRef.current !== render;
 
         if (shouldReset) {

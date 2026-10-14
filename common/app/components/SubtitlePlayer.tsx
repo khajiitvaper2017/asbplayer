@@ -26,11 +26,10 @@ import type {
     PlaybackState,
 } from '@project/common';
 import { PostMineAction } from '@project/common';
-import type { AsbplayerSettings, DictionaryTrack, TokenAnnotationConfig } from '@project/common/settings';
+import type { AsbplayerSettings } from '@project/common/settings';
 import {
     effectiveSubtitleListCustomization,
     SubtitleListTimestampDisplay,
-    tokenAnnotationStyleValues,
 } from '@project/common/settings';
 import {
     surroundingSubtitles,
@@ -39,15 +38,7 @@ import {
     extractText,
 } from '@project/common/util';
 import type { SubtitleCollection } from '@project/common/subtitle-collection';
-import type { RichTextWindow, RenderedRichText, SubtitleAnnotations } from '@project/common/annotations';
-import type { TokenJumpMatch } from '@project/common/annotations/token-navigation';
-import {
-    getAnnotationsHtml,
-    renderRichTextWindow,
-    emptyRichTextWindow,
-    renderRichTextForSubtitle,
-    ASB_SUBTITLE_INDEX_ATTRIBUTE,
-} from '@project/common/annotations';
+import { ASB_SUBTITLE_INDEX_ATTRIBUTE } from '@project/common/annotations';
 import type { KeyBinder } from '@project/common/key-binder';
 import SubtitleTextImage from '@project/common/components/SubtitleTextImage';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
@@ -72,7 +63,6 @@ import type { ExtensionMessage } from '@project/common/app/services/chrome-exten
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import type { MineSubtitleCommand, WebSocketClient } from '@project/common/web-socket-client';
 import { clampSubtitlePlayerWidth } from '@project/common/app/components/video-subtitle-split';
-import { useTokenSelection } from '@project/common/app/hooks/use-token-selection';
 import '@project/common/app/components/subtitles.css';
 
 let lastKnownWidth: number | undefined;
@@ -218,8 +208,6 @@ interface SubtitleRowContext {
     showCopyButton: boolean;
     timestampDisplay: SubtitleListTimestampDisplay;
     disabledSubtitleTracks: { [track: number]: boolean };
-    dictionaryTracks: DictionaryTrack[];
-    richTextWindowRef: React.RefObject<RichTextWindow>;
     selectedSubtitleIndexes?: boolean[];
     highlightedJumpToSubtitleIndex?: number;
     currentSubtitleIndexes: ReadonlySet<number>;
@@ -414,8 +402,6 @@ interface SubtitleRowCellsProps {
     compressed: boolean;
     showCopyButton: boolean;
     timestampDisplay: SubtitleListTimestampDisplay;
-    tokenAnnotationConfig?: TokenAnnotationConfig;
-    rendered?: RenderedRichText;
     onCopySubtitle: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, index: number) => void;
     onMouseOver?: (e: React.MouseEvent) => void;
     onMouseOut?: (e: React.MouseEvent) => void;
@@ -430,8 +416,6 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
     compressed,
     showCopyButton,
     timestampDisplay,
-    tokenAnnotationConfig,
-    rendered,
     onCopySubtitle,
     onMouseOver,
     onMouseOut,
@@ -446,11 +430,10 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
         <span
             className={disabledClassName}
             dangerouslySetInnerHTML={{
-                __html: getAnnotationsHtml(subtitle.text, rendered?.richText, rendered?.richTextOnHover),
+                __html: subtitle.text,
             }}
             data-track={subtitle.track}
             {...{ [ASB_SUBTITLE_INDEX_ATTRIBUTE]: subtitle.index }}
-            style={tokenAnnotationStyleValues(tokenAnnotationConfig)}
             onMouseOver={onMouseOver}
             onMouseOut={onMouseOut}
         />
@@ -514,13 +497,6 @@ const renderSubtitleRow = (index: number, subtitle: DisplaySubtitleModel, contex
         compressed={context.compressed}
         showCopyButton={context.showCopyButton}
         timestampDisplay={context.timestampDisplay}
-        tokenAnnotationConfig={context.dictionaryTracks[subtitle.track]?.dictionaryTokenAnnotationConfig.subtitlePlayer}
-        rendered={renderRichTextForSubtitle(
-            context.richTextWindowRef.current,
-            subtitle,
-            'subtitlePlayer',
-            context.dictionaryTracks
-        )}
         onCopySubtitle={context.onCopySubtitle}
         onMouseOver={context.onMouseOver}
         onMouseOut={context.onMouseOut}
@@ -741,7 +717,6 @@ export default function SubtitlePlayer({
         scrollerElementRef.current = element instanceof HTMLElement ? element : null;
     }, []);
 
-    const richTextWindowRef = useRef<RichTextWindow>(emptyRichTextWindow());
     const visibleRangeRef = useRef<ListRange>({ startIndex: 0, endIndex: 0 });
     const handleVisibleRangeChanged = useCallback((range: ListRange) => {
         visibleRangeRef.current = range;
@@ -751,34 +726,14 @@ export default function SubtitlePlayer({
         (range: ListRange) => {
             handleVisibleRangeChanged(range);
             if (!subtitleListRef.current?.length) return;
-            const windowSubtitles = subtitleListRef.current.slice(range.startIndex, range.endIndex + 1);
-            richTextWindowRef.current = renderRichTextWindow(
-                richTextWindowRef.current,
-                windowSubtitles,
-                'subtitlePlayer',
-                settings.dictionaryTracks
-            );
         },
-        [settings.dictionaryTracks, handleVisibleRangeChanged]
+        [handleVisibleRangeChanged]
     );
 
     useEffect(() => {
-        const range = richTextWindowRef.current.range;
-        richTextWindowRef.current = emptyRichTextWindow();
-        if (range && subtitles?.length) {
-            const windowSubtitles = subtitles.slice(range.min, range.max + 1);
-            richTextWindowRef.current = renderRichTextWindow(
-                richTextWindowRef.current,
-                windowSubtitles,
-                'subtitlePlayer',
-                settings.dictionaryTracks
-            );
-        }
-    }, [subtitles, settings.dictionaryTracks]);
+    }, [subtitles]);
 
-    const subtitleCollectionRef = useRef<SubtitleAnnotations | SubtitleCollection<DisplaySubtitleModel>>(
-        subtitleCollection
-    );
+    const subtitleCollectionRef = useRef<SubtitleCollection<DisplaySubtitleModel>>(subtitleCollection);
     subtitleCollectionRef.current = subtitleCollection;
 
     const highlightedSubtitleIndexesRef = useRef<ReadonlySet<number>>(new Set());
@@ -800,37 +755,8 @@ export default function SubtitlePlayer({
     const classes = useSubtitlePlayerStyles({ resizable, appBarHidden, appBarHeight });
     const onSubtitlesHighlightedRef = useRef<(subtitles: SubtitleModel[]) => void>(undefined);
     onSubtitlesHighlightedRef.current = onSubtitlesHighlighted;
-    const tokenSelectionCurrentTime = useCallback(() => clock.time({ maxMs: length }), [clock, length]);
-    const tokenSelectionSeekableTracks = useCallback(() => settingsRef.current.seekableTracks, []);
-    const tokenSelectionDisabled = useCallback(() => disableKeyEvents, [disableKeyEvents]);
-    const handleTokenSelectionMatch = useCallback(
-        (match: TokenJumpMatch) => {
-            onSeek(match.subtitle.start, clock.running ?? false);
-            lastScrollTimestampRef.current = Date.now();
-
-            if (!hiddenRef.current) {
-                virtuosoRef.current?.scrollToIndex({
-                    index: match.subtitleArrayIndex,
-                    align: 'center',
-                    behavior: 'smooth',
-                });
-            }
-        },
-        [clock.running, onSeek]
-    );
-    const { requestTokenSelection, clearTokenSelection } = useTokenSelection({
-        rootRef: scrollerElementRef,
-        maxAttempts: 20,
-        keyBinder,
-        subtitles,
-        getCurrentTime: tokenSelectionCurrentTime,
-        getSeekableTracks: tokenSelectionSeekableTracks,
-        onMatch: handleTokenSelectionMatch,
-        disabledGetter: tokenSelectionDisabled,
-    });
     const find = useSubtitleFind({
         subtitles,
-        dictionaryTracks: settings.dictionaryTracks,
         disableKeyEventsRef,
         hiddenRef,
         lastScrollTimestampRef,
@@ -838,8 +764,6 @@ export default function SubtitlePlayer({
         virtuosoRef,
         visibleRangeRef,
         setHighlightedJumpToSubtitleIndex,
-        requestTokenSelection,
-        clearTokenSelection,
     });
 
     const updateShowingSubtitles = useCallback((showing: readonly IndexedSubtitleModel[]) => {
@@ -1469,8 +1393,6 @@ export default function SubtitlePlayer({
             showCopyButton: showCopyButton && subtitleListCustomization.showMiningButton,
             timestampDisplay: subtitleListCustomization.timestampDisplay,
             disabledSubtitleTracks,
-            dictionaryTracks: settings.dictionaryTracks,
-            richTextWindowRef,
             selectedSubtitleIndexes,
             highlightedJumpToSubtitleIndex,
             currentSubtitleIndexes,
@@ -1487,7 +1409,6 @@ export default function SubtitlePlayer({
             subtitleListCustomization.showMiningButton,
             subtitleListCustomization.timestampDisplay,
             disabledSubtitleTracks,
-            settings.dictionaryTracks,
             selectedSubtitleIndexes,
             highlightedJumpToSubtitleIndex,
             currentSubtitleIndexes,

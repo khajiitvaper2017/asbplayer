@@ -19,8 +19,6 @@ import { useRequestingActiveTabPermission } from '@project/extension/src/ui/hook
 import { isMobile } from 'react-device-detect';
 import { useSettingsProfileContext } from '@project/common/hooks/use-settings-profile-context';
 import { StyledEngineProvider } from '@mui/material/styles';
-import { DictionaryProvider } from '@project/common/dictionary-db';
-import { ExtensionDictionaryStorage } from '@/services/extension-dictionary-storage';
 import { isFirefoxBuild } from '@/services/build-flags';
 import { extensionLogProvider } from '@/services/extension-log-provider';
 
@@ -41,7 +39,6 @@ const notifySettingsUpdated = () => {
 };
 
 export function PopupUi({ commands }: Props) {
-    const dictionaryProvider = useMemo(() => new DictionaryProvider(new ExtensionDictionaryStorage()), []);
     const settingsProvider = useMemo(() => new SettingsProvider(new ExtensionSettingsStorage()), []);
     const [settings, setSettings] = useState<AsbplayerSettings>();
     const theme = useMemo(() => settings && createTheme(settings.themeType), [settings]);
@@ -143,7 +140,6 @@ export function PopupUi({ commands }: Props) {
                     <Box>
                         <Popup
                             commands={commands}
-                            dictionaryProvider={dictionaryProvider}
                             logProvider={extensionLogProvider}
                             settings={settings}
                             onSettingsChanged={handleSettingsChanged}

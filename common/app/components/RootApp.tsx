@@ -2,21 +2,18 @@ import { asbError } from '@project/common/util/log';
 import type { Fetcher } from '@project/common';
 import type { AsbplayerSettings, SettingsProvider } from '@project/common/settings';
 import { isSaveOnlySettings } from '@project/common/settings';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import App from '@project/common/app/components/App';
 import type { AppSettingsStorage } from '@project/common/app/services/app-settings-storage';
 import { useSettingsProfileContext } from '@project/common/hooks/use-settings-profile-context';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import type { GlobalState, GlobalStateProvider } from '@project/common/global-state';
-import type { DictionaryStorage } from '@project/common/dictionary-db';
-import { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
 
 interface Props {
     origin: string;
     logoUrl: string;
     fetcher: Fetcher;
-    dictionaryStorage: DictionaryStorage;
     settingsStorage: AppSettingsStorage;
     settingsProvider: SettingsProvider;
     globalStateProvider: GlobalStateProvider;
@@ -28,14 +25,12 @@ const RootApp = ({
     extension,
     origin,
     logoUrl,
-    dictionaryStorage,
     settingsStorage,
     settingsProvider,
     globalStateProvider,
     fetcher,
     logProvider,
 }: Props) => {
-    const dictionaryProvider = useMemo(() => new DictionaryProvider(dictionaryStorage), [dictionaryStorage]);
     const [settings, setSettings] = useState<AsbplayerSettings>();
     const [globalState, setGlobalState] = useState<GlobalState>();
 
@@ -108,7 +103,6 @@ const RootApp = ({
         <App
             origin={origin}
             logoUrl={logoUrl}
-            dictionaryProvider={dictionaryProvider}
             logProvider={logProvider}
             settingsProvider={settingsProvider}
             settings={settings}
