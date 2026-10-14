@@ -15,15 +15,7 @@ export interface Localization {
 }
 
 export const fetchLocalization = async (lang: string): Promise<Localization> => {
-    if (import.meta.env.MODE === 'development') {
-        return (await bundledStringsForLang(lang)) ?? (await bundledStringsForLang('en'))!;
-    }
-
-    return (
-        (await cachedStringsForLang(lang)) ??
-        (await bundledStringsForLang(lang)) ??
-        (await bundledStringsForLang('en'))!
-    );
+    return (await bundledStringsForLang(lang)) ?? (await bundledStringsForLang('en'))!;
 };
 
 export const fetchSupportedLanguages = async (): Promise<string[]> => {
@@ -93,16 +85,4 @@ const bundledStringsForLang = async (lang: string): Promise<Localization | undef
     }
 
     return undefined;
-};
-
-const cachedStringsForLang = async (lang: string): Promise<Localization | undefined> => {
-    const stringsKey = stringsKeyForLang(lang);
-    const result = await browser.storage.local.get(stringsKey);
-    const strings = result ? result[stringsKey] : undefined;
-
-    if (strings === undefined) {
-        return undefined;
-    }
-
-    return { lang, strings };
 };
