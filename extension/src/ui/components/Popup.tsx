@@ -5,7 +5,6 @@ import { chromeCommandBindsToKeyBinds } from '@project/common/settings';
 import SettingsForm from '@project/common/components/SettingsForm';
 import PanelIcon from '@project/common/components/PanelIcon';
 import LaunchIcon from '@mui/icons-material/Launch';
-import SettingsIcon from '@mui/icons-material/Settings';
 import { useCallback, useMemo } from 'react';
 import Button from '@mui/material/Button';
 import type { ButtonProps } from '@mui/material/Button';
@@ -25,7 +24,6 @@ import TutorialIcon from '@project/common/components/TutorialIcon';
 import Paper from '@mui/material/Paper';
 import type { LogProvider } from '@project/common/util/log';
 import Tooltip from '@project/common/components/Tooltip';
-
 
 interface Props {
     logProvider: LogProvider;
@@ -105,7 +103,7 @@ const Popup = ({
     const { supportedLanguages } = useSupportedLanguages();
     const { localFontsAvailable, localFontsPermission, localFontFamilies } = useLocalFontFamilies();
     const theme = useTheme();
-    const [scrollToId, setScrollToId] = useState<string>();
+    const [scrollToId] = useState<string>();
     if (!i18nInitialized) {
         return null;
     }

@@ -439,8 +439,6 @@ export default class KeyBindings {
             this._unbindAdjustTopSubtitlePositionOffset = false;
         }
 
-
         this._bound = false;
     }
-
 }

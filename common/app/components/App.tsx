@@ -649,7 +649,6 @@ function App({
                 if (settings.lastSelectedAnkiExportMode !== params.mode) {
                     onSettingsChanged({ lastSelectedAnkiExportMode: params.mode });
                 }
-
             } catch (e) {
                 handleError(e);
             } finally {
@@ -1769,13 +1768,7 @@ function App({
             () => ankiDialogOpen || !extension.supportsSidePanel,
             false
         );
-    }, [
-        extension,
-        keyBinder,
-        copyHistoryOpen,
-        handleOpenCopyHistory,
-        ankiDialogOpen,
-    ]);
+    }, [extension, keyBinder, copyHistoryOpen, handleOpenCopyHistory, ankiDialogOpen]);
 
     const mp3Encoder = useCallback(async (blob: Blob) => {
         return Mp3Encoder.encode(blob, () => new mp3WorkerFactory());

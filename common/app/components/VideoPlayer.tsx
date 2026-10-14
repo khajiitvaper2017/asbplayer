@@ -174,7 +174,7 @@ const showingSubtitleHtml = (
     videoRef: MutableRefObject<ExperimentalHTMLVideoElement | undefined>,
     subtitleStyles: string,
     subtitleClasses: string,
-    imageBasedSubtitleScaleFactor: number,
+    imageBasedSubtitleScaleFactor: number
 ) => {
     if (subtitle.textImage) {
         const imageScale =
@@ -2027,7 +2027,7 @@ export default function VideoPlayer({
                 videoRef,
                 trackStyles[subtitle.track]?.styleString ?? trackStyles[0]?.styleString ?? '',
                 trackStyles[subtitle.track]?.classes ?? trackStyles[0]?.classes ?? '',
-                subtitleSettings.imageBasedSubtitleScaleFactor,
+                subtitleSettings.imageBasedSubtitleScaleFactor
             ),
         [trackStyles, subtitleSettings.imageBasedSubtitleScaleFactor]
     );
@@ -2060,20 +2060,14 @@ export default function VideoPlayer({
 
     const isPausedDueToHoverRef = useRef<boolean>(undefined);
 
-    const handleSubtitleMouseOver = useCallback(
-        (e: React.MouseEvent) => {
-            if (miscSettings.pauseOnHoverMode !== PauseOnHoverMode.disabled && videoRef.current?.paused === false) {
-                playerChannel.pause();
-                isPausedDueToHoverRef.current = true;
-            }
-        },
-        [miscSettings.pauseOnHoverMode, playerChannel]
-    );
+    const handleSubtitleMouseOver = useCallback(() => {
+        if (miscSettings.pauseOnHoverMode !== PauseOnHoverMode.disabled && videoRef.current?.paused === false) {
+            playerChannel.pause();
+            isPausedDueToHoverRef.current = true;
+        }
+    }, [miscSettings.pauseOnHoverMode, playerChannel]);
 
-    const handleSubtitleMouseOut = useCallback(
-        () => {},
-        []
-    );
+    const handleSubtitleMouseOut = useCallback(() => {}, []);
 
     const inBetweenMobileOverlayAndBottomSubtitles = (e: React.MouseEvent<HTMLVideoElement>) => {
         if (!mobileOverlayRef.current || !bottomSubtitleContainerRef.current || !videoRef.current) {

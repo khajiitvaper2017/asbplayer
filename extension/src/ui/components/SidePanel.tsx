@@ -3,8 +3,6 @@ import { download, timeDurationDisplay } from '@project/common/util';
 import { MediaFragment } from '@project/common';
 import type {
     AsbplayerInstance,
-    Command,
-    Message,
     AsbPlayerToTabCommand,
     AsbPlayerToVideoCommandV2,
     CopyHistoryItem,
@@ -334,7 +332,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
     const handleDownloadSubtitleTimeline = useCallback(() => {
         playerRef.current?.downloadSubtitleTimeline();
     }, []);
-
 
     const topControlsRef = useRef<HTMLDivElement>(null);
     const [showTopControls, setShowTopControls] = useState<boolean>(false);
@@ -682,7 +679,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
                     )}
                 </>
             )}
-
         </div>
     );
 }

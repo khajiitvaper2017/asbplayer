@@ -12,11 +12,11 @@ import type {
     Tokenization,
     TokenReading,
     PitchAccentPosition,
+    TokenStatusInfo,
 } from '@project/common/src/model';
 import type { SeekableTracks, TextSubtitleSettings } from '@project/common/settings';
-import { isTrackSeekable, TokenStatus } from '@project/common/settings';
+import { isTrackSeekable } from '@project/common/settings';
 import type { Progress } from '..';
-import type { TokenStatusInfo } from '@project/common/src/model';
 
 export interface AnimationFrameRetryOptions {
     runImmediately?: boolean;

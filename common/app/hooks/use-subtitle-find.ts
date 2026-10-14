@@ -4,8 +4,6 @@ import type { ListRange, TableVirtuosoHandle } from 'react-virtuoso';
 import type { DisplaySubtitleModel } from '@project/common';
 import { normalizedLookupTerms, normalizeSearchText } from '@project/common/util';
 
-const findDelayMs = 300;
-
 const parseRegexQuery = (query: string): RegExp | undefined => {
     const regexMatch = /^\/(.+)\/([a-z]*)$/.exec(query);
     if (!regexMatch) return;
@@ -51,7 +49,7 @@ export const useSubtitleFind = ({
 }: UseSubtitleFindParams) => {
     const [open, setOpen] = useState<boolean>(false);
     const [query, setQuery] = useState<string>('');
-    const [expansion, setExpansion] = useState<{ query: string; terms: string[] }>({ query: '', terms: [] });
+    const [expansion] = useState<{ query: string; terms: string[] }>({ query: '', terms: [] });
     const [currentMatchPosition, setCurrentMatchPosition] = useState<number>(0);
     const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -96,8 +94,7 @@ export const useSubtitleFind = ({
     useEffect(() => {
         if (!open) return;
         const trimmed = query.trim();
-        const searchCompleted =
-            !trimmed || parseRegexQuery(query) !== undefined || expansion.query === trimmed;
+        const searchCompleted = !trimmed || parseRegexQuery(query) !== undefined || expansion.query === trimmed;
         if (!searchCompleted) return;
         if (!matches.length) {
             setHighlightedJumpToSubtitleIndex(undefined);
@@ -111,15 +108,7 @@ export const useSubtitleFind = ({
         );
         setCurrentMatchPosition(matchPosition);
         scrollToMatch(matches[matchPosition]);
-    }, [
-        matches,
-        open,
-        query,
-        expansion.query,
-        scrollToMatch,
-        setHighlightedJumpToSubtitleIndex,
-        visibleRangeRef,
-    ]);
+    }, [matches, open, query, expansion.query, scrollToMatch, setHighlightedJumpToSubtitleIndex, visibleRangeRef]);
 
     const navigate = useCallback(
         (delta: number) => {

@@ -27,10 +27,7 @@ import type {
 } from '@project/common';
 import { PostMineAction } from '@project/common';
 import type { AsbplayerSettings } from '@project/common/settings';
-import {
-    effectiveSubtitleListCustomization,
-    SubtitleListTimestampDisplay,
-} from '@project/common/settings';
+import { effectiveSubtitleListCustomization, SubtitleListTimestampDisplay } from '@project/common/settings';
 import {
     surroundingSubtitles,
     mockSurroundingSubtitles,
@@ -730,8 +727,7 @@ export default function SubtitlePlayer({
         [handleVisibleRangeChanged]
     );
 
-    useEffect(() => {
-    }, [subtitles]);
+    useEffect(() => {}, [subtitles]);
 
     const subtitleCollectionRef = useRef<SubtitleCollection<DisplaySubtitleModel>>(subtitleCollection);
     subtitleCollectionRef.current = subtitleCollection;

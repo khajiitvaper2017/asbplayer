@@ -35,7 +35,6 @@ import {
 import i18n from 'i18next';
 import type { ElementOverlay, ElementOverlayParams, KeyedHtml } from '@project/extension/src/services/element-overlay';
 import { CachingElementOverlay, OffsetAnchor } from '@project/extension/src/services/element-overlay';
-import { v4 as uuidv4 } from 'uuid';
 import type Binding from '@/services/binding';
 
 const BOUNDING_BOX_PADDING = 25;
@@ -340,8 +339,7 @@ export default class SubtitleController {
         return { subtitleOverlayParams, topSubtitleOverlayParams, notificationOverlayParams };
     }
 
-    bind() {
-    }
+    bind() {}
 
     playbackStateChanged(state: PlaybackState): void {
         const hiddenSubtitleIndexes = state.hiddenSubtitleIndexes ?? [];
@@ -416,7 +414,6 @@ export default class SubtitleController {
         } else {
             this.showingOffset = undefined;
         }
-
     }
 
     private _renderSubtitles(
@@ -506,11 +503,7 @@ export default class SubtitleController {
                             </div>
                         `;
                     } else {
-                        return this._buildTextHtml(
-                            subtitle.text,
-                            subtitle.track,
-                            subtitle.index
-                        );
+                        return this._buildTextHtml(subtitle.text, subtitle.track, subtitle.index);
                     }
                 },
                 key: String(subtitle.index),
@@ -518,11 +511,7 @@ export default class SubtitleController {
         });
     }
 
-    private _buildTextHtml(
-        text: string,
-        track?: number,
-        subtitleIndex?: number
-    ) {
+    private _buildTextHtml(text: string, track?: number, subtitleIndex?: number) {
         const indexAttribute = subtitleIndex === undefined ? '' : ` ${ASB_SUBTITLE_INDEX_ATTRIBUTE}="${subtitleIndex}"`;
         return `<span data-track="${track ?? 0}"${indexAttribute} class="${this._subtitleClasses(
             track

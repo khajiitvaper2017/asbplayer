@@ -15,7 +15,6 @@ jest.mock('ass-compiler', () => ({ compile: () => ({ dialogues: [] }) }));
 
 import SubtitleReader from '@project/common/subtitle-reader/subtitle-reader';
 import { SubtitleHtml } from '@project/common';
-import { defaultSettings } from '@project/common/settings';
 
 const createReader = (options: Partial<ConstructorParameters<typeof SubtitleReader>[0]> = {}) =>
     new SubtitleReader({

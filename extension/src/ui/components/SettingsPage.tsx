@@ -57,13 +57,7 @@ const extensionTestCard: () => Promise<CardModel> = () => {
     });
 };
 
-const SettingsPage = ({
-    logProvider,
-    settings,
-    inTutorial,
-    onSettingsChanged,
-    ...profileContext
-}: Props) => {
+const SettingsPage = ({ logProvider, settings, inTutorial, onSettingsChanged, ...profileContext }: Props) => {
     const { t } = useTranslation();
     const theme = useTheme();
     const anki = useMemo(

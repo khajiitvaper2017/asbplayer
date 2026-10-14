@@ -858,7 +858,7 @@ export default class Binding {
             document.addEventListener('asbplayer-netflix-seek-cancelled', this.netflixSeekCancelledListener);
         }
 
-        this.subtitleController.onMouseOver = (mouseEvent: MouseEvent) => {
+        this.subtitleController.onMouseOver = () => {
             if (
                 this.pauseOnHoverMode !== PauseOnHoverMode.disabled &&
                 !this.video.paused &&
@@ -1314,7 +1314,6 @@ export default class Binding {
         const subtitleSource = this._subtitleSource;
         asbTrace('playback/binding', 'Refreshing media-owner settings');
         const activeProfile = (await this.settings.activeProfile())?.name;
-        const profileChanged = this._lastProfile !== activeProfile;
         this._lastProfile = activeProfile;
         this.playbackEngine.profileChanged(activeProfile);
         const currentSettings = await this.settings.getAll();
@@ -1426,6 +1425,7 @@ export default class Binding {
         this._unsubscribeJiten?.();
         this._unsubscribeJiten = undefined;
         this._subtitleSource = undefined;
+        this._resetSubtitles();
         asbTrace('playback/binding', 'Unbinding media owner', {
             subscribed: this.subscribed,
             pendingDisneyPlusSeeks: this.disneyPlusPendingSeeks.size,

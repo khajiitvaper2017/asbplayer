@@ -207,8 +207,6 @@ export default function SettingsForm({
     anki,
     logProvider,
     settings,
-    profiles,
-    activeProfile,
     pageConfigs,
     extensionInstalled,
     extensionVersion,
@@ -362,22 +360,14 @@ export default function SettingsForm({
                     <Tab tabIndex={2} label={t('settings.subtitleAppearance')} id="subtitle-appearance" />
                     <Tab tabIndex={3} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
                     {extensionSupportsAppIntegration && (
-                        <Tab
-                            tabIndex={4}
-                            label={t('settings.streamingVideo')}
-                            id="streaming-video"
-                        />
+                        <Tab tabIndex={4} label={t('settings.streamingVideo')} id="streaming-video" />
                     )}
                     <Tab
                         tabIndex={4 + Number(extensionSupportsAppIntegration)}
                         label={t('settings.misc')}
                         id="misc-settings"
                     />
-                    <Tab
-                        tabIndex={5 + Number(extensionSupportsAppIntegration)}
-                        label={t('about.title')}
-                        id="about"
-                    />
+                    <Tab tabIndex={5 + Number(extensionSupportsAppIntegration)} label={t('about.title')} id="about" />
                 </Tabs>
                 <TabPanel
                     ref={ankiPanelRef}

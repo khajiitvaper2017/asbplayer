@@ -1,9 +1,6 @@
 import { useMemo, useRef } from 'react';
 import type { SubtitleSettings, TextSubtitleSettings } from '@project/common/settings';
-import {
-    areSubtitleSettingsEqual,
-    textSubtitleSettingsForTrack,
-} from '@project/common/settings';
+import { areSubtitleSettingsEqual, textSubtitleSettingsForTrack } from '@project/common/settings';
 import { computeStyleString, computeStyles } from '@project/common/util';
 
 interface TrackStyles {
@@ -28,10 +25,7 @@ export const useStableSubtitleSettings = (settings: SubtitleSettings) => {
     return useStableValue(settings, areSubtitleSettingsEqual);
 };
 
-export const useSubtitleStyles = (
-    settings: SubtitleSettings,
-    trackCount: number
-) => {
+export const useSubtitleStyles = (settings: SubtitleSettings, trackCount: number) => {
     const stableSettings = useStableSubtitleSettings(settings);
 
     return useMemo(() => {

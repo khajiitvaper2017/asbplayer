@@ -17,8 +17,6 @@ import {
     VideoSubtitleSplitBehavior,
 } from '@project/common/settings/settings';
 import {
-} from '@project/common/settings/settings';
-import {
     AutoPausePreference,
     PlayMode,
     PostMineAction,
