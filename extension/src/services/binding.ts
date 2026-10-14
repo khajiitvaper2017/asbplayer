@@ -62,9 +62,6 @@ import type {
     VideoHeartbeatMessage,
     VideoToExtensionCommand,
     IndexedSubtitleModel,
-    SaveTokenLocalMessage,
-    DictionaryBuildAnkiCacheStateMessage,
-    DictionaryBuildWaniKaniCacheStateMessage,
 } from '@project/common';
 import {
     cropAndResize,
@@ -112,9 +109,6 @@ import KeyBindings from '@project/extension/src/services/key-bindings';
 import { shouldShowUpdateAlert } from '@project/extension/src/services/update-alert';
 import { bufferToBase64 } from '@project/common/base64';
 import { pgsParserWorkerFactory } from '@project/extension/src/services/pgs-parser-worker-factory';
-import { DictionaryProvider } from '@project/common/dictionary-db/dictionary-provider';
-import { ExtensionDictionaryStorage } from '@project/extension/src/services/extension-dictionary-storage';
-import { HoveredToken } from '@project/common/annotations';
 import { readJitenCapture, onJitenWordMined } from '@project/extension/src/services/jiten-reader';
 import { v4 as uuidv4 } from 'uuid';
 import { debounced } from '@project/extension/src/services/debounced';
@@ -232,7 +226,6 @@ export default class Binding {
     readonly mobileVideoOverlayController: MobileVideoOverlayController;
     readonly mobileGestureController: MobileGestureController;
     readonly keyBindings: KeyBindings;
-    readonly dictionary: DictionaryProvider;
     readonly settings: SettingsProvider;
     private readonly _audioRecorder = new AudioRecorder();
     readonly bulkExportController: BulkExportController;
@@ -250,7 +243,6 @@ export default class Binding {
     private imageDelay = 0;
     private pauseOnHoverMode: PauseOnHoverMode = PauseOnHoverMode.disabled;
     private _disablePauseOnHover: boolean;
-    hoveredToken: HoveredToken;
     recordMedia: boolean;
 
     private seekedListener?: EventListener;
@@ -280,8 +272,6 @@ export default class Binding {
     private audioContext?: AudioContext;
     private audioVolumeChangeListener?: () => void;
     private currentAudioRecordingRequestId?: string;
-    private unsubscribeStatisticsSeek?: () => void;
-    private unsubscribeStatisticsSubtitleMine?: () => void;
 
     private readonly frameId?: string;
 
@@ -291,9 +281,8 @@ export default class Binding {
         this._lastLoadedMetadataMediaIdentity = mediaSourceIdentity(video);
         this.hasPageScript = options.hasPageScript;
         this._videoSrcChangesIndicateNewVideo = options.videoSrcChangesIndicateNewVideo;
-        this.dictionary = new DictionaryProvider(new ExtensionDictionaryStorage());
         this.settings = new SettingsProvider(new ExtensionSettingsStorage());
-        this.subtitleController = new SubtitleController(this, this.dictionary, this.settings);
+        this.subtitleController = new SubtitleController(this);
         this.playbackEngine = this._createPlaybackEngine();
         this.videoDataSyncController = new VideoDataSyncController(this, this.settings);
         this.controlsController = new ControlsController(video);
@@ -310,7 +299,6 @@ export default class Binding {
         this.mobileGestureController = new MobileGestureController(this);
         this.bulkExportController = new BulkExportController(this);
         this._disablePauseOnHover = false;
-        this.hoveredToken = new HoveredToken();
         this.recordMedia = true;
         this.takeScreenshot = true;
         this.cleanScreenshot = true;
@@ -900,9 +888,7 @@ export default class Binding {
 
                 document.addEventListener('mousemove', this.mouseMoveListener);
             }
-            this.hoveredToken.handleMouseOver(mouseEvent);
         };
-        this.subtitleController.onMouseOut = (mouseEvent: MouseEvent) => this.hoveredToken.handleMouseOut(mouseEvent);
 
         if (this.hasPageScript) {
             const debouncedChangeListener = debounced(
@@ -1106,11 +1092,9 @@ export default class Binding {
                         switch (cardMessage.command) {
                             case 'card-updated':
                                 locKey = 'info.updatedCard';
-                                this.subtitleController.subtitleAnnotations.ankiCardWasModified();
                                 break;
                             case 'card-exported':
                                 locKey = 'info.exportedCard';
-                                this.subtitleController.subtitleAnnotations.ankiCardWasModified();
                                 break;
                             case 'card-saved':
                                 locKey = 'info.copiedSubtitle2';
@@ -1136,31 +1120,6 @@ export default class Binding {
                             dialogRequestedTimestamp: this.currentTimeMs,
                         };
                         void this.mobileVideoOverlayController.updateModel();
-                        break;
-                    }
-                    case 'card-updated-dialog':
-                    case 'card-exported-dialog':
-                        this.subtitleController.subtitleAnnotations.ankiCardWasModified();
-                        break;
-                    case 'save-token-local': {
-                        const { track, token, status, states, applyStates } = request.message as SaveTokenLocalMessage;
-                        void this.subtitleController.subtitleAnnotations.saveTokenLocal(
-                            track,
-                            token,
-                            status,
-                            states,
-                            applyStates
-                        );
-                        break;
-                    }
-                    case 'dictionary-build-anki-cache-state': {
-                        const state = request.message as DictionaryBuildAnkiCacheStateMessage;
-                        this.subtitleController.subtitleAnnotations.buildAnkiCacheStateChange(state);
-                        break;
-                    }
-                    case 'dictionary-build-wanikani-cache-state': {
-                        const state = request.message as DictionaryBuildWaniKaniCacheStateMessage;
-                        this.subtitleController.subtitleAnnotations.buildWaniKaniCacheStateChange(state);
                         break;
                     }
                     case 'notify-error': {
@@ -1357,23 +1316,6 @@ export default class Binding {
         };
 
         browser.runtime.onMessage.addListener(this.listener);
-        this.unsubscribeStatisticsSeek = this.dictionary.onRequestStatisticsSeek((timestamp) => {
-            void this.seek(timestamp);
-        });
-        this.unsubscribeStatisticsSubtitleMine = this.dictionary.onRequestStatisticsMineSentences(
-            (_mediaId, indexes) => {
-                const index = indexes[0];
-                if (index === undefined) return;
-                const [resolvedSubtitle, resolvedSurroundingSubtitles] = this.subtitleController.subtitleAtIndex(index);
-                if (resolvedSubtitle === null || resolvedSurroundingSubtitles === null) return;
-                void this._copySubtitle({
-                    command: 'copy-subtitle',
-                    postMineAction: this.clickToMineDefaultAction,
-                    subtitle: resolvedSubtitle,
-                    surroundingSubtitles: resolvedSurroundingSubtitles,
-                });
-            }
-        );
         this.subscribed = true;
     }
 
@@ -1412,7 +1354,6 @@ export default class Binding {
         this.subtitleController.surroundingSubtitlesCountRadius = currentSettings.surroundingSubtitlesCountRadius;
         this.subtitleController.surroundingSubtitlesTimeRadius = currentSettings.surroundingSubtitlesTimeRadius;
         this.subtitleController.autoCopyCurrentSubtitle = currentSettings.autoCopyCurrentSubtitle;
-        this.subtitleController.dictionaryTrackSettings = currentSettings.dictionaryTracks;
         this.subtitleController.autoCopyableTracks = currentSettings.autoCopyableTracks;
 
         const convertNetflixRubyChanged =
@@ -1422,11 +1363,6 @@ export default class Binding {
         const subtitleHtmlChanged = this.subtitleController.subtitleHtml !== currentSettings.subtitleHtml;
         this.subtitleController.subtitleHtml = currentSettings.subtitleHtml;
 
-        if (profileChanged) {
-            this.subtitleController.subtitleAnnotations.profileChanged(currentSettings);
-        } else {
-            this.subtitleController.subtitleAnnotations.settingsUpdated(currentSettings, { force: false });
-        }
         this.subtitleController.setSubtitleSettings(currentSettings);
 
         if (convertNetflixRubyChanged || subtitleHtmlChanged) {
@@ -1561,11 +1497,6 @@ export default class Binding {
             browser.runtime.onMessage.removeListener(this.listener);
             this.listener = undefined;
         }
-
-        this.unsubscribeStatisticsSeek?.();
-        this.unsubscribeStatisticsSeek = undefined;
-        this.unsubscribeStatisticsSubtitleMine?.();
-        this.unsubscribeStatisticsSubtitleMine = undefined;
 
         this.playbackEngine.unbind();
         this.subtitleController.unbind();
