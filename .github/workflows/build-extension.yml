@@ -10,7 +10,7 @@ on:
                 type: string
 
 permissions:
-    contents: read
+    contents: write
 
 jobs:
     build:
@@ -28,6 +28,13 @@ jobs:
             - run: pnpm --filter @project/extension run zip:firefox
             - run: pnpm --filter @project/extension run zip:firefox-android
 
+            - name: Read extension version
+              id: version
+              run: |
+                  set -euo pipefail
+                  version=$(node -e "const fs=require('fs');const m=fs.readFileSync('extension/wxt.config.ts','utf8').match(/const version = '([^']+)'/);if(!m){console.error('version not found in extension/wxt.config.ts');process.exit(1)}console.log(m[1])")
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
+
             - name: Upload extension ZIPs
               uses: actions/upload-artifact@v4
               with:
@@ -38,3 +45,17 @@ jobs:
                       extension/.output/*-firefox-android.zip
                   include-hidden-files: true
                   if-no-files-found: error
+
+            - name: Create GitHub release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  VERSION: ${{ steps.version.outputs.version }}
+              run: |
+                  set -euo pipefail
+                  gh release create "v${VERSION}" \
+                    --target "${GITHUB_SHA}" \
+                    --title "asbplayer v${VERSION}" \
+                    --generate-notes \
+                    extension/.output/asbplayer-${VERSION}-chrome.zip \
+                    extension/.output/asbplayer-${VERSION}-firefox.zip \
+                    extension/.output/asbplayer-${VERSION}-firefox-android.zip
