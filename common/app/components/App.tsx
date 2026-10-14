@@ -1,6 +1,5 @@
 import { asbError, asbWarn } from '@project/common/util/log';
 import { humanReadableTime, download, extractText, timeDurationDisplay } from '@project/common/util';
-import type { ComponentProps } from 'react';
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { makeStyles } from '@mui/styles';
 import type { Theme } from '@mui/material/styles';
@@ -8,7 +7,6 @@ import ThemeProvider from '@mui/material/styles/ThemeProvider';
 import { useWindowSize } from '@project/common/app/hooks/use-window-size';
 import { useLocationHash } from '@project/common/hooks/use-location-hash';
 import type {
-    OpenStatisticsOverlayMessage,
     RequestLocalSubtitlesMessage,
     SubtitleModel,
     DisplaySubtitleModel,
@@ -52,7 +50,6 @@ import Bar from '@project/common/app/components/Bar';
 import type { ExtensionMessage } from '@project/common/app/services/chrome-extension';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import CopyHistory from '@project/common/app/components/CopyHistory';
-import StatisticsDrawer from '@project/common/components/StatisticsDrawer';
 import LandingPage from '@project/common/app/components/LandingPage';
 import type { MediaSources, PlayerRef } from '@project/common/app/components/Player';
 import Player from '@project/common/app/components/Player';
@@ -93,9 +90,6 @@ import NeedRefreshDialog from '@project/common/app/components/NeedRefreshDialog'
 import type { DictionaryProvider } from '@project/common/dictionary-db';
 import type { LogProvider } from '@project/common/util/log';
 import { isFirefox } from '@project/common/browser-detection';
-import type { StatisticsOverlayProps } from '@project/common/components/StatisticsOverlay';
-import StatisticsOverlay from '@project/common/components/StatisticsOverlay';
-import OneUncollectedSentenceDetailsDialog from '@project/common/components/OneUncollectedSentenceDetailsDialog';
 import VideoDataSyncDialog, { useVideoDataSyncDialogState } from '@project/common/components/VideoDataSyncDialog';
 import type { FileWithId } from '@project/common/file-selector';
 import { DefaultFileSelector } from '@project/common/file-selector';
@@ -275,63 +269,6 @@ function Content(props: ContentProps) {
     );
 }
 
-function AppStatisticsOverlay({
-    dictionaryProvider,
-    mediaId,
-    dictionaryTracks,
-    ...rest
-}: StatisticsOverlayProps & { mediaId: string; dictionaryTracks: DictionaryTrack[] }) {
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-
-    useEffect(() => {
-        if (rest.open) {
-            setPosition({ x: 0, y: 0 });
-        }
-    }, [rest.open]);
-
-    const handleMoveBy = useCallback((deltaX: number, deltaY: number) => {
-        setPosition((current) => ({
-            x: current.x + deltaX,
-            y: Math.max(0, current.y + deltaY),
-        }));
-    }, []);
-
-    const [oneUncollectedSentenceDetailsDialogState, setOneUncollectedSentenceDetailsDialogState] = useState<
-        Omit<ComponentProps<typeof OneUncollectedSentenceDetailsDialog>, 'dictionaryTracks' | 'onClose'>
-    >({
-        open: false,
-        entries: [],
-        totalSentences: 0,
-        miningEnabled: true,
-        dictionaryProvider,
-    });
-    return (
-        <>
-            <StatisticsOverlay
-                {...rest}
-                dictionaryProvider={dictionaryProvider}
-                onMoveBy={handleMoveBy}
-                sx={{
-                    position: 'absolute',
-                    top: 8,
-                    left: '50%',
-                    transform: `translateX(calc(-50% + ${position.x}px)) translateY(${position.y}px)`,
-                }}
-                onOpenSentenceDetails={(entries, totalSentences) =>
-                    setOneUncollectedSentenceDetailsDialogState((s) => ({ ...s, open: true, entries, totalSentences }))
-                }
-            />
-            <OneUncollectedSentenceDetailsDialog
-                {...oneUncollectedSentenceDetailsDialogState}
-                mediaId={mediaId}
-                dictionaryProvider={dictionaryProvider}
-                dictionaryTracks={dictionaryTracks}
-                onClose={() => setOneUncollectedSentenceDetailsDialogState((s) => ({ ...s, open: false }))}
-            />
-        </>
-    );
-}
-
 interface Props {
     origin: string;
     logoUrl: string;
@@ -383,7 +320,6 @@ function App({
         settings.convertNetflixRuby,
     ]);
     const webSocketClient = useAppWebSocketClient({ settings });
-    const supportsDictionaryStatistics = !extension.installed || extension.supportsDictionaryStatistics;
     const [subtitles, setSubtitles] = useState<DisplaySubtitleModel[]>([]);
     const playbackPreferences = usePlaybackPreferences();
     const theme = useMemo<Theme>(() => createTheme(settings.themeType), [settings.themeType]);
@@ -417,7 +353,6 @@ function App({
     const copyHistoryItemsRef = useRef<CopyHistoryItem[]>([]);
     copyHistoryItemsRef.current = copyHistoryItems;
     const [copyHistoryOpen, setCopyHistoryOpen] = useState<boolean>(false);
-    const [statisticsOpen, setStatisticsOpen] = useState<boolean>(false);
     const [theaterMode, setTheaterMode] = useState<boolean>(playbackPreferences.theaterMode);
     const [hideSubtitlePlayer, setHideSubtitlePlayer] = useState<boolean>(playbackPreferences.hideSubtitleList);
     const [videoPopOut, setVideoPopOut] = useState<boolean>(false);
@@ -451,8 +386,6 @@ function App({
     const [tab, setTab] = useState<VideoTabModel>();
     const [availableTabs, setAvailableTabs] = useState<VideoTabModel[]>();
     const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
-    const [statisticsOverlayOpen, setStatisticsOverlayOpen] = useState<boolean>(false);
-    const [statisticsOverlayDismissed, setStatisticsOverlayDismissed] = useState<boolean>(false);
     const {
         canRestoreLastSession: canRestoreLastFileSession,
         saveSession: saveFileSession,
@@ -928,57 +861,6 @@ function App({
             await toggleInAppCopyHistory();
         }
     }, [extension, refreshCopyHistory, isSidePanelOpen]);
-    const handleOpenStatistics = useCallback(() => {
-        const toggleInAppStatistics = () => {
-            setStatisticsOpen((statisticsOpen) => !statisticsOpen);
-            setVideoFullscreen(false);
-        };
-        if (isFirefox) {
-            // Firefox doesn't support opening the side panel with a button from the app.
-            // So update the side panel state if it happens to be open,
-            // otherwise open the in-app drawer.
-            if (extension.supportsSidePanel && isSidePanelOpen) {
-                extension.toggleSidePanel('statistics');
-            } else {
-                toggleInAppStatistics();
-            }
-        } else if (extension.supportsSidePanel) {
-            extension.toggleSidePanel('statistics');
-        } else {
-            toggleInAppStatistics();
-        }
-    }, [extension, isSidePanelOpen]);
-    const handleReceivedStatisticsSnapshot = useCallback(
-        (mediaId: string, trackIndex: number) => {
-            if (mediaId !== extension.id) {
-                return;
-            }
-
-            if (settings.dictionaryTracks[trackIndex].dictionaryAutoGenerateStatistics && !statisticsOverlayDismissed) {
-                setStatisticsOverlayOpen(true);
-            }
-        },
-        [extension, settings.dictionaryTracks, statisticsOverlayDismissed]
-    );
-    const handleCloseStatisticsOverlay = useCallback(() => {
-        setStatisticsOverlayOpen(false);
-        setStatisticsOverlayDismissed(true);
-    }, []);
-    const handleStatisticsOverlaySnapshotCleared = useCallback(() => {
-        setStatisticsOverlayOpen(false);
-    }, []);
-    const openStatisticsOverlay = useCallback(() => {
-        setStatisticsOverlayDismissed(false);
-        setStatisticsOverlayOpen(true);
-    }, []);
-    const handleOpenStatisticsOverlay = useCallback(() => {
-        if (statisticsOverlayOpen) {
-            handleCloseStatisticsOverlay();
-            return;
-        }
-
-        openStatisticsOverlay();
-    }, [handleCloseStatisticsOverlay, openStatisticsOverlay, statisticsOverlayOpen]);
     const handleCloseCopyHistory = useCallback(() => setCopyHistoryOpen(false), []);
     const handleAppBarToggle = useCallback(() => {
         const newValue = !playbackPreferences.theaterMode;
@@ -1031,9 +913,6 @@ function App({
             if (videoFileUrl !== sources.videoFileUrl) {
                 return;
             }
-
-            void dictionaryProvider.publishStatisticsSnapshot(extension.id, undefined);
-            setStatisticsOverlayOpen(false);
 
             setSources((previous) => {
                 revokeBlobUrl(videoFileUrl);
@@ -1551,14 +1430,6 @@ function App({
                 setSettingsDialogOpen(true);
             } else if (message.data.command === 'show-anki-ui') {
                 handleAnki(message.data as ShowAnkiUiMessage);
-            } else if (message.data.command === 'open-statistics-overlay') {
-                const openMessage = message.data as OpenStatisticsOverlayMessage;
-
-                if (openMessage.force && statisticsOverlayOpen) {
-                    handleCloseStatisticsOverlay();
-                } else {
-                    openStatisticsOverlay();
-                }
             } else if (message.data.command === 'request-local-subtitles') {
                 const requestMessage = message.data as RequestLocalSubtitlesMessage;
                 extension.sendSubtitles(requestMessage.messageId, {
@@ -1583,17 +1454,13 @@ function App({
     }, [
         extension,
         subtitles,
-        supportsDictionaryStatistics,
         inVideoPlayer,
         sources.videoFileUrl,
         sources.subtitleFiles,
-        statisticsOverlayOpen,
         tab,
         handleFiles,
         handleAnki,
-        handleCloseStatisticsOverlay,
         handleUnloadVideo,
-        openStatisticsOverlay,
     ]);
 
     useEffect(() => {
@@ -1900,8 +1767,6 @@ function App({
                     extension.toggleSidePanel();
                 } else if (copyHistoryOpen) {
                     void handleOpenCopyHistory();
-                } else if (statisticsOpen) {
-                    handleOpenStatistics();
                 } else {
                     void handleOpenCopyHistory();
                 }
@@ -1913,29 +1778,9 @@ function App({
         extension,
         keyBinder,
         copyHistoryOpen,
-        statisticsOpen,
         handleOpenCopyHistory,
-        handleOpenStatistics,
         ankiDialogOpen,
     ]);
-
-    useEffect(() => {
-        return keyBinder?.bindOpenStatistics(
-            (event) => {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                setDisableKeyEvents(true);
-                handleOpenStatistics();
-            },
-            () => ankiDialogOpen || !supportsDictionaryStatistics,
-            false
-        );
-    }, [keyBinder, ankiDialogOpen, supportsDictionaryStatistics, handleOpenStatistics]);
-
-    const fetchStatisticsMediaInfo = useCallback(async () => {
-        // In-app statistics can only show the current media - no need to display redundant information like the source string
-        return { sourceString: '' };
-    }, []);
 
     const mp3Encoder = useCallback(async (blob: Blob) => {
         return Mp3Encoder.encode(blob, () => new mp3WorkerFactory());
@@ -1961,11 +1806,6 @@ function App({
         onNeedRefresh: handleOpenNeedRefreshDialog,
         onOfflineReady: handleOfflineReady,
     });
-    const handleCloseStatistics = useCallback(() => setStatisticsOpen(false), []);
-    const handleViewAnnotationSettings = useCallback(() => {
-        setSettingsDialogScrollToId('annotation');
-        setSettingsDialogOpen(true);
-    }, []);
 
     const {
         subtitleTrackSelectorOpen,
@@ -2071,7 +1911,7 @@ function App({
         tab === undefined &&
         ((loading && !videoFrameRef.current) || (sources.subtitleFiles.length === 0 && !sources.videoFile));
     const appBarHidden = sources.videoFile !== undefined && ((theaterMode && !videoPopOut) || videoFullscreen);
-    const effectiveDrawerOpen = (copyHistoryOpen || statisticsOpen) && !videoFullscreen;
+    const effectiveDrawerOpen = copyHistoryOpen && !videoFullscreen;
     const lastSelectedAnkiExportMode =
         !extension.installed || extension.supportsLastSelectedAnkiExportModeSetting
             ? settings.lastSelectedAnkiExportMode
@@ -2151,20 +1991,6 @@ function App({
                                 onDownloadSectionAsSrt={handleDownloadCopyHistorySectionAsSrt}
                                 onSelect={handleSelectCopyHistoryItem}
                                 onAnki={handleAnki}
-                            />
-                            <StatisticsDrawer
-                                mediaId={extension.id}
-                                open={statisticsOpen}
-                                settings={settings}
-                                dictionaryProvider={dictionaryProvider}
-                                hasSubtitles={subtitles !== undefined && subtitles.length > 0}
-                                showBackButton
-                                drawerWidth={drawerWidth}
-                                onViewAnnotationSettings={handleViewAnnotationSettings}
-                                onOpenOverlay={handleOpenStatisticsOverlay}
-                                onClose={handleCloseStatistics}
-                                mediaInfoFetcher={fetchStatisticsMediaInfo}
-                                sx={{ p: 2 }}
                             />
                             {ankiDialogCard && (
                                 <AnkiDialog
@@ -2257,7 +2083,6 @@ function App({
                                 hidden={appBarHidden}
                                 subtitleFiles={sources.subtitleFiles}
                                 onOpenCopyHistory={handleOpenCopyHistory}
-                                onOpenStatistics={supportsDictionaryStatistics ? handleOpenStatistics : undefined}
                                 onDownloadSubtitleFilesAsSrt={handleDownloadSubtitleFilesAsSrt}
                                 onDownloadSubtitleTimeline={handleDownloadSubtitleTimeline}
                                 onOpenSettings={handleOpenSettings}

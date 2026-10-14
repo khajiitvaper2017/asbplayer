@@ -26,7 +26,6 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Popover from '@mui/material/Popover';
 import ErrorIcon from '@mui/icons-material/Error';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import type { FileWithId } from '@project/common/file-selector';
 
 interface BarProps {
@@ -42,7 +41,6 @@ interface BarProps {
     onOpenSettings: () => void;
     onOpenCopyHistory: () => void;
     onCopyLastError: (error: string) => void;
-    onOpenStatistics?: () => void;
 }
 
 interface StyleProps {
@@ -137,7 +135,6 @@ export default function Bar({
     onDownloadSubtitleFilesAsSrt,
     onDownloadSubtitleTimeline,
     onCopyLastError,
-    onOpenStatistics,
 }: BarProps) {
     const classes = useStyles({ drawerWidth });
     const canSaveAsSrt =
@@ -234,20 +231,6 @@ export default function Bar({
                                 <HistoryIcon />
                             </IconButton>
                         </CopyHistoryTooltip>
-                        {onOpenStatistics && (
-                            <Tooltip title={t('statistics.title')}>
-                                <IconButton
-                                    edge="end"
-                                    color="inherit"
-                                    onClick={onOpenStatistics}
-                                    className={clsx(classes.drawerButton, {
-                                        [classes.drawerButtonShift]: drawerOpen,
-                                    })}
-                                >
-                                    <BarChartIcon />
-                                </IconButton>
-                            </Tooltip>
-                        )}
                     </Box>
                 </Toolbar>
             </AppBar>
