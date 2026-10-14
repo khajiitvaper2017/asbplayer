@@ -26,227 +26,6 @@ const ankiFieldSchema = {
     },
     required: ['order', 'display'],
 };
-const dictionaryTrackSchema = {
-    id: '/DictionaryTrack',
-    type: 'object',
-    properties: {
-        dictionaryColorizeSubtitles: {
-            type: 'boolean',
-        },
-        dictionaryAutoGenerateStatistics: {
-            type: 'boolean',
-        },
-        dictionaryColorizeOnHoverOnly: {
-            type: 'boolean',
-        },
-        dictionaryHighlightOnHover: {
-            type: 'boolean',
-        },
-        dictionaryTokenMatchStrategy: {
-            type: 'string',
-        },
-        dictionaryMatchAcrossScripts: {
-            type: 'boolean',
-        },
-        dictionaryTokenMatchStrategyPriority: {
-            type: 'string',
-        },
-        dictionaryYomitanUrl: {
-            type: 'string',
-        },
-        dictionaryYomitanParser: {
-            type: 'string',
-        },
-        dictionaryYomitanScanLength: {
-            type: 'number',
-        },
-        dictionaryTokenReadingAnnotation: {
-            type: 'string',
-        },
-        dictionaryDisplayIgnoredTokenReadings: {
-            type: 'boolean',
-        },
-        dictionaryTokenFrequencyAnnotation: {
-            type: 'string',
-        },
-        dictionaryAnkiDecks: {
-            type: 'array',
-            items: {
-                type: 'string',
-            },
-        },
-        dictionaryAnkiWordFields: {
-            type: 'array',
-            items: {
-                type: 'string',
-            },
-        },
-        dictionaryAnkiSentenceFields: {
-            type: 'array',
-            items: {
-                type: 'string',
-            },
-        },
-        dictionaryAnkiSentenceTokenMatchStrategy: {
-            type: 'string',
-        },
-        dictionaryAnkiMatureCutoff: {
-            type: 'number',
-        },
-        dictionaryAnkiTreatSuspended: {
-            type: ['string', 'number'],
-        },
-        dictionaryWaniKaniApiToken: {
-            type: 'string',
-        },
-        dictionaryTokenStyling: {
-            type: 'string',
-        },
-        dictionaryTokenStylingThickness: {
-            type: 'number',
-        },
-        dictionaryColorizeFullyKnownTokens: {
-            type: 'boolean',
-        },
-        dictionaryTokenStatusColors: {
-            type: 'array',
-            items: {
-                type: 'string',
-            },
-        },
-        dictionaryTokenStatusConfig: {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    display: { type: 'boolean' },
-                    color: { type: 'string' },
-                    alpha: { type: 'string' },
-                },
-                required: ['display', 'color', 'alpha'],
-            },
-        },
-        dictionaryTokenAnnotationConfig: {
-            type: 'object',
-            properties: {
-                colorizeEnabled: {
-                    type: 'boolean',
-                },
-                video: {
-                    type: 'object',
-                    properties: {
-                        color: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        reading: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        frequency: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        gloss: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        pitchAccent: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                    },
-                    required: ['color', 'reading', 'frequency', 'pitchAccent'],
-                },
-                subtitlePlayer: {
-                    type: 'object',
-                    properties: {
-                        color: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        reading: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        frequency: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        gloss: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                        pitchAccent: {
-                            type: 'object',
-                            properties: { onHoverEnabled: { type: 'boolean' }, size: { type: 'number' } },
-                            required: ['onHoverEnabled', 'size'],
-                        },
-                    },
-                    required: ['color', 'reading', 'frequency', 'pitchAccent'],
-                },
-                onStatuses: {
-                    type: 'array',
-                    items: {
-                        type: 'object',
-                        properties: {
-                            reading: { type: 'boolean' },
-                            frequency: { type: 'boolean' },
-                            gloss: { type: 'boolean' },
-                            pitchAccent: { type: 'boolean' },
-                        },
-                        required: ['reading', 'frequency', 'pitchAccent'],
-                    },
-                },
-                onStates: {
-                    type: 'array',
-                    items: {
-                        type: 'object',
-                        properties: {
-                            reading: { type: 'boolean' },
-                            frequency: { type: 'boolean' },
-                            gloss: { type: 'boolean' },
-                            pitchAccent: { type: 'boolean' },
-                        },
-                        required: ['reading', 'frequency', 'pitchAccent'],
-                    },
-                },
-            },
-            required: ['colorizeEnabled', 'video', 'subtitlePlayer', 'onStatuses', 'onStates'],
-        },
-    },
-    required: [
-        'dictionaryColorizeSubtitles',
-        'dictionaryColorizeOnHoverOnly',
-        'dictionaryHighlightOnHover',
-        'dictionaryTokenMatchStrategy',
-        'dictionaryTokenMatchStrategyPriority',
-        'dictionaryYomitanUrl',
-        'dictionaryYomitanScanLength',
-        'dictionaryTokenReadingAnnotation',
-        'dictionaryDisplayIgnoredTokenReadings',
-        'dictionaryTokenFrequencyAnnotation',
-        'dictionaryAnkiDecks',
-        'dictionaryAnkiWordFields',
-        'dictionaryAnkiSentenceFields',
-        'dictionaryAnkiSentenceTokenMatchStrategy',
-        'dictionaryAnkiMatureCutoff',
-        'dictionaryAnkiTreatSuspended',
-        'dictionaryTokenStyling',
-        'dictionaryTokenStylingThickness',
-        'dictionaryColorizeFullyKnownTokens',
-        'dictionaryTokenStatusColors',
-    ],
-};
 const textSubtitleSettingsSchema = {
     id: '/TextSubtitleSettings',
     type: 'object',
@@ -803,12 +582,6 @@ const settingsSchema = {
         lastSelectedAnkiExportMode: {
             type: 'string',
         },
-        dictionaryTracks: {
-            type: 'array',
-            items: {
-                $ref: '/DictionaryTrack',
-            },
-        },
         thumbnailPreview: {
             type: 'boolean',
         },
@@ -827,7 +600,6 @@ export type IgnorePath = readonly IgnorePathSegment[];
 const ignorePaths: readonly IgnorePath[] = [
     ['jitenApiKey'],
     ['ankiConnectApiKey'],
-    ['dictionaryTracks', '*', 'dictionaryWaniKaniApiToken'],
     ['streamingPages'], // Ignored due to security risk (e.g. disable CSP)
 ];
 const validationIgnorePaths: readonly IgnorePath[] = [['streamingPages']];
@@ -906,7 +678,6 @@ export const validateSettings = (settings: any) => {
     const validator = new Validator();
     validator.addSchema(keyBindSchema);
     validator.addSchema(ankiFieldSchema);
-    validator.addSchema(dictionaryTrackSchema);
     validator.addSchema(textSubtitleSettingsSchema);
     const result = validator.validate(copy, settingsSchema);
     validateAllKnownKeys(copy, []);
@@ -960,10 +731,6 @@ const schemaForRef = (ref: string) => {
 
     if (ref === '/AnkiField') {
         return ankiFieldSchema;
-    }
-
-    if (ref === '/DictionaryTrack') {
-        return dictionaryTrackSchema;
     }
 
     if (ref === '/TextSubtitleSettings') {

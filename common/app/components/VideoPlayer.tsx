@@ -2018,7 +2018,7 @@ export default function VideoPlayer({
         setAlertDisableAutoHide(false);
         setAlert((alert) => ({ ...alert, open: false }));
     }, []);
-    const trackStyles = useSubtitleStyles(subtitleSettings, trackCount ?? 1, [], 'video');
+    const trackStyles = useSubtitleStyles(subtitleSettings, trackCount ?? 1);
 
     const getSubtitleHtml = useCallback(
         (subtitle: IndexedSubtitleModel) =>

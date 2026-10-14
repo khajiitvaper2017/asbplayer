@@ -26,7 +26,7 @@ import type {
 } from '@project/common';
 import { MediaFragment, PostMineAction, MediaFragmentErrorCode, VideoDataUiOpenReason } from '@project/common';
 import { createTheme } from '@project/common/theme';
-import type { AsbplayerSettings, DictionaryTrack, Profile, SettingsProvider } from '@project/common/settings';
+import type { AsbplayerSettings, Profile, SettingsProvider } from '@project/common/settings';
 import { AudioClip, Mp3Encoder } from '@project/common/audio-clip';
 import type { ExportParams } from '@project/common/anki';
 import { SubtitleReader } from '@project/common/subtitle-reader';

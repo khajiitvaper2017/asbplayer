@@ -7,7 +7,6 @@ import type {
 } from '@project/common/src/model';
 import { AutoPausePreference } from '@project/common/src/model';
 import { arrayEquals } from '@project/common/util/array-equals';
-import type { DictionarySettings } from '@project/common/settings/settings-dictionary';
 
 export const activeProfileKey = 'activeSettingsProfile';
 export const profilesKey = 'settingsProfiles';
@@ -44,6 +43,35 @@ export enum SubtitleVisibility {
 export enum VideoSubtitleSplitBehavior {
     rememberSplitPosition = 'rememberSplitPosition',
     autoMaximizeVideo = 'autoMaximizeVideo',
+}
+
+export enum TokenStatus {
+    UNCOLLECTED = 0,
+    UNKNOWN = 1,
+    LEARNING = 2,
+    GRADUATED = 3,
+    YOUNG = 4,
+    MATURE = 5,
+}
+
+export function getFullyKnownTokenStatus(): TokenStatus {
+    return TokenStatus.MATURE;
+}
+
+export enum TokenState {
+    IGNORED = 0,
+}
+
+export type TokenJumpTarget =
+    | { kind: 'any' }
+    | { kind: 'status'; value: TokenStatus }
+    | { kind: 'state'; value: TokenState };
+
+export enum ApplyStrategy {
+    ADD = 'ADD',
+    REMOVE = 'REMOVE',
+    REPLACE = 'REPLACE',
+    TOGGLE = 'TOGGLE',
 }
 
 export enum SubtitleListTimestampDisplay {
@@ -676,7 +704,6 @@ export interface AsbplayerSettings
     extends MiscSettings,
         AnkiSettings,
         SubtitleSettings,
-        DictionarySettings,
         StreamingVideoSettings,
         WebSocketClientSettings,
         JitenSettings {
