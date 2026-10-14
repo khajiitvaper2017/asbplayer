@@ -194,7 +194,7 @@ export const defaultSettings: AsbplayerSettings = {
     recordWithAudioPlayback: true,
     preferMp3: true,
     alwaysUseSubtitleForSentence: false,
-    tabName: 'asbplayer',
+    tabName: 'asbplayer-jiten',
     miningHistoryStorageLimit: 25,
     clickToMineDefaultAction: PostMineAction.mineNewJitenWords,
     postMiningPlaybackState: PostMinePlayback.remember,

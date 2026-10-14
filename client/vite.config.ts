@@ -45,8 +45,8 @@ export default defineConfig(({ mode }) => {
                 registerType: 'prompt',
                 includeAssets: ['locales/*.json', 'background-colored.png'],
                 manifest: {
-                    short_name: 'asbplayer',
-                    name: 'a subtitle player',
+                    short_name: 'asbplayer-jiten',
+                    name: 'asbplayer-jiten',
                     description: 'A browser-based media player for mining sentences from subtitles',
                     icons: [
                         {

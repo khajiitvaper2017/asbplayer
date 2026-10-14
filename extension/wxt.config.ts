@@ -25,7 +25,7 @@ const addToPublicPathsType = (srcPath: string, destPath: string, paths: PublicPa
     }
 };
 
-const extName = 'asbplayer';
+const extName = 'asbplayer-jiten';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
