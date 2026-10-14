@@ -50,21 +50,21 @@ function HomepageHeader() {
                     <div className={styles.pillRow}>
                         <a
                             className={styles.pillButton}
-                            href="https://chromewebstore.google.com/detail/asbplayer-language-learni/hkledmpjpaehamkiehglnbelcpdflcab"
+                            href="https://github.com/khajiitvaper2017/asbplayer/releases"
                             target="_blank"
                         >
                             <ChromeIcon />
-                            Chrome
+                            GitHub Releases
                         </a>
                         <a
                             className={styles.pillButton}
-                            href="https://addons.mozilla.org/firefox/addon/asbplayer-language-learning"
+                            href="https://github.com/khajiitvaper2017/asbplayer/releases"
                             target="_blank"
                         >
                             <FirefoxIcon />
-                            Firefox
+                            GitHub Releases (Firefox)
                         </a>
-                        <a className={styles.pillButton} href="https://app.asbplayer.dev" target="_blank">
+                        <a className={styles.pillButton} href="https://asbplayer-jiten.pages.dev/asbplayer" target="_blank">
                             <WebAppIcon />
                             Web App
                         </a>
@@ -101,23 +101,18 @@ export default function Home(): ReactNode {
                         <video autoPlay loop muted playsInline className={styles.video} src="/video/asbplayer-2.mp4" />
                     </div>
                     <div className="col col--7">
-                        <h1>Create multimedia Anki flashcards</h1>
+                        <h1>Mine multimedia sentences to Jiten</h1>
                         <p>
-                            Combine subtitles with video sources to create high-quality, multimedia vocabulary
-                            flashcards with image and audio.
+                            Combine subtitles with video sources and send sentence context, images, and audio to Jiten.
                         </p>
                     </div>
                 </div>
                 <div className={clsx('row', styles.featureSection)}>
                     <div className="col col--7">
-                        <h1>Analyze and track your language-learning progress</h1>
+                        <h1>Watch, listen, and mine with subtitles</h1>
                         <p>
-                            Combine asbplayer with{' '}
-                            <a href="https://yomitan.wiki/" target="_blank">
-                                Yomitan
-                            </a>{' '}
-                            to unlock powerful word annotation features that analyze subtitles and keep track of your
-                            known vocabulary.
+                            Load subtitles on local or streaming video, navigate by sentence, and use Jiten Reader to
+                            mine new words with matching video context.
                         </p>
                     </div>
                     <div className="col col--5">

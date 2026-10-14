@@ -4,238 +4,74 @@ sidebar_position: 2
 
 # External API {#external-api}
 
-This page is intended to be an technical reference on asbplayer's external interface and the [pre-packaged WebSocket server](https://github.com/asbplayer/asbplayer/tree/main/scripts/web-socket-server) that implements this interface. See the [guide](../guides/web-socket-server) for how to setup the WebSocket server.
+asbplayer exposes a WebSocket interface through the bundled local server. The API controls subtitles and playback; Jiten mining is configured in asbplayer and is not an AnkiConnect proxy.
 
 ## WebSocket commands {#websocket-commands}
 
-asbplayer, as a WebSocket client, responds to the following commands from a WebSocket server.
-
 ### `mine-subtitle` {#mine-subtitle}
 
-Mines from the active tab by default. Set `mediaId` to an ID returned by [`get-bound-media`](#get-bound-media) to target specific media. If the media is not found or has no subtitles, `published` is `false`.
-
-When `postMineAction` is `2`, `noteId` selects the Anki note to update. If omitted, the last-added note is updated. `noteId` applies to streaming media only and is ignored for local media.
-
-> `mediaId` and `noteId` require extension v1.20.0 or later.
-
-#### Request {#mine-subtitle-request}
-
-    ```javascript
-    {
-        "command": "mine-subtitle",
-        // Message ID to correlate with asbplayer's response
-        "messageId": "10281760-d787-4356-8572-f698d8ff3884",
-        "body": {
-            // 0 = "None", 1 = "Show anki dialog", 2 = "Update last card", 3 = "Export card"
-            "postMineAction": 1,
-            // Key-value pairs corresponding to an Anki note type
-            "fields": {
-                "key1": "value1",
-                "key2": "value2"
-            },
-            // Optional media id from `get-bound-media`
-            "mediaId": "a1b2c3d4e5f6",
-            // Optional Anki note id to update when postMineAction is 2 (streaming media only)
-            "noteId": 1752856898044
-        }
-    }
-    ```
-
-#### Response {#mine-subtitle-response}
-
-    ```javascript
-    {
-        "command": "response",
-        // Same message ID received in request
-        "messageId": "10281760-d787-4356-8572-f698d8ff3884",
-        "body": {
-            // Whether the command was successfully published to an asbplayer client
-            "published": true
-        }
-    }
-    ```
-
-### `load-subtitles` {#load-subtitles}
-
-#### Request {#load-subtitles-request}
+Mines the active media's current subtitle using the configured Jiten action.
 
 ```javascript
 {
-    "command": "load-subtitles",
-    // Message ID to correlate with asbplayer's response
-    "messageId": "3565510c-342f-4cec-ad2e-dee81af88d75",
-    "body": {
-        "files": [{
-            // Name of the file, including its extension
-            "name": "some-file.srt",
-            // Base64-encoded file contents
-            "base64": "Zm9vYmFyY..."
-        }]
-    }
+  "command": "mine-subtitle",
+  "messageId": "10281760-d787-4356-8572-f698d8ff3884",
+  "body": {
+    "postMineAction": 1,
+    "mediaId": "a1b2c3d4e5f6"
+  }
 }
 ```
 
-#### Response {#load-subtitles-response}
+`postMineAction` values used by this fork are:
+
+- `0`: keep the subtitle in mining history only
+- `1`: open the Jiten mining dialog
+- `5`: mine new words to Jiten
+
+The response contains the original `messageId` and a `published` boolean.
+
+### `load-subtitles` {#load-subtitles}
+
+Loads base64-encoded subtitle files into the active media.
 
 ```javascript
 {
-    "command": "response",
-    // Same message ID received in request
-    "messageId": "3565510c-342f-4cec-ad2e-dee81af88d75",
-    "body": {}
+  "command": "load-subtitles",
+  "messageId": "3565510c-342f-4cec-ad2e-dee81af88d75",
+  "body": {
+    "files": [{ "name": "subtitles.srt", "base64": "Zm9vYmFyY..." }]
+  }
 }
 ```
 
 ### `seek-timestamp` {#seek-timestamp}
 
-Seeks the active tab's video by default. Set `mediaId` to an ID returned by [`get-bound-media`](#get-bound-media) to target streaming media. Local media cannot be targeted by `mediaId`.
-
-> `mediaId` requires extension v1.20.0+
-
-#### Request {#seek-timestamp-request}
+Seeks the active media, or the media identified by `mediaId`.
 
 ```javascript
 {
-    "command": "seek-timestamp",
-    // Message ID to correlate with asbplayer's response
-    "messageId": "6e4b2d8f-3a1c-4d9e-8f7b-2c0a9d5e1f3b",
-    "body": {
-        //The timestamp to seek in seconds
-        "timestamp": 30.5,
-        // Optional media id from `get-bound-media`
-        "mediaId": "a1b2c3d4e5f6"
-    }
-}
-```
-
-#### Response {#seek-timestamp-response}
-
-```javascript
-{
-    "command": "response",
-    // Same message ID received in request
-    "messageId": "6e4b2d8f-3a1c-4d9e-8f7b-2c0a9d5e1f3b",
-    "body": {}
+  "command": "seek-timestamp",
+  "messageId": "6e4b2d8f-3a1c-4d9e-8f7b-2c0a9d5e1f3b",
+  "body": { "timestamp": 30.5, "mediaId": "a1b2c3d4e5f6" }
 }
 ```
 
 ### `get-bound-media` {#get-bound-media}
 
-> Requires extension v1.20.0+
-
-Returns the media asbplayer is currently tracking, including both `streaming` and `local` media.
-
-#### Request {#get-bound-media-request}
-
-```javascript
-{
-    "command": "get-bound-media",
-    // Message ID to correlate with asbplayer's response
-    "messageId": "9f1c2b3a-4d5e-6f70-8190-a1b2c3d4e5f6",
-    "body": {}
-}
-```
-
-#### Response {#get-bound-media-response}
-
-```javascript
-{
-    "command": "response",
-    // Same message ID received in request
-    "messageId": "9f1c2b3a-4d5e-6f70-8190-a1b2c3d4e5f6",
-    "body": {
-        "media": [{
-            // Identifier for the media
-            "id": "a1b2c3d4e5f6",
-            // Type of media: "streaming" or "local"
-            "type": "streaming",
-            // Display title for the media, if available
-            "title": "Title of the Video",
-            // Favicon of the tab containing the media, if available
-            "faviconUrl": "https://example.com/favicon.ico",
-            // Subtitle tracks currently loaded for this media. Empty if none are loaded.
-            "loadedSubtitles": [{
-                // Track number
-                "trackNumber": 0,
-                // File name of the subtitle track
-                "fileName": "subtitles.srt"
-            }],
-            // Whether the media's tab is the active tab of its window
-            "active": true
-        }]
-    }
-}
-```
+Returns the media currently tracked by asbplayer, including its type, title, and loaded subtitle tracks.
 
 ### `get-subtitles` {#get-subtitles}
 
-> Requires extension v1.20.0+
-
-Returns the subtitles currently loaded for a piece of media. By default it targets the active tab's media; pass a `mediaId` from [`get-bound-media`](#get-bound-media) to target specific media.
-Returns an empty list when no matching media is found or no subtitles are loaded.
-
-#### Request {#get-subtitles-request}
-
-```javascript
-{
-    "command": "get-subtitles",
-    // Message ID to correlate with asbplayer's response
-    "messageId": "2d7e8a1b-9c4f-4e3a-8b6d-1f0c5a2e9d7b",
-    "body": {
-        // Optional media id from `get-bound-media`. Defaults to the active tab when omitted.
-        "mediaId": "a1b2c3d4e5f6",
-        // Optional track numbers from `get-bound-media`. Returns all loaded tracks when omitted.
-        "trackNumbers": [0]
-    }
-}
-```
-
-#### Response {#get-subtitles-response}
-
-```javascript
-{
-    "command": "response",
-    // Same message ID received in request
-    "messageId": "2d7e8a1b-9c4f-4e3a-8b6d-1f0c5a2e9d7b",
-    "body": {
-        // Loaded subtitles. `start`/`end` are in milliseconds; `track` is the loaded track number.
-        "subtitles": [
-            { "text": "Hello", "start": 1000, "end": 2000, "track": 0 }
-        ]
-    }
-}
-```
+Returns loaded subtitles. Pass `mediaId` and optional `trackNumbers` to select a specific media and tracks.
 
 ## HTTP-based API {#http-based-api}
 
-The WebSocket server also implements an HTTP-based API which can trigger the commands above.
+The local server also provides HTTP equivalents:
 
-- `POST asbplayer/load-subtitles` ([script](https://github.com/asbplayer/asbplayer/blob/main/scripts/web-socket-server/cli/load-subtitles))
-- `POST asbplayer/seek` (optional `mediaId` in the request body) ([script](https://github.com/asbplayer/asbplayer/blob/main/scripts/web-socket-server/cli/seek))
-- `GET asbplayer/bound-media` ([script](https://github.com/asbplayer/asbplayer/blob/main/scripts/web-socket-server/cli/bound-media))
-- `GET asbplayer/subtitles` (optional `?mediaId=...&trackNumbers=0,1`) ([script](https://github.com/asbplayer/asbplayer/blob/main/scripts/web-socket-server/cli/subtitles))
+- `POST asbplayer/load-subtitles`
+- `POST asbplayer/seek`
+- `GET asbplayer/bound-media`
+- `GET asbplayer/subtitles`
 
-## AnkiConnect proxy {#ankiconnect-proxy}
-
-It also functions as an AnkiConnect proxy that allows `addNote` requests to be enriched with asbplayer-provided context, such as audio and screenshots.
-
-The proxy passes through all AnkiConnect requests as-is except for `addNote`. The proxy's specific behavior in the case of `addNote` depends on the value of `POST_MINE_ACTION` in the configuration documented below.
-
-## Server configuration {#server-configuration}
-
-The server is configured with an `.env` file placed next to it in the same directory. Below is an example file with explanation.
-
-```
-# Port that the proxy will listen on
-PORT=8766
-
-# AnkiConnect URL
-ANKI_CONNECT_URL=http://127.0.0.1:8765
-
-# Action for asbplayer to take when the proxy receives an addNote request
-# 0 = 'None'
-# 1 = 'Open Anki dialog'
-# 2 = 'Update last card' (updates last card with asbplayer media AFTER passing through original addNote request)
-# 3 = 'Export card'
-POST_MINE_ACTION=2
-```
+See the [WebSocket server guide](../guides/web-socket-server) for setup.

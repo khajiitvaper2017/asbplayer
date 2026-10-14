@@ -94,8 +94,7 @@ import type { FileWithId } from '@project/common/file-selector';
 import { DefaultFileSelector } from '@project/common/file-selector';
 
 const latestExtensionVersion = '1.16.0';
-const extensionUrl =
-    'https://chromewebstore.google.com/detail/asbplayer-language-learni/hkledmpjpaehamkiehglnbelcpdflcab';
+const extensionUrl = 'https://github.com/khajiitvaper2017/asbplayer/releases';
 
 const useContentStyles = makeStyles<Theme, ContentProps>((theme) => ({
     content: {

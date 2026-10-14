@@ -14,7 +14,7 @@ import { ExtensionSettingsStorage } from '@/services/extension-settings-storage'
 import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-provider';
 import { configureExtensionLogProvider } from '@/services/extension-log-provider';
 
-const matches = ['*://app.asbplayer.dev/*'];
+const matches = ['*://asbplayer-jiten.pages.dev/asbplayer/*'];
 
 if (import.meta.env.DEV) {
     matches.push('*://localhost/*');

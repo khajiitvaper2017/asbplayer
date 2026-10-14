@@ -465,7 +465,7 @@ const MiscSettingTab: React.FC<Props> = ({
                                     <Tooltip title={t('settings.subtitleRegexFilterDocs')}>
                                         <IconButton
                                             component="a"
-                                            href="https://docs.asbplayer.dev/docs/guides/subtitle-text-filtering"
+                                            href="https://asbplayer-jiten-docs.pages.dev/docs/guides/subtitle-text-filtering"
                                             target="_blank"
                                             rel="noreferrer"
                                             aria-label={t('settings.subtitleRegexFilterDocs')}

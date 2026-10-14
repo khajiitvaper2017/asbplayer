@@ -149,7 +149,7 @@ const NotificationUi = ({ bridge }: Props) => {
                                     color="primary"
                                     target="_blank"
                                     rel="noreferrer"
-                                    href={`https://github.com/asbplayer/asbplayer/releases/tag/v${newVersion}`}
+                                    href="https://github.com/khajiitvaper2017/asbplayer/releases"
                                 >
                                     release notes
                                 </Link>,

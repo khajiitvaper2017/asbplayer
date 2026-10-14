@@ -51,7 +51,7 @@ const WelcomeMessage: React.FC<{ className: string }> = ({ className }) => {
                                 color="primary"
                                 target="_blank"
                                 rel="noreferrer"
-                                href={'https://docs.asbplayer.dev/docs/intro/'}
+                                href={'https://asbplayer-jiten-docs.pages.dev/docs/intro/'}
                             >
                                 readme
                             </Link>,

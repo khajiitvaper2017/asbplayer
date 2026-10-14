@@ -275,7 +275,7 @@ export default function Bar({
                 }}
             >
                 <List className={classes.menu} onMouseLeave={handleMenuClose} dense>
-                    <Link href="https://docs.asbplayer.dev/docs/intro">
+                    <Link href="https://asbplayer-jiten-docs.pages.dev/docs/intro">
                         <ListItem disablePadding>
                             <ListItemButton>
                                 <ListItemIcon>
@@ -285,7 +285,7 @@ export default function Bar({
                             </ListItemButton>
                         </ListItem>
                     </Link>
-                    <Link href="https://github.com/asbplayer/asbplayer/issues">
+                    <Link href="https://github.com/khajiitvaper2017/asbplayer/issues">
                         <ListItem disablePadding>
                             <ListItemButton>
                                 <ListItemIcon>

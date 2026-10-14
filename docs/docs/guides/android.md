@@ -26,7 +26,7 @@ Below are Android browsers where asbplayer can be installed.
 
 ### Firefox for Android {#firefox-for-android}
 
-Install asbplayer from the [AMO page](https://addons.mozilla.org/en-US/android/addon/asbplayer-android/). Firefox for Android suffers from the same limitations as Firefox - it's not possible to record audio from DRM-protected streams.
+Install asbplayer from the [GitHub releases](https://github.com/khajiitvaper2017/asbplayer/releases). Firefox for Android suffers from the same limitations as Firefox - it's not possible to record audio from DRM-protected streams.
 
 ### Edge Canary {#edge-canary}
 
@@ -39,8 +39,4 @@ To install asbplayer on Edge Canary:
 
 ### Kiwi Browser (discontinued) {#kiwi-browser-discontinued}
 
-Kiwi Browser is a Chromium-based mobile browser that can run extensions. However, it's development has been discontinued and the only way to install it is from the [GitHub page](https://github.com/kiwibrowser/src.next/releases). Once Kiwi Browser is installed, asbplayer can be installed from the Chrome [web store](https://chromewebstore.google.com/detail/asbplayer-language-learni/hkledmpjpaehamkiehglnbelcpdflcab).
-
-## Anki integration {#anki-integration}
-
-Install [AnkiConnect Android](https://github.com/KamWithK/AnkiconnectAndroid) for Anki integration.
+Kiwi Browser is a Chromium-based mobile browser that can run extensions. However, its development has been discontinued.

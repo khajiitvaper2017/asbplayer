@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const DOCS_BASE_URL = 'https://docs.asbplayer.dev';
+export const DOCS_BASE_URL = 'https://asbplayer-jiten-docs.pages.dev';
 export const DEFAULT_PREFIX = 'New blog post:';
 export const COMPONENTS_TEXT_LIMIT = 4000;
 export const MESSAGE_FLAGS = (1 << 15) | (1 << 2); // IS_COMPONENTS_V2 | SUPPRESS_EMBEDS

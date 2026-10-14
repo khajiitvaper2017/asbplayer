@@ -26,7 +26,7 @@
         "typescript": "catalog:",
         "vite": "^8.2.2"
     },
-    "homepage": "https://app.asbplayer.dev",
+    "homepage": "https://asbplayer-jiten.pages.dev/asbplayer",
     "scripts": {
         "start": "VITE_APP_VERSION_REPO_PATH=\"commit/$(git rev-parse --short HEAD)\" vite",
         "verify": "../scripts/loc/loc-keys-match && tsc && jest",

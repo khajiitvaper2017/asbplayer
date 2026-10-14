@@ -140,7 +140,7 @@ export default function llmsTxtPlugin(context: LoadContext): Plugin {
       }
       lines.push("", "## Optional", "");
       lines.push(`- [Blog](${url}${baseUrl}blog)`);
-      lines.push("- [GitHub](https://github.com/asbplayer/asbplayer)");
+      lines.push("- [GitHub](https://github.com/khajiitvaper2017/asbplayer/tree/jiten-fork)");
       lines.push("");
 
       fs.writeFileSync(path.join(outDir, "llms.txt"), lines.join("\n"));

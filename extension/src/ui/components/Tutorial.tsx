@@ -208,7 +208,7 @@ const FinishedDialog: React.FC<{ open: boolean; onClose: () => void }> = ({ open
                             Settings
                         </Link>,
                         <p key={1} />,
-                        <Link href="https://docs.asbplayer.dev/docs/intro/" target="_blank" rel="noreferrer" key={2}>
+                        <Link href="https://asbplayer-jiten-docs.pages.dev/docs/intro/" target="_blank" rel="noreferrer" key={2}>
                             user guide
                         </Link>,
                     ]}

@@ -6,8 +6,8 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd());
-    const domain = env.VITE_APP_DOMAIN || 'app.asbplayer.dev';
-    const base = env.VITE_APP_BASE_PATH || '/';
+    const domain = env.VITE_APP_DOMAIN || 'asbplayer-jiten.pages.dev';
+    const base = env.VITE_APP_BASE_PATH || '/asbplayer/';
     return {
         base,
         resolve: {

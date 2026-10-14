@@ -21,7 +21,7 @@ import { configureExtensionLogProvider } from '@/services/extension-log-provider
 
 import './video.css';
 
-const excludeGlobs = ['*://app.asbplayer.dev/*'];
+const excludeGlobs = ['*://asbplayer-jiten.pages.dev/asbplayer/*'];
 
 if (import.meta.env.DEV) {
     excludeGlobs.push('*://localhost:3000/*');

@@ -85,7 +85,7 @@ export function PopupUi({ commands }: Props) {
     }, []);
 
     const handleOpenUserGuide = useCallback(() => {
-        void browser.tabs.create({ active: true, url: 'https://docs.asbplayer.dev/docs/intro' });
+        void browser.tabs.create({ active: true, url: 'https://asbplayer-jiten-docs.pages.dev/docs/intro' });
     }, []);
 
     const { requestingActiveTabPermission, tabRequestingActiveTabPermission } = useRequestingActiveTabPermission();

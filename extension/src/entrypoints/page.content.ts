@@ -2,7 +2,7 @@ import { asbError } from '@project/common/util/log';
 import { currentPageDelegate } from '@/services/pages';
 import { configureExtensionLogProvider } from '@/services/extension-log-provider';
 
-const excludeGlobs = ['*://app.asbplayer.dev/*'];
+const excludeGlobs = ['*://asbplayer-jiten.pages.dev/asbplayer/*'];
 
 if (import.meta.env.DEV) {
     excludeGlobs.push('*://localhost:3000/*');

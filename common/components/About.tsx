@@ -917,7 +917,7 @@ const About = ({ appVersionRepoPath, extensionVersion }: Props) => {
             <Box style={{ width: '100%', textAlign: 'center' }}>
                 <LogoIcon style={{ width: 48, height: 48 }} />
                 <br />
-                <Link variant="h5" href="https://github.com/asbplayer/asbplayer">
+                <Link variant="h5" href="https://github.com/khajiitvaper2017/asbplayer/tree/jiten-fork">
                     asbplayer
                 </Link>
                 <br />
@@ -925,7 +925,7 @@ const About = ({ appVersionRepoPath, extensionVersion }: Props) => {
                     <>
                         <Typography variant="caption">
                             {t('about.appVersion')}{' '}
-                            <Link href={`https://github.com/asbplayer/asbplayer/${appVersionRepoPath}`}>
+                            <Link href={`https://github.com/khajiitvaper2017/asbplayer/${appVersionRepoPath}`}>
                                 {appVersionRepoPath.split('/').at(-1)}
                             </Link>
                         </Typography>
@@ -935,7 +935,7 @@ const About = ({ appVersionRepoPath, extensionVersion }: Props) => {
                 {extensionVersion && (
                     <Typography variant="caption">
                         {t('about.extensionVersion')}{' '}
-                        <Link href={`https://github.com/asbplayer/asbplayer/releases/tag/v${extensionVersion}`}>
+                        <Link href="https://github.com/khajiitvaper2017/asbplayer/releases">
                             {extensionVersion}
                         </Link>
                     </Typography>

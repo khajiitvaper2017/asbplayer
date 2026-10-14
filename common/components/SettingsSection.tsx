@@ -22,7 +22,7 @@ const SettingsSection = React.forwardRef<HTMLSpanElement, Props>(function Settin
         >
             {children}
             {docs && (
-                <Link href={`https://docs.asbplayer.dev/${docs}`} target="_blank">
+                <Link href={`https://asbplayer-jiten-docs.pages.dev/${docs}`} target="_blank">
                     <IconButton>
                         <InfoIcon />
                     </IconButton>
