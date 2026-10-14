@@ -602,8 +602,6 @@
         "dictionaryAnkiSelectFields": "Seleziona campi Anki da cercare...",
         "dictionaryAnkiSentenceTokenMatchStrategy": "Strategia di ricerca nel campo frase",
         "dictionaryAnkiMatureCutoff": "Stabilità/intervallo Anki maturo (giorni)",
-        "dictionaryAnkiTreatSuspended": "Tratta le carte Anki sospese come",
-        "dictionaryAnkiTreatSuspendedNormal": "Normale",
         "dictionaryWaniKaniSection": "WaniKani",
         "dictionaryWaniKaniApiToken": "WaniKani API token",
         "dictionaryWaniKaniApiTokenHelperText": "Instructions to get an API token are <0>here</0>.",

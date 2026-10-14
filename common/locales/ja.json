@@ -602,8 +602,6 @@
         "dictionaryAnkiSelectFields": "検索対象のAnkiフィールドを選択…",
         "dictionaryAnkiSentenceTokenMatchStrategy": "文章フィールドの検索戦略",
         "dictionaryAnkiMatureCutoff": "熟知間隔（日）",
-        "dictionaryAnkiTreatSuspended": "休止中のカードを次ように扱います",
-        "dictionaryAnkiTreatSuspendedNormal": "普通",
         "dictionaryWaniKaniSection": "WaniKani",
         "dictionaryWaniKaniApiToken": "WaniKani API token",
         "dictionaryWaniKaniApiTokenHelperText": "Instructions to get an API token are <0>here</0>.",

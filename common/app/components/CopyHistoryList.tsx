@@ -15,7 +15,6 @@ import ListItemText from '@mui/material/ListItemText';
 import Popover from '@mui/material/Popover';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import Tooltip from '@project/common/components/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -31,7 +30,6 @@ interface CopyHistoryListProps {
     onClose: () => void;
     onDelete: (item: CopyHistoryItem) => void;
     onDeleteAll: () => void;
-    onAnki: (item: CopyHistoryItem) => void;
     onSelect?: (item: CopyHistoryItem) => void;
     onClipAudio: (item: CopyHistoryItem) => void;
     onDownloadImage: (item: CopyHistoryItem) => void;
@@ -244,7 +242,6 @@ export default function CopyHistoryList({
     onDelete,
     onDeleteAll,
     onDownloadSectionAsSrt,
-    onAnki,
 }: CopyHistoryListProps) {
     const classes = useStyles();
     const listContainerRef = useRef<HTMLDivElement | null>(null);
@@ -354,13 +351,6 @@ export default function CopyHistoryList({
                     className={classes.listItem}
                     classes={{ gutters: classes.listItemGutters }}
                 >
-                    <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
-                        <Tooltip title={t('copyHistory.exportToAnki')}>
-                            <IconButton onClick={() => onAnki(item)}>
-                                <NoteAddIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </ListItemIcon>
                     <ListItemIcon classes={{ root: classes.listItemIconRoot }}>
                         <IconButton onClick={(e) => handleMenu(e, item)}>
                             <MoreVertIcon fontSize="small" />

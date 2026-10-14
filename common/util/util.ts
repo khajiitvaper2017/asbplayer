@@ -1083,7 +1083,6 @@ const tokenComparators: TokenComparators = {
     gloss: (a, b) => a === b,
     pitchAccent: (a, b) => a === b,
     groupingKey: (a, b) => a === b,
-    lemmasGroupingKey: (a, b) => a === b,
     externalCandidateStatuses: (a, b) => arrayEquals(a, b),
 } satisfies Required<TokenComparators>;
 
@@ -1100,25 +1099,6 @@ const areTokensEqual = (aToken: Token, bToken: Token) => {
     }
     return true;
 };
-
-/**
- * We prefer the highest status for a given token (e.g. duplicate anki cards)
- */
-export function getTokenStatus(
-    statuses: TokenStatusInfo[],
-    dictionaryAnkiTreatSuspended: TokenStatus | 'NORMAL'
-): TokenStatus {
-    if (statuses.length && dictionaryAnkiTreatSuspended !== 'NORMAL') {
-        const unsuspended = statuses.filter((status) => !status.suspended);
-        if (!unsuspended.length) return dictionaryAnkiTreatSuspended;
-        statuses = unsuspended;
-    }
-    if (statuses.some((c) => c.status === TokenStatus.MATURE)) return TokenStatus.MATURE;
-    if (statuses.some((c) => c.status === TokenStatus.YOUNG)) return TokenStatus.YOUNG;
-    if (statuses.some((c) => c.status === TokenStatus.GRADUATED)) return TokenStatus.GRADUATED;
-    if (statuses.some((c) => c.status === TokenStatus.LEARNING)) return TokenStatus.LEARNING;
-    return TokenStatus.UNKNOWN;
-}
 
 export function dedupeTokenStatusInfos(statuses: TokenStatusInfo[]): TokenStatusInfo[] | undefined {
     if (!statuses.length) return;

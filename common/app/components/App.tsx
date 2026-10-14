@@ -1985,7 +1985,6 @@ function App({
                                 onDownloadImage={handleDownloadImage}
                                 onDownloadSectionAsSrt={handleDownloadCopyHistorySectionAsSrt}
                                 onSelect={handleSelectCopyHistoryItem}
-                                onAnki={handleAnki}
                             />
                             {ankiDialogCard && (
                                 <AnkiDialog

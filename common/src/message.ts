@@ -728,7 +728,7 @@ export interface GrantedActiveTabPermissionMessage extends Message {
     readonly command: 'granted-active-tab-permission';
 }
 
-export type SidePanelLocation = 'mining-history' | 'statistics';
+export type SidePanelLocation = 'mining-history';
 
 export interface ToggleSidePanelMessage extends Message {
     readonly command: 'toggle-side-panel';
@@ -738,10 +738,6 @@ export interface ToggleSidePanelMessage extends Message {
 export interface OpenSidePanelLocationMessage extends Message {
     readonly command: 'open-side-panel-location';
     readonly location: SidePanelLocation;
-}
-
-export interface OpenStatisticsMessage extends Message {
-    readonly command: 'open-statistics';
 }
 
 export interface CloseSidePanelMessage extends Message {

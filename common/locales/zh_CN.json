@@ -602,8 +602,6 @@
         "dictionaryAnkiSelectFields": "选择需搜索的字段...",
         "dictionaryAnkiSentenceTokenMatchStrategy": "例句字段匹配策略",
         "dictionaryAnkiMatureCutoff": "Anki 成熟卡片判定标准（天）",
-        "dictionaryAnkiTreatSuspended": "被暂停卡片的处理方式",
-        "dictionaryAnkiTreatSuspendedNormal": "正常处理",
         "dictionaryWaniKaniSection": "WaniKani",
         "dictionaryWaniKaniApiToken": "WaniKani API token",
         "dictionaryWaniKaniApiTokenHelperText": "Instructions to get an API token are <0>here</0>.",
