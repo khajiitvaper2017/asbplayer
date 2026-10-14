@@ -56,6 +56,6 @@ jobs:
                     --target "${GITHUB_SHA}" \
                     --title "asbplayer v${VERSION}" \
                     --generate-notes \
-                    extension/.output/asbplayer-${VERSION}-chrome.zip \
-                    extension/.output/asbplayer-${VERSION}-firefox.zip \
-                    extension/.output/asbplayer-${VERSION}-firefox-android.zip
+                    extension/.output/asbplayer-jiten-${VERSION}-chrome.zip \
+                    extension/.output/asbplayer-jiten-${VERSION}-firefox.zip \
+                    extension/.output/asbplayer-jiten-${VERSION}-firefox-android.zip
