@@ -198,7 +198,7 @@ export const defaultSettings: AsbplayerSettings = {
     alwaysUseSubtitleForSentence: false,
     tabName: 'asbplayer',
     miningHistoryStorageLimit: 25,
-    clickToMineDefaultAction: PostMineAction.showAnkiDialog,
+    clickToMineDefaultAction: PostMineAction.mineNewJitenWords,
     postMiningPlaybackState: PostMinePlayback.remember,
     updateLastCardForSameSubtitle: false,
     themeType: 'dark',

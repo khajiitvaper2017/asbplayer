@@ -302,7 +302,7 @@ export default class Binding {
         this.recordMedia = true;
         this.takeScreenshot = true;
         this.cleanScreenshot = true;
-        this.clickToMineDefaultAction = PostMineAction.showAnkiDialog;
+        this.clickToMineDefaultAction = PostMineAction.mineNewJitenWords;
         this.audioPaddingStart = 0;
         this.audioPaddingEnd = 500;
         this.maxImageWidth = 0;
