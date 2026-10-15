@@ -107,7 +107,7 @@ The full git history is available locally.
 
 ## Documents to audit
 
-Inventory everything first, then audit each: `README.md`, all of `docs/docs/**` (`intro.md`, `reference/settings.md`, `guides/*`, `common-issues.md`, `compatibility.md`, `contributing.md`, `acknowledgements.md`, `getting-started/*`), `docs/blog/*.mdx`, `plugins/anki/README.md`, and any other package READMEs.
+Inventory everything first, then audit each: `README.md`, all of `docs/docs/**` (`intro.md`, `reference/settings.md`, `guides/*`, `common-issues.md`, `compatibility.md`, `contributing.md`, `acknowledgements.md`, `getting-started/*`), `docs/blog/*.mdx`, and any other package READMEs.
 
 ## Detection procedure
 
