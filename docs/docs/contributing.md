@@ -4,7 +4,7 @@ sidebar_position: 6
 
 # Contributing {#contributing}
 
-Contributions to the project are always welcome. asbplayer will never be complete, and there are a ton of [issues](https://github.com/asbplayer/asbplayer/issues) to work on. [Many contributions](https://github.com/asbplayer/asbplayer/pulls?q=is%3Apr+is%3Aclosed) have already been made, including some very large features.
+Contributions to the project are always welcome. asbplayer-jiten will never be complete, and there are a ton of [issues](https://github.com/asbplayer/asbplayer/issues) to work on. [Many contributions](https://github.com/asbplayer/asbplayer/pulls?q=is%3Apr+is%3Aclosed) have already been made, including some very large features.
 
 ## AI-assisted contributions {#ai-assisted-contributions}
 

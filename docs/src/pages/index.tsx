@@ -77,7 +77,7 @@ function HomepageHeader() {
 
 export default function Home(): ReactNode {
     return (
-        <Layout title={`asbplayer docs`} description="asbplayer docs">
+        <Layout title={`asbplayer-jiten docs`} description="asbplayer-jiten docs">
             <HomepageHeader />
             <main className="container">
                 <div className={clsx('row', styles.featureSection)}>
@@ -123,8 +123,7 @@ export default function Home(): ReactNode {
                     <div className="col col--12 text--center">
                         <h1>By language learners, for language learners</h1>
                         <p>
-                            asbplayer is a free, open source, community-driven project, used by thousands of language
-                            learners.
+                            asbplayer-jiten is free and open source. It is based on asbplayer.
                         </p>
                         <Link className="button button--secondary button--lg" to="/docs/intro">
                             Learn more

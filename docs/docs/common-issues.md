@@ -44,7 +44,7 @@ Use 100% browser zoom. Cropping can be disabled in the extension settings.
 
 ## Audio recording repeatedly asks for permission {#repeated-audio-permission-prompts}
 
-Disable extensions that control page audio, such as Volume Master, and grant recording permission to asbplayer.
+Disable extensions that control page audio, such as Volume Master, and grant recording permission to asbplayer-jiten.
 
 ## Audio recordings are garbled {#garbled-audio-recordings}
 

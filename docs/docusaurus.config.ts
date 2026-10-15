@@ -3,7 +3,7 @@ import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
-  title: "asbplayer",
+  title: "asbplayer-jiten",
   tagline: "Learn languages with subtitles",
   favicon: "img/favicon.ico",
   url: "https://asbplayer-jiten-docs.pages.dev",
@@ -53,9 +53,9 @@ const config: Config = {
       respectPrefersColorScheme: false,
     },
     navbar: {
-      title: "asbplayer",
+      title: "asbplayer-jiten",
       logo: {
-        alt: "asbplayer logo",
+        alt: "asbplayer-jiten logo",
         src: "img/logo.png",
       },
       items: [

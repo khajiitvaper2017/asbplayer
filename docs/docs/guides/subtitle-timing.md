@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Subtitle timing {#subtitle-timing}
 
-Subtitle files will very often not be aligned to the video source you load them into. To work around this, asbplayer provides ways to manually adjust subtitle timing.
+Subtitle files will very often not be aligned to the video source you load them into. To work around this, asbplayer-jiten provides ways to manually adjust subtitle timing.
 
 ## Keyboard shortcuts {#keyboard-shortcuts}
 

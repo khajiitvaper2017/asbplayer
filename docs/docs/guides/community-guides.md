@@ -4,7 +4,7 @@ sidebar_position: 6
 
 # Community guides {#community-guides}
 
-Below are guides from the community demonstrating a variety of ways to use asbplayer.
+Below are guides from the community demonstrating a variety of ways to use asbplayer-jiten.
 
 ## Text guides {#text-guides}
 

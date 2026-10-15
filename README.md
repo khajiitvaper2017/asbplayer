@@ -1,4 +1,4 @@
-# asbplayer Jiten fork
+# asbplayer-jiten
 
 This fork is for mining words from videos into [Jiten](https://jiten.moe/).
 
@@ -27,4 +27,4 @@ This is a fork of [asbplayer](https://github.com/asbplayer/asbplayer). See the o
 
 ## License
 
-asbplayer is licensed under the GNU Affero General Public License version 3 or later (AGPL-3.0-or-later). Portions of this software are licensed under the MIT License.
+asbplayer-jiten is licensed under the GNU Affero General Public License version 3 or later (AGPL-3.0-or-later). Portions of this software are licensed under the MIT License.

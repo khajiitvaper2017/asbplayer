@@ -2,11 +2,11 @@
 sidebar_position: 1
 ---
 
-# What is asbplayer? {#what-is-asbplayer}
+# What is asbplayer-jiten? {#what-is-asbplayer}
 
 ## A video language-learning assistant {#a-language-learning-assistant}
 
-**asbplayer** helps you learn languages through subtitled videos and Jiten. With asbplayer you can:
+**asbplayer-jiten** helps you learn languages through subtitled videos and Jiten. With asbplayer-jiten you can:
 
 - **Mine subtitle sentences to Jiten** with optional audio and image attachments.
 - **Load text-selectable subtitles** onto local and streaming video.
@@ -19,7 +19,7 @@ sidebar_position: 1
 
 The [website](https://asbplayer-jiten.pages.dev/asbplayer) works with local video files. The [browser extension](https://github.com/khajiitvaper2017/asbplayer/releases) works with streaming video. They can be used independently or together.
 
-## Why use asbplayer? {#why-use-asbplayer}
+## Why use asbplayer-jiten? {#why-use-asbplayer}
 
 - You want text-selectable subtitles while watching video.
 - You want to send multimedia sentence context to Jiten.

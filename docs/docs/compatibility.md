@@ -29,7 +29,7 @@ sidebar_position: 7
 ### Streaming services and subtitle detection {#streaming-services-and-subtitle-detection}
 
 :::tip
-For streaming services not listed below, asbplayer can attempt a best-effort generic subtitle detection which works for ~85% of websites.
+For streaming services not listed below, asbplayer-jiten can attempt a best-effort generic subtitle detection which works for ~85% of websites.
 
 You can always request a dedicated parser for any website, even if the generic parser detects subtitles, through an [issue](https://github.com/asbplayer/asbplayer/issues) or submit your own implementation in a [PR](https://github.com/asbplayer/asbplayer/pulls) on GitHub.
 :::
@@ -52,7 +52,7 @@ You can always request a dedicated parser for any website, even if the generic p
 | NRK TV                  |                                                                                            ✓                                                                                             |
 | OK Ru                   |                                                                                            ✓                                                                                             |
 | osnplus                 |                                             Compatibility with osnplus is currently unknown. Reach out if you have more information on this.                                             |
-| Plex                    | Supports external subtitles. As for internal subtitles, first select them from Plex UI to make them selectable from asbplayer. Configure custom domains from the page-specific settings. |
+| Plex                    | Supports external subtitles. As for internal subtitles, first select them from Plex UI to make them selectable from asbplayer-jiten. Configure custom domains from the page-specific settings. |
 | Rakuten Viki            |                                                                                            ✓                                                                                             |
 | Rutube                  |                                                                                            ✓                                                                                             |
 | Stremio                 |                                                                                            ✓                                                                                             |

@@ -6,11 +6,11 @@ import CodeBlock from '@theme/CodeBlock'; // Empty fenced code blocks lose their
 
 # Subtitle text filtering {#subtitle-text-filtering}
 
-If you'd like to filter out specific instances subtitle text, one way to do so is by using a regular expression (regex). asbplayer can match any sequence following a specified regex pattern and remove the matches.
+If you'd like to filter out specific instances subtitle text, one way to do so is by using a regular expression (regex). asbplayer-jiten can match any sequence following a specified regex pattern and remove the matches.
 
 ## Configure the regex filter {#configure-the-regex-filter}
 
-Under the [Subtitles → Text processing](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#subtitle-appearance) section in asbplayer settings, locate the "Subtitle regex filter" textbox. Enter an appropriate regex to filter desired content.
+Under the [Subtitles → Text processing](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#subtitle-appearance) section in asbplayer-jiten settings, locate the "Subtitle regex filter" textbox. Enter an appropriate regex to filter desired content.
 You can replace filtered content similarly by entering a string into the "Subtitle regex filter text replacement" textbox. Leaving this blank will simply remove the content.
 
 ### Remove speaker names {#remove-speaker-names}
@@ -231,9 +231,9 @@ Leave "Subtitle regex filter text replacement" blank. This combines the removal 
 
 ## Invisible characters and blank subtitles {#invisible-characters}
 
-An apparently empty subtitle can contain invisible characters such as an LRM. asbplayer drops text cues containing only whitespace, control characters, or default-ignorable Unicode characters after parsing and filtering. Direction marks within meaningful text are preserved unless your regex explicitly removes them.
+An apparently empty subtitle can contain invisible characters such as an LRM. asbplayer-jiten drops text cues containing only whitespace, control characters, or default-ignorable Unicode characters after parsing and filtering. Direction marks within meaningful text are preserved unless your regex explicitly removes them.
 
-Invisible characters at the beginning or end of a cue can prevent an anchored pattern such as `^\[.+\]$` from matching. If the pattern does not match, asbplayer retries it without surrounding whitespace and invisible controls, but only drops the cue if that retry leaves no meaningful text. For example, `[THUNDER]` followed by an LRM is removed with this pattern and an empty replacement. The retry preserves the original cue when its replacement would contain meaningful text.
+Invisible characters at the beginning or end of a cue can prevent an anchored pattern such as `^\[.+\]$` from matching. If the pattern does not match, asbplayer-jiten retries it without surrounding whitespace and invisible controls, but only drops the cue if that retry leaves no meaningful text. For example, `[THUNDER]` followed by an LRM is removed with this pattern and an empty replacement. The retry preserves the original cue when its replacement would contain meaningful text.
 
 When combining an anchored pattern with a bidi-removal alternative, remember that replacements happen in one pass. For example, `^\[.+\]$|\u200E` applied to `[THUNDER]` followed by an LRM removes the LRM, but does not retry the bracketed description afterward. To remove both in the same pass, use the unanchored `\[.+\]|\p{Bidi_Control}` with an empty replacement. This also removes bracketed descriptions within dialogue.
 

@@ -6,7 +6,7 @@ labels: ''
 assignees: ''
 ---
 
-Before submitting a feature request, please look through the asbplayer readme (https://github.com/khajiitvaper2017/asbplayer/tree/jiten-fork), docs (https://docs.asbplayer.dev/docs/reference/settings), and settings (https://asbplayer-jiten.pages.dev/asbplayer/?view=settings)
+Before submitting a feature request, please look through the asbplayer-jiten readme (https://github.com/khajiitvaper2017/asbplayer/tree/jiten-fork), docs (https://docs.asbplayer.dev/docs/reference/settings), and settings (https://asbplayer-jiten.pages.dev/asbplayer/?view=settings)
 to be sure that your feature request isn't already implemented.
 
 **Is your feature request related to a problem? Please describe.**

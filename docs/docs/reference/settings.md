@@ -10,7 +10,7 @@ Choose how to save words and attach sentences, pictures, and audio. See [Mining 
 
 ### Jiten API key {#jiten-api-key}
 
-Connects asbplayer to your Jiten account. Copy the key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key).
+Connects asbplayer-jiten to your Jiten account. Copy the key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key).
 
 ### Mining deck {#jiten-mining-deck}
 

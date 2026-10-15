@@ -6,11 +6,11 @@ import NoteAddIcon from '@site/src/components/NoteAddIcon';
 
 # Mining subtitles {#mining-subtitles}
 
-asbplayer's mining path is built around [Jiten](https://jiten.moe/). It combines a subtitle sentence with optional audio and images, then sends the result to Jiten.
+asbplayer-jiten's mining path is built around [Jiten](https://jiten.moe/). It combines a subtitle sentence with optional audio and images, then sends the result to Jiten.
 
 ## Configure Jiten {#configure-jiten}
 
-1. Open [asbplayer's settings](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings).
+1. Open [asbplayer-jiten's settings](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings).
 2. Set **Mining → Mining destination** to **Jiten**.
 3. Open the **Jiten** settings tab.
 4. Paste the API key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key).

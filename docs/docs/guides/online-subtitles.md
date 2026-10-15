@@ -4,7 +4,7 @@ sidebar_position: 11
 
 # Online subtitles {#online-subtitles}
 
-Instead of hunting for subtitle files by hand, you can search for them and load them straight from asbplayer. Subtitles are provided by [Jimaku](https://jimaku.cc), a community subtitle site mostly covering anime and Japanese drama.
+Instead of hunting for subtitle files by hand, you can search for them and load them straight from asbplayer-jiten. Subtitles are provided by [Jimaku](https://jimaku.cc), a community subtitle site mostly covering anime and Japanese drama.
 
 ## Usage {#usage}
 
@@ -27,7 +27,7 @@ The key is saved automatically, so you only need to do this once. It is hidden b
 
 ## Automatic episode detection {#episode-detection}
 
-For series, asbplayer tries to read the episode number from the page title (for example `S01E05`, `EP05`, or `第5話`/`第五集`). If one is found:
+For series, asbplayer-jiten tries to read the episode number from the page title (for example `S01E05`, `EP05`, or `第5話`/`第五集`). If one is found:
 
 - the episode marker is removed from the search term, so you search for the series name only;
 - the file list is filtered to that episode, shown as an **EP N** chip. Click the chip's ✕ to see all files.
@@ -36,7 +36,7 @@ If the chosen episode has no usable subtitle files, the full list is shown inste
 
 ### Custom episode regex {#episode-regex}
 
-Some websites use title formats that the built-in rules don't recognize, so no episode is detected and you see every file in the series. A custom regex teaches asbplayer how to read the episode on those sites.
+Some websites use title formats that the built-in rules don't recognize, so no episode is detected and you see every file in the series. A custom regex teaches asbplayer-jiten how to read the episode on those sites.
 
 Once you've opened a series, click the gear icon next to the file list header to show the **Custom episode regex** field. The gear is highlighted while a regex is set.
 

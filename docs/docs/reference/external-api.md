@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # External API {#external-api}
 
-asbplayer exposes a WebSocket interface through the bundled local server. The API controls subtitles and playback; Jiten mining is configured in asbplayer and is not an AnkiConnect proxy.
+asbplayer-jiten exposes a WebSocket interface through the bundled local server. The API controls subtitles and playback; Jiten mining is configured in asbplayer-jiten and is not an AnkiConnect proxy.
 
 ## WebSocket commands {#websocket-commands}
 
@@ -60,7 +60,7 @@ Seeks the active media, or the media identified by `mediaId`.
 
 ### `get-bound-media` {#get-bound-media}
 
-Returns the media currently tracked by asbplayer, including its type, title, and loaded subtitle tracks.
+Returns the media currently tracked by asbplayer-jiten, including its type, title, and loaded subtitle tracks.
 
 ### `get-subtitles` {#get-subtitles}
 

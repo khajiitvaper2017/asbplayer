@@ -8,8 +8,8 @@ Save words to Jiten with sentences, pictures, and audio from your videos. You do
 
 ## Setup {#setup}
 
-1. Install Jiten Reader and [load subtitles](../getting-started/loading-subtitles) in asbplayer.
-2. Open the **Jiten** tab in asbplayer settings. Copy your API key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key) and paste it into **Jiten API key**.
+1. Install Jiten Reader and [load subtitles](../getting-started/loading-subtitles) in asbplayer-jiten.
+2. Open the **Jiten** tab in asbplayer-jiten settings. Copy your API key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key) and paste it into **Jiten API key**.
 3. Choose a **Mining deck** for new words. Use the link below the selector to create a deck in Jiten.
 4. Use **Attach screenshot / video** and **Attach audio** to choose which media to send. Media uploads require Jiten+ or an eligible trial.
 
@@ -32,7 +32,7 @@ Open **Mining → Mining button default action** to choose what the **Mine Subti
 
 ## Save one word {#attach-context}
 
-Mine a word with Jiten Reader in asbplayer's subtitles. asbplayer automatically adds the sentence, picture, and audio to that word. You don't need to click another mining button.
+Mine a word with Jiten Reader in asbplayer-jiten's subtitles. asbplayer-jiten automatically adds the sentence, picture, and audio to that word. You don't need to click another mining button.
 
 This is on by default. Existing pictures and audio won't be replaced.
 
