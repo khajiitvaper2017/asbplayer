@@ -167,7 +167,9 @@ export default function JitenSettingsTab({ settings, onSettingChanged, onSetting
             />
             {status && (
                 <>
-                    <Typography>{t('jiten.tier', { tier: status.tier })}</Typography>
+                    <Typography>
+                        {t('jiten.tier', { tier: t(`jiten.tiers.${status.tier}`, { defaultValue: status.tier }) })}
+                    </Typography>
                     <Typography>
                         {t('jiten.storage', {
                             used: (status.quota.usedBytes / (1024 * 1024)).toFixed(1),
