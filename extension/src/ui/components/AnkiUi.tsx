@@ -104,8 +104,6 @@ export default function AnkiUi({ bridge }: Props) {
     );
     const jitenClient = useMemo(() => new JitenClient(undefined, jitenFetcher(bridge)), [bridge]);
     const dialogStateRef = useRef<AnkiDialogState>(undefined);
-    const openCardSelectDialogActionRef = useRef<() => void>(undefined);
-    const [initialCardSelectDialogOpen, setInitialCardSelectDialogOpen] = useState<boolean>(false);
 
     const savedState = useCallback(() => {
         const dialogState = dialogStateRef.current!;
@@ -162,10 +160,6 @@ export default function AnkiUi({ bridge }: Props) {
                 setInitialTimestampInterval(undefined);
                 setLastAppliedTimestampIntervalToText(undefined);
                 setLastAppliedTimestampIntervalToAudio(undefined);
-                if ((s as AnkiUiInitialState).cardSelectOpen) {
-                    openCardSelectDialogActionRef.current?.();
-                    setInitialCardSelectDialogOpen(true);
-                }
             } else if (s.type === 'resume') {
                 const state = s as AnkiUiResumeState;
                 setInitialTimestampInterval(state.initialTimestampInterval);
@@ -531,8 +525,6 @@ export default function AnkiUi({ bridge }: Props) {
                         showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
                         onDismissShowQuickSelectFtue={handleDismissShowQuickSelectFtue}
                         stateRef={dialogStateRef}
-                        openCardSelectDialogActionRef={openCardSelectDialogActionRef}
-                        initialCardSelectDialogOpen={initialCardSelectDialogOpen}
                         mp3Encoder={mp3Encoder}
                         lastSelectedExportMode={settings.lastSelectedAnkiExportMode}
                         inTutorial={inTutorial}

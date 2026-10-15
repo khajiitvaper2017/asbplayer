@@ -47,7 +47,6 @@ import type {
     SettingsUpdatedMessage,
     ShowAnkiUiAfterRerecordMessage,
     ShowAnkiUiMessage,
-    ShowCardSelectUiMessage,
     StartRecordingAudioViaCaptureStreamMessage,
     StartRecordingAudioWithTimeoutViaCaptureStreamMessage,
     StartRecordingMediaMessage,
@@ -1147,11 +1146,6 @@ export default class Binding {
                     case 'show-anki-ui': {
                         const showAnkiUiMessage = request.message as ShowAnkiUiMessage;
                         void this.ankiUiController.show(this, showAnkiUiMessage);
-                        break;
-                    }
-                    case 'show-card-select-ui': {
-                        const showCardSelectUiMessage = request.message as ShowCardSelectUiMessage;
-                        void this.ankiUiController.showCardSelect(this, showCardSelectUiMessage);
                         break;
                     }
                     case 'show-anki-ui-after-rerecord': {

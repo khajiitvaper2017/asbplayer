@@ -20,7 +20,6 @@ import type {
     OpenAsbplayerSettingsMessage,
     SettingsUpdatedMessage,
     ShowAnkiUiMessage,
-    ShowCardSelectUiMessage,
     VideoToExtensionCommand,
 } from '@project/common';
 import { PostMinePlayback } from '@project/common';
@@ -160,53 +159,6 @@ export default class AnkiUiController {
             miningDestination: destination,
             jitenPending,
             jitenResult,
-            inTutorial: this._inTutorial,
-            ...(await this._additionalUiState(context)),
-        };
-        client.updateState(state);
-    }
-
-    async showCardSelect(
-        context: Binding,
-        {
-            subtitle,
-            surroundingSubtitles,
-            image,
-            audio,
-            text,
-            definition,
-            word,
-            customFieldValues,
-        }: ShowCardSelectUiMessage
-    ) {
-        if (!this._settings) {
-            throw new Error('Unable to show card select UI because settings are missing.');
-        }
-
-        const capture =
-            this._settings.miningDestination === 'jiten'
-                ? await readJitenCapture(subtitle, surroundingSubtitles)
-                : undefined;
-        this._prepareShow(context);
-        const client = await this._client(context);
-        const state: AnkiUiInitialState = {
-            type: 'initial',
-            open: true,
-            cardSelectOpen: true,
-            canRerecord: true,
-            settings: this._settings,
-            source: sourceString(context.subtitleFileName(), subtitle.start),
-            url: context.url(subtitle.start, subtitle.end),
-            subtitle,
-            surroundingSubtitles,
-            image,
-            audio,
-            dialogRequestedTimestamp: context.currentTimeMs,
-            text,
-            word,
-            definition,
-            customFieldValues,
-            ...capture,
             inTutorial: this._inTutorial,
             ...(await this._additionalUiState(context)),
         };
