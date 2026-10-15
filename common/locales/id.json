@@ -447,6 +447,7 @@
         "subtitleAlignmentTop": "Atas",
         "showSubtitleListMiningButton": "Show mining button in subtitle list",
         "subtitleListTimestamps": "Subtitle list timestamps",
+        "subtitleListTimestampDecimalPlaces": "Time format",
         "subtitleAboveThumbnail": "Subtitle above thumbnail",
         "thumbnailPreview": "Show preview thumbnails",
         "subtitleBlur": "Takarir Buram",

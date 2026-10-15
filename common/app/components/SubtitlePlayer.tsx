@@ -204,6 +204,7 @@ interface SubtitleRowContext {
     compressed: boolean;
     showCopyButton: boolean;
     timestampDisplay: SubtitleListTimestampDisplay;
+    timestampDecimalPlaces: AsbplayerSettings['subtitleListTimestampDecimalPlaces'];
     disabledSubtitleTracks: { [track: number]: boolean };
     selectedSubtitleIndexes?: boolean[];
     highlightedJumpToSubtitleIndex?: number;
@@ -399,6 +400,7 @@ interface SubtitleRowCellsProps {
     compressed: boolean;
     showCopyButton: boolean;
     timestampDisplay: SubtitleListTimestampDisplay;
+    timestampDecimalPlaces: AsbplayerSettings['subtitleListTimestampDecimalPlaces'];
     onCopySubtitle: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, index: number) => void;
     onMouseOver?: (e: React.MouseEvent) => void;
     onMouseOut?: (e: React.MouseEvent) => void;
@@ -413,6 +415,7 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
     compressed,
     showCopyButton,
     timestampDisplay,
+    timestampDecimalPlaces,
     onCopySubtitle,
     onMouseOver,
     onMouseOut,
@@ -420,6 +423,10 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
     const classes = useSubtitleRowStyles();
     const { t } = useTranslation();
     const className = `${compressed ? classes.compressedSubtitle : classes.subtitle} asb-subtitles`.trim();
+    const formatTimestamp = (timestamp: string) =>
+        timestamp.replace(/\.\d+$/, (fraction) =>
+            timestampDecimalPlaces === 0 ? '' : fraction.slice(0, timestampDecimalPlaces + 1)
+        );
     const disabledClassName = disabled ? classes.disabledSubtitle : '';
     const content = subtitle.textImage ? (
         <SubtitleTextImage availableWidth={window.screen.availWidth / 2} subtitle={subtitle} scale={1} />
@@ -468,9 +475,9 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
                     <TableCell className={classes.timestamp}>
                         <div>
                             <span style={{ display: 'none' }}>.</span>
-                            <div>{`\n${subtitle.displayTime}\n`}</div>
+                            <div>{`\n${formatTimestamp(subtitle.displayTime)}\n`}</div>
                             {timestampDisplay === SubtitleListTimestampDisplay.startAndEnd && (
-                                <div>{`\n${subtitle.displayEndTime}\n`}</div>
+                                <div>{`\n${formatTimestamp(subtitle.displayEndTime)}\n`}</div>
                             )}
                             <span style={{ display: 'none' }}>.</span>
                         </div>
@@ -494,6 +501,7 @@ const renderSubtitleRow = (index: number, subtitle: DisplaySubtitleModel, contex
         compressed={context.compressed}
         showCopyButton={context.showCopyButton}
         timestampDisplay={context.timestampDisplay}
+        timestampDecimalPlaces={context.timestampDecimalPlaces}
         onCopySubtitle={context.onCopySubtitle}
         onMouseOver={context.onMouseOver}
         onMouseOut={context.onMouseOut}
@@ -1364,6 +1372,7 @@ export default function SubtitlePlayer({
             compressed,
             showCopyButton: showCopyButton && subtitleListCustomization.showMiningButton,
             timestampDisplay: subtitleListCustomization.timestampDisplay,
+            timestampDecimalPlaces: settings.subtitleListTimestampDecimalPlaces ?? 3,
             disabledSubtitleTracks,
             selectedSubtitleIndexes,
             highlightedJumpToSubtitleIndex,
@@ -1380,6 +1389,7 @@ export default function SubtitlePlayer({
             showCopyButton,
             subtitleListCustomization.showMiningButton,
             subtitleListCustomization.timestampDisplay,
+            settings.subtitleListTimestampDecimalPlaces,
             disabledSubtitleTracks,
             selectedSubtitleIndexes,
             highlightedJumpToSubtitleIndex,

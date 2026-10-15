@@ -447,6 +447,7 @@
         "subtitleAlignmentTop": "顶部对齐",
         "showSubtitleListMiningButton": "Show mining button in subtitle list",
         "subtitleListTimestamps": "Subtitle list timestamps",
+        "subtitleListTimestampDecimalPlaces": "Time format",
         "subtitleAboveThumbnail": "Subtitle above thumbnail",
         "thumbnailPreview": "Show preview thumbnails",
         "subtitleBlur": "字幕模糊处理",

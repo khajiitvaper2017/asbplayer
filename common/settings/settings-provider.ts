@@ -177,6 +177,7 @@ export const defaultSettings: AsbplayerSettings = {
     videoSubtitleSplitBehavior: VideoSubtitleSplitBehavior.rememberSplitPosition,
     showSubtitleListMiningButton: true,
     subtitleListTimestampDisplay: SubtitleListTimestampDisplay.startAndEnd,
+    subtitleListTimestampDecimalPlaces: 3,
     copyToClipboardOnMine: false,
     rememberSubtitleOffset: true,
     lastSubtitleOffset: 0,

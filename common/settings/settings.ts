@@ -109,6 +109,7 @@ export interface MiscSettings {
     readonly videoSubtitleSplitBehavior: VideoSubtitleSplitBehavior;
     readonly showSubtitleListMiningButton: boolean;
     readonly subtitleListTimestampDisplay: SubtitleListTimestampDisplay;
+    readonly subtitleListTimestampDecimalPlaces: 0 | 1 | 2 | 3;
     readonly copyToClipboardOnMine: boolean;
     readonly autoPausePreference: AutoPausePreference;
     readonly autoPauseResumeMode: AutoPauseResumeMode;

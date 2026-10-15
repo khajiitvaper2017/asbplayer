@@ -7,6 +7,7 @@ import FormLabel from '@mui/material/FormLabel';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Radio from '@mui/material/Radio';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import Tooltip from '@mui/material/Tooltip';
@@ -55,6 +56,7 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
     const {
         showSubtitleListMiningButton,
         subtitleListTimestampDisplay,
+        subtitleListTimestampDecimalPlaces,
         rememberSubtitleOffset,
         autoCopyCurrentSubtitle,
         autoCopyableTracks,
@@ -105,6 +107,29 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                             ))}
                         </RadioGroup>
                     </FormControl>
+                    <SettingsTextField
+                        select
+                        label={t('settings.subtitleListTimestampDecimalPlaces')}
+                        value={subtitleListTimestampDecimalPlaces}
+                        slotProps={{
+                            select: {
+                                inputProps: { 'aria-label': t('settings.subtitleListTimestampDecimalPlaces') },
+                            },
+                        }}
+                        disabled={subtitleListTimestampDisplay === SubtitleListTimestampDisplay.hidden}
+                        onChange={(event) =>
+                            onSettingChanged(
+                                'subtitleListTimestampDecimalPlaces',
+                                Number(event.target.value) as AsbplayerSettings['subtitleListTimestampDecimalPlaces']
+                            )
+                        }
+                    >
+                        {[0, 1, 2, 3].map((places) => (
+                            <MenuItem key={places} value={places}>
+                                {places === 0 ? '08:54' : `08:54.${'617'.slice(0, places)}`}
+                            </MenuItem>
+                        ))}
+                    </SettingsTextField>
                 </>
             )}
             {insideApp && (

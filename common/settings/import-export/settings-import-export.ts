@@ -390,6 +390,10 @@ const settingsSchema = {
         subtitleListTimestampDisplay: {
             type: 'string',
         },
+        subtitleListTimestampDecimalPlaces: {
+            type: 'integer',
+            enum: [0, 1, 2, 3],
+        },
         copyToClipboardOnMine: {
             type: 'boolean',
         },

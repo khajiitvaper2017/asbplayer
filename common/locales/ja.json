@@ -447,6 +447,7 @@
         "subtitleAlignmentTop": "上部",
         "showSubtitleListMiningButton": "Show mining button in subtitle list",
         "subtitleListTimestamps": "Subtitle list timestamps",
+        "subtitleListTimestampDecimalPlaces": "Time format",
         "subtitleAboveThumbnail": "字幕の上にサムネイルを表示",
         "thumbnailPreview": "ビデオタイムラインのサムネイルを表示",
         "subtitleBlur": "字幕のぼかし",

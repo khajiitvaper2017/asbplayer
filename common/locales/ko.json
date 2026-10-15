@@ -447,6 +447,7 @@
         "subtitleAlignmentTop": "상단",
         "showSubtitleListMiningButton": "Show mining button in subtitle list",
         "subtitleListTimestamps": "Subtitle list timestamps",
+        "subtitleListTimestampDecimalPlaces": "Time format",
         "subtitleAboveThumbnail": "Subtitle above thumbnail",
         "thumbnailPreview": "Show preview thumbnails",
         "subtitleBlur": "자막 블러 효과",
