@@ -280,6 +280,7 @@ export interface SeekRequest {
 
 interface Props {
     embedded?: boolean;
+    topControls?: React.ReactNode;
     disableKeyEvents?: boolean;
     settings: AsbplayerSettings;
     settingsProvider: SettingsProvider;
@@ -339,6 +340,7 @@ const saveLastControlType = async (controlType: ControlType): Promise<void> => {
 
 function VideoPlayer({
     embedded = false,
+    topControls,
     disableKeyEvents = false,
     settings,
     settingsProvider,
@@ -2228,6 +2230,7 @@ function VideoPlayer({
                 </SubtitleContainer>
             )}
             <Controls
+                topControls={topControls}
                 videoWidth={videoWidth}
                 videoHeight={videoHeight}
                 mousePositionRef={mousePositionRef}

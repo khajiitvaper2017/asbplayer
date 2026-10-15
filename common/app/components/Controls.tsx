@@ -146,6 +146,13 @@ const useControlStyles = makeStyles<Theme>((theme) => ({
         opacity: 1,
         pointerEvents: 'auto',
     },
+    topContainer: {
+        pointerEvents: 'none',
+        position: 'absolute',
+        top: 0,
+        paddingBottom: 24,
+        background: 'linear-gradient(to top, rgba(0, 0, 0, 0), rgba(0, 0, 0, .4) 40%, rgba(0, 0, 0, .7))',
+    },
     subContainer: {
         background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, .4) 40%, rgba(0, 0, 0, 0.7))',
         position: 'relative',
@@ -588,6 +595,7 @@ export interface Point {
 }
 
 interface ControlsProps {
+    topControls?: React.ReactNode;
     clock: Clock;
     length: number;
     offsetEnabled?: boolean;
@@ -649,6 +657,7 @@ interface ControlsProps {
 }
 
 export default function Controls({
+    topControls,
     clock,
     length,
     offsetEnabled,
@@ -950,7 +959,7 @@ export default function Controls({
     return (
         <React.Fragment>
             <Fade in={show} timeout={200}>
-                <Grid container style={{ position: 'absolute', top: 0 }}>
+                <Grid container className={classes.topContainer}>
                     <Grid item>
                         {closeEnabled && (
                             <Tooltip title={t('controls.unloadVideo')}>
@@ -980,6 +989,17 @@ export default function Controls({
                         </Grid>
                     )}
                     <Grid item style={{ flexGrow: 1 }} />
+                    {topControls && (
+                        <Grid
+                            item
+                            className={classes.button}
+                            style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
+                            onMouseOver={handleMouseOver}
+                            onMouseOut={handleMouseOut}
+                        >
+                            {topControls}
+                        </Grid>
+                    )}
                     <Grid item>
                         {theaterModeToggleEnabled && (
                             <Tooltip title={t('controls.toggleTheaterMode')}>

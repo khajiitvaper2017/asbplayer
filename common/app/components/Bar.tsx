@@ -32,6 +32,7 @@ interface BarProps {
     drawerWidth: number;
     drawerOpen: boolean;
     hidden: boolean;
+    controlsOnly?: boolean;
     title: string;
     subtitleFiles?: FileWithId[];
     lastError?: any;
@@ -127,6 +128,7 @@ export default function Bar({
     drawerWidth,
     drawerOpen,
     hidden,
+    controlsOnly = false,
     title,
     subtitleFiles,
     lastError,
@@ -185,55 +187,74 @@ export default function Bar({
         onCopyLastError(errorString);
     }, [lastError, onCopyLastError]);
 
+    const downloadButton = (
+        <>
+            {canSaveAsSrt && (
+                <Tooltip title={t('action.downloadSubtitlesAsSrt')}>
+                    <IconButton
+                        edge={controlsOnly ? false : 'start'}
+                        color="inherit"
+                        className={controlsOnly ? undefined : classes.leftButton}
+                        onClick={handleDownloadMenuOpen}
+                    >
+                        <SaveAltIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
+        </>
+    );
+    const actionButtons = (
+        <>
+            <IconButton edge={controlsOnly ? false : 'end'} color="inherit" onClick={handleMenuOpen}>
+                <GitHubIcon />
+            </IconButton>
+            <Tooltip title={t('bar.settings')}>
+                <IconButton edge={controlsOnly ? false : 'end'} color="inherit" onClick={onOpenSettings}>
+                    <SettingsIcon />
+                </IconButton>
+            </Tooltip>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CopyHistoryTooltip title={t('bar.miningHistory')} show={!drawerOpen}>
+                    <IconButton
+                        edge={controlsOnly ? false : 'end'}
+                        color="inherit"
+                        className={clsx({
+                            [classes.drawerButton]: !controlsOnly,
+                            [classes.drawerButtonShift]: drawerOpen,
+                        })}
+                        onClick={onOpenCopyHistory}
+                    >
+                        <HistoryIcon />
+                    </IconButton>
+                </CopyHistoryTooltip>
+            </Box>
+        </>
+    );
+
     return (
         <>
-            <AppBar
-                position="static"
-                className={clsx(classes.appBar, {
-                    [classes.appBarShift]: drawerOpen,
-                    [classes.hide]: hidden,
-                })}
-            >
-                <Toolbar>
-                    {canSaveAsSrt && (
-                        <Tooltip title={t('action.downloadSubtitlesAsSrt')}>
-                            <IconButton
-                                edge="start"
-                                color="inherit"
-                                className={classes.leftButton}
-                                onClick={handleDownloadMenuOpen}
-                            >
-                                <SaveAltIcon />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    <Typography variant="h6" noWrap className={classes.title}>
-                        {title}
-                    </Typography>
-                    <IconButton edge="end" color="inherit" onClick={handleMenuOpen}>
-                        <GitHubIcon />
-                    </IconButton>
-                    <Tooltip title={t('bar.settings')}>
-                        <IconButton edge="end" color="inherit" onClick={onOpenSettings}>
-                            <SettingsIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CopyHistoryTooltip title={t('bar.miningHistory')} show={!drawerOpen}>
-                            <IconButton
-                                edge="end"
-                                color="inherit"
-                                className={clsx(classes.drawerButton, {
-                                    [classes.drawerButtonShift]: drawerOpen,
-                                })}
-                                onClick={onOpenCopyHistory}
-                            >
-                                <HistoryIcon />
-                            </IconButton>
-                        </CopyHistoryTooltip>
-                    </Box>
-                </Toolbar>
-            </AppBar>
+            {controlsOnly ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
+                    {downloadButton}
+                    {actionButtons}
+                </Box>
+            ) : (
+                <AppBar
+                    position="static"
+                    className={clsx(classes.appBar, {
+                        [classes.appBarShift]: drawerOpen,
+                        [classes.hide]: hidden,
+                    })}
+                >
+                    <Toolbar>
+                        {downloadButton}
+                        <Typography variant="h6" noWrap className={classes.title}>
+                            {title}
+                        </Typography>
+                        {actionButtons}
+                    </Toolbar>
+                </AppBar>
+            )}
             <Popover
                 open={downloadMenuOpen}
                 anchorEl={downloadMenuAnchorEl}

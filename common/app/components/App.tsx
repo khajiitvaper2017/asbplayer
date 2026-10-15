@@ -1813,16 +1813,47 @@ function App({
         );
     }, [keyBinder, ankiDialogOpen, openSubtitleTrackSelector]);
 
-    if (!i18nInitialized) {
-        return null;
-    }
-
     const loading = loadingSources.length !== 0;
     const nothingLoaded =
         tab === undefined &&
         ((loading && !videoContainerRef.current) || (sources.subtitleFiles.length === 0 && !sources.videoFile));
     const appBarHidden = sources.videoFile !== undefined && ((theaterMode && !videoPopOut) || videoFullscreen);
     const effectiveDrawerOpen = copyHistoryOpen && !videoFullscreen;
+    const headerControls = useMemo(
+        () => (
+            <Bar
+                title={fileName || 'asbplayer-jiten'}
+                drawerWidth={drawerWidth}
+                drawerOpen={effectiveDrawerOpen}
+                hidden={false}
+                controlsOnly={appBarHidden}
+                subtitleFiles={sources.subtitleFiles}
+                onOpenCopyHistory={handleOpenCopyHistory}
+                onDownloadSubtitleFilesAsSrt={handleDownloadSubtitleFilesAsSrt}
+                onDownloadSubtitleTimeline={handleDownloadSubtitleTimeline}
+                onOpenSettings={handleOpenSettings}
+                lastError={lastError}
+                onCopyLastError={handleCopyLastError}
+            />
+        ),
+        [
+            fileName,
+            drawerWidth,
+            effectiveDrawerOpen,
+            appBarHidden,
+            sources.subtitleFiles,
+            handleOpenCopyHistory,
+            handleDownloadSubtitleFilesAsSrt,
+            handleDownloadSubtitleTimeline,
+            handleOpenSettings,
+            lastError,
+            handleCopyLastError,
+        ]
+    );
+
+    if (!i18nInitialized) {
+        return null;
+    }
     return (
         <StyledEngineProvider injectFirst>
             <ThemeProvider theme={theme}>
@@ -1967,19 +1998,7 @@ function App({
                                 onRefresh={updateFromServiceWorker}
                                 onClose={handleCloseNeedRefreshDialog}
                             />
-                            <Bar
-                                title={fileName || 'asbplayer-jiten'}
-                                drawerWidth={drawerWidth}
-                                drawerOpen={effectiveDrawerOpen}
-                                hidden={appBarHidden}
-                                subtitleFiles={sources.subtitleFiles}
-                                onOpenCopyHistory={handleOpenCopyHistory}
-                                onDownloadSubtitleFilesAsSrt={handleDownloadSubtitleFilesAsSrt}
-                                onDownloadSubtitleTimeline={handleDownloadSubtitleTimeline}
-                                onOpenSettings={handleOpenSettings}
-                                lastError={lastError}
-                                onCopyLastError={handleCopyLastError}
-                            />
+                            {!appBarHidden && headerControls}
                             <input
                                 ref={fileInputRef}
                                 onChange={handleFileInputChange}
@@ -2059,6 +2078,7 @@ function App({
                                         <VideoPlayer
                                             key={videoFile}
                                             embedded
+                                            topControls={appBarHidden ? headerControls : undefined}
                                             videoFile={videoFile}
                                             channel={channel}
                                             popOut={false}
