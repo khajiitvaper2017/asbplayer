@@ -2023,7 +2023,6 @@ function App({
                                 />
                             )}
                             <SettingsDialog
-                                anki={anki}
                                 extension={extension}
                                 open={settingsDialogOpen}
                                 onSettingsChanged={onSettingsChanged}

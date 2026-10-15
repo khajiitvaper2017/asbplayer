@@ -1,18 +1,15 @@
 import Grid from '@mui/material/Grid';
-import type { HttpPostMessage, PopupToExtensionCommand } from '@project/common';
 import type { AsbplayerSettings, Profile } from '@project/common/settings';
 import { chromeCommandBindsToKeyBinds } from '@project/common/settings';
 import SettingsForm from '@project/common/components/SettingsForm';
 import PanelIcon from '@project/common/components/PanelIcon';
 import LaunchIcon from '@mui/icons-material/Launch';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import Button from '@mui/material/Button';
 import type { ButtonProps } from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import { useTranslation } from 'react-i18next';
-import type { Fetcher } from '@project/common/src/fetcher';
 import { useLocalFontFamilies } from '@project/common/hooks';
-import { Anki } from '@project/common/anki';
 import { useSupportedLanguages } from '@project/extension/src/ui/hooks/use-supported-languages';
 import { useI18n } from '@project/extension/src/ui/hooks/use-i18n';
 import { isMobile } from 'react-device-detect';
@@ -39,21 +36,6 @@ interface Props {
     onNewProfile: (name: string) => void;
     onRemoveProfile: (name: string) => void;
     onSetActiveProfile: (name: string | undefined) => void;
-}
-
-class ExtensionFetcher implements Fetcher {
-    fetch(url: string, body: any) {
-        const httpPostCommand: PopupToExtensionCommand<HttpPostMessage> = {
-            sender: 'asbplayer-popup',
-            message: {
-                command: 'http-post',
-                url,
-                body,
-                messageId: '',
-            },
-        };
-        return browser.runtime.sendMessage(httpPostCommand);
-    }
 }
 
 const NavButton: React.FC<ButtonProps & { label: string }> = ({ label, ...buttonProps }) => {
@@ -93,7 +75,6 @@ const Popup = ({
 }: Props) => {
     const { t } = useTranslation();
     const { initialized: i18nInitialized } = useI18n({ language: settings.language });
-    const anki = useMemo(() => new Anki(settings, new ExtensionFetcher()), [settings]);
     const handleUnlockLocalFonts = useCallback(() => {
         void browser.tabs.create({
             url: `${browser.runtime.getURL('/options.html')}#subtitle-appearance`,
@@ -146,7 +127,6 @@ const Popup = ({
                         extensionSupportsAppIntegration
                         extensionSupportsOverlay
                         extensionSupportsSidePanel
-                        extensionSupportsOrderableAnkiFields
                         extensionSupportsTrackSpecificSettings
                         extensionSupportsSubtitlesWidthSetting
                         extensionSupportsSubtitlesWidthInPixels
@@ -161,7 +141,6 @@ const Popup = ({
                         extensionSupportsSubtitleListCustomization
                         extensionSupportsUpdateLastWithSameSubtitleText
                         forceVerticalTabs={false}
-                        anki={anki}
                         chromeKeyBinds={chromeCommandBindsToKeyBinds(commands)}
                         logProvider={logProvider}
                         settings={settings}

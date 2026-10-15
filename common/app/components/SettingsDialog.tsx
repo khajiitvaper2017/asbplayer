@@ -7,9 +7,8 @@ import DialogContent from '@mui/material/DialogContent';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import SettingsForm from '@project/common/components/SettingsForm';
 import { useLocalFontFamilies } from '@project/common/hooks';
-import type { Anki } from '@project/common/anki';
 import type { AsbplayerSettings, Profile } from '@project/common/settings';
-import { supportedLanguages, testCard } from '@project/common/settings';
+import { supportedLanguages } from '@project/common/settings';
 import SettingsProfileSelectMenu from '@project/common/components/SettingsProfileSelectMenu';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -17,11 +16,6 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import type { Theme } from '@mui/material';
 import type { LogProvider } from '@project/common/util/log';
-
-const appTestCard = () => {
-    const basePath = window.location.pathname === '/' ? '' : window.location.pathname;
-    return testCard({ imageUrl: `${basePath}/assets/test-card.jpeg`, audioUrl: `${basePath}/assets/test-card.mp3` });
-};
 
 const useStyles = makeStyles<Theme>((theme) => ({
     root: {
@@ -43,7 +37,6 @@ const useStyles = makeStyles<Theme>((theme) => ({
 }));
 
 interface Props {
-    anki: Anki;
     extension: ChromeExtension;
     open: boolean;
     logProvider: LogProvider;
@@ -59,7 +52,6 @@ interface Props {
 }
 
 export default function SettingsDialog({
-    anki,
     extension,
     open,
     logProvider,
@@ -96,13 +88,11 @@ export default function SettingsDialog({
             </Toolbar>
             <DialogContent className={classes.content}>
                 <SettingsForm
-                    anki={anki}
                     extensionInstalled={extension.installed}
                     extensionVersion={extension.installed ? extension.version : undefined}
                     extensionSupportsAppIntegration={extension.supportsAppIntegration}
                     extensionSupportsOverlay={extension.supportsStreamingVideoOverlay}
                     extensionSupportsSidePanel={extension.supportsSidePanel}
-                    extensionSupportsOrderableAnkiFields={extension.supportsOrderableAnkiFields}
                     extensionSupportsTrackSpecificSettings={extension.supportsTrackSpecificSettings}
                     extensionSupportsSubtitlesWidthSetting={extension.supportsSubtitlesWidthSetting}
                     extensionSupportsSubtitlesWidthInPixels={extension.supportsSubtitlesWidthInPixels}
@@ -131,7 +121,6 @@ export default function SettingsDialog({
                     localFontsPermission={localFontsPermission}
                     localFontFamilies={localFontFamilies}
                     supportedLanguages={supportedLanguages}
-                    testCard={appTestCard}
                     onUnlockLocalFonts={handleUnlockLocalFonts}
                 />
             </DialogContent>

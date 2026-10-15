@@ -5,16 +5,11 @@ import type { CreateCSSProperties } from '@mui/styles';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import type { Theme } from '@mui/material';
-import type { CardModel } from '@project/common';
 import type { AsbplayerSettings, PageConfig, PageSettings, Profile } from '@project/common/settings';
-import { isMobile } from 'react-device-detect';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import type { Anki } from '@project/common/anki';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import About from '@project/common/components/About';
-import { TutorialStep } from '@project/common/components/settings-model';
-import AnkiSettingsTab from '@project/common/components/AnkiSettingsTab';
 import MiningSettingsTab from '@project/common/components/MiningSettingsTab';
 import JitenSettingsTab from '@project/common/components/JitenSettingsTab';
 import SubtitleAppearanceSettingsTab from '@project/common/components/SubtitleAppearanceSettingsTab';
@@ -161,13 +156,11 @@ interface SettingsFormPageConfig extends PageConfig {
 export type PageConfigMap = { [K in keyof PageSettings]: SettingsFormPageConfig };
 
 interface Props {
-    anki: Anki;
     extensionInstalled: boolean;
     extensionVersion?: string;
     extensionSupportsAppIntegration: boolean;
     extensionSupportsOverlay: boolean;
     extensionSupportsSidePanel: boolean;
-    extensionSupportsOrderableAnkiFields: boolean;
     extensionSupportsTrackSpecificSettings: boolean;
     extensionSupportsSubtitlesWidthSetting: boolean;
     extensionSupportsSubtitlesWidthInPixels: boolean;
@@ -197,14 +190,12 @@ interface Props {
     forceVerticalTabs?: boolean;
     inTutorial?: boolean;
     heightConstrained?: boolean;
-    testCard?: () => Promise<CardModel>;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
     onOpenChromeExtensionShortcuts: () => void;
     onUnlockLocalFonts: () => void;
 }
 
 export default function SettingsForm({
-    anki,
     logProvider,
     settings,
     pageConfigs,
@@ -215,7 +206,6 @@ export default function SettingsForm({
     extensionSupportsSidePanel,
     extensionSupportsSubtitleTrackSelectorInWebApp,
     extensionSupportsSubtitleListCustomization,
-    extensionSupportsOrderableAnkiFields,
     extensionSupportsTrackSpecificSettings,
     extensionSupportsSubtitlesWidthSetting,
     extensionSupportsSubtitlesWidthInPixels,
@@ -236,9 +226,7 @@ export default function SettingsForm({
     localFontFamilies,
     supportedLanguages,
     forceVerticalTabs,
-    inTutorial,
     heightConstrained,
-    testCard,
     onSettingsChanged,
     onOpenChromeExtensionShortcuts,
     onUnlockLocalFonts,
@@ -274,7 +262,6 @@ export default function SettingsForm({
         [onSettingsChanged]
     );
     const { t } = useTranslation();
-    const { noteType } = settings;
     const tabIndicesById = useMemo(() => {
         const tabs = [
             'mining-settings',
@@ -302,15 +289,6 @@ export default function SettingsForm({
 
     const [tabIndex, setTabIndex] = useState<number>(0);
     const tabsOrientation = smallScreen ? 'horizontal' : 'vertical';
-    const [tutorialStep, setTutorialStep] = useState<TutorialStep>(TutorialStep.ankiConnect);
-
-    useEffect(() => {
-        if (tutorialStep === TutorialStep.noteType && noteType) {
-            setTutorialStep(TutorialStep.ankiFields);
-        }
-    }, [tutorialStep, noteType]);
-
-    const ankiPanelRef = useRef<HTMLDivElement>(null);
     const keyboardShortcutsPanelRef = useRef<HTMLDivElement>(null);
 
     const viewKeyboardShortcutSection = useCallback(
@@ -326,12 +304,6 @@ export default function SettingsForm({
         },
         [tabIndicesById]
     );
-
-    useEffect(() => {
-        if (tutorialStep === TutorialStep.testCard) {
-            ankiPanelRef.current?.scrollBy({ behavior: 'smooth', top: 100000 });
-        }
-    }, [tutorialStep]);
 
     return (
         <ThemeProvider theme={settingsTheme}>
@@ -352,11 +324,7 @@ export default function SettingsForm({
                     }}
                 >
                     <Tab tabIndex={0} label={t('settings.mining')} id="mining-settings" />
-                    <Tab
-                        tabIndex={1}
-                        label={settings.miningDestination === 'jiten' ? 'Jiten' : t('settings.anki')}
-                        id="anki-settings"
-                    />
+                    <Tab tabIndex={1} label="Jiten" id="anki-settings" />
                     <Tab tabIndex={2} label={t('settings.subtitleAppearance')} id="subtitle-appearance" />
                     <Tab tabIndex={3} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
                     {extensionSupportsAppIntegration && (
@@ -369,34 +337,12 @@ export default function SettingsForm({
                     />
                     <Tab tabIndex={5 + Number(extensionSupportsAppIntegration)} label={t('about.title')} id="about" />
                 </Tabs>
-                <TabPanel
-                    ref={ankiPanelRef}
-                    value={tabIndex}
-                    index={tabIndicesById['anki-settings']}
-                    tabsOrientation={tabsOrientation}
-                >
-                    {settings.miningDestination === 'jiten' ? (
-                        <JitenSettingsTab
-                            settings={settings}
-                            onSettingChanged={handleSettingChanged}
-                            onSettingsChanged={onSettingsChanged}
-                        />
-                    ) : (
-                        <AnkiSettingsTab
-                            settings={settings}
-                            extensionInstalled={extensionInstalled}
-                            extensionSupportsOrderableAnkiFields={extensionSupportsOrderableAnkiFields}
-                            isMobile={isMobile}
-                            insideApp={insideApp}
-                            inTutorial={inTutorial}
-                            onSettingChanged={handleSettingChanged}
-                            onSettingsChanged={onSettingsChanged}
-                            tutorialStep={tutorialStep}
-                            onTutorialStepChanged={setTutorialStep}
-                            anki={anki}
-                            testCard={testCard}
-                        />
-                    )}
+                <TabPanel value={tabIndex} index={tabIndicesById['anki-settings']} tabsOrientation={tabsOrientation}>
+                    <JitenSettingsTab
+                        settings={settings}
+                        onSettingChanged={handleSettingChanged}
+                        onSettingsChanged={onSettingsChanged}
+                    />
                 </TabPanel>
                 <TabPanel value={tabIndex} index={tabIndicesById['mining-settings']} tabsOrientation={tabsOrientation}>
                     <MiningSettingsTab

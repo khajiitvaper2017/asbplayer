@@ -1,6 +1,4 @@
-import type { CardModel } from '@project/common';
-import { HttpFetcher } from '@project/common';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { makeStyles } from '@mui/styles';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
@@ -12,11 +10,9 @@ import { useCommandKeyBinds } from '@project/extension/src/ui/hooks/use-command-
 import { useLocalFontFamilies } from '@project/common/hooks';
 import { useI18n } from '@project/extension/src/ui/hooks/use-i18n';
 import Paper from '@mui/material/Paper';
-import { Anki } from '@project/common/anki';
 import { useSupportedLanguages } from '@project/extension/src/ui/hooks/use-supported-languages';
 import SettingsProfileSelectMenu from '@project/common/components/SettingsProfileSelectMenu';
 import type { AsbplayerSettings, Profile } from '@project/common/settings';
-import { testCard } from '@project/common/settings';
 import { useTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { settingsPageConfigs } from '@/services/pages';
@@ -50,20 +46,9 @@ interface Props {
     onSetActiveProfile: (name: string | undefined) => void;
 }
 
-const extensionTestCard: () => Promise<CardModel> = () => {
-    return testCard({
-        imageUrl: browser.runtime.getURL('/assets/test-card.jpeg'),
-        audioUrl: browser.runtime.getURL('/assets/test-card.mp3'),
-    });
-};
-
 const SettingsPage = ({ logProvider, settings, inTutorial, onSettingsChanged, ...profileContext }: Props) => {
     const { t } = useTranslation();
     const theme = useTheme();
-    const anki = useMemo(
-        () => (settings === undefined ? undefined : new Anki(settings, new HttpFetcher())),
-        [settings]
-    );
     const classes = useStyles();
 
     const {
@@ -89,7 +74,7 @@ const SettingsPage = ({ logProvider, settings, inTutorial, onSettingsChanged, ..
 
     const { hash: scrollToId } = useLocationHash();
 
-    if (!settings || !anki || !commands || !i18nInitialized) {
+    if (!settings || !commands || !i18nInitialized) {
         return null;
     }
 
@@ -99,13 +84,11 @@ const SettingsPage = ({ logProvider, settings, inTutorial, onSettingsChanged, ..
                 <DialogTitle>{t('settings.title')}</DialogTitle>
                 <DialogContent className={classes.content}>
                     <SettingsForm
-                        anki={anki}
                         extensionInstalled
                         extensionVersion={browser.runtime.getManifest().version}
                         extensionSupportsAppIntegration
                         extensionSupportsOverlay
                         extensionSupportsSidePanel
-                        extensionSupportsOrderableAnkiFields
                         extensionSupportsTrackSpecificSettings
                         extensionSupportsSubtitlesWidthSetting
                         extensionSupportsSubtitlesWidthInPixels
@@ -133,7 +116,6 @@ const SettingsPage = ({ logProvider, settings, inTutorial, onSettingsChanged, ..
                         supportedLanguages={supportedLanguages}
                         onUnlockLocalFonts={handleUnlockLocalFonts}
                         inTutorial={inTutorial}
-                        testCard={extensionTestCard}
                         scrollToId={scrollToId}
                     />
                 </DialogContent>
