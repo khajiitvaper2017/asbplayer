@@ -323,7 +323,7 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
             )}
             <ResponsiveSettingsStack>
                 {' '}
-                {subtitleOutlineColor !== undefined && (
+                {subtitleOutlineColor !== undefined && subtitleOutlineThickness !== 0 && (
                     <SettingsTextField
                         size="small"
                         type="color"
@@ -356,7 +356,7 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
             </ResponsiveSettingsStack>
             <ResponsiveSettingsStack>
                 {' '}
-                {subtitleShadowColor !== undefined && (
+                {subtitleShadowColor !== undefined && subtitleShadowThickness !== 0 && (
                     <SettingsTextField
                         size="small"
                         type="color"
@@ -388,7 +388,7 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
             </ResponsiveSettingsStack>
             <ResponsiveSettingsStack>
                 {' '}
-                {subtitleBackgroundColor !== undefined && (
+                {subtitleBackgroundColor !== undefined && subtitleBackgroundOpacity !== 0 && (
                     <SettingsTextField
                         size="small"
                         type="color"

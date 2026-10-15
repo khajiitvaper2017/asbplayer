@@ -196,28 +196,29 @@ const GeneralSettingsTab: React.FC<Props> = ({
                         label={t('settings.webSocketClientEnabled')}
                         labelPlacement="start"
                     />
-                    <SettingsTextField
-                        size="small"
-                        color="primary"
-                        fullWidth
-                        label={t('settings.webSocketServerUrl')}
-                        value={webSocketServerUrl}
-                        disabled={!webSocketClientEnabled}
-                        onChange={(e) => onSettingChanged('webSocketServerUrl', e.target.value)}
-                        error={webSocketClientEnabled && webSocketConnectionSucceeded === false}
-                        helperText={webSocketServerUrlHelperText}
-                        slotProps={{
-                            input: {
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton onClick={pingWebSocketServer}>
-                                            <RefreshIcon />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            },
-                        }}
-                    />
+                    {webSocketClientEnabled && (
+                        <SettingsTextField
+                            size="small"
+                            color="primary"
+                            fullWidth
+                            label={t('settings.webSocketServerUrl')}
+                            value={webSocketServerUrl}
+                            onChange={(e) => onSettingChanged('webSocketServerUrl', e.target.value)}
+                            error={webSocketClientEnabled && webSocketConnectionSucceeded === false}
+                            helperText={webSocketServerUrlHelperText}
+                            slotProps={{
+                                input: {
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={pingWebSocketServer}>
+                                                <RefreshIcon />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                        />
+                    )}
                 </Box>{' '}
                 <SettingsSection>{t('settings.tools')}</SettingsSection>
                 <ButtonGroup size="small" variant="contained" orientation={isSmallScreen ? 'vertical' : 'horizontal'}>

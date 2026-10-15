@@ -156,26 +156,30 @@ const StreamingVideoSettingsTab: React.FC<Props> = ({
                     label={t('extension.settings.takeScreenshot')}
                     labelPlacement="start"
                 />
-                <SwitchLabelWithHoverEffect
-                    control={
-                        <Switch
-                            checked={streamingCleanScreenshot}
-                            onChange={(e) => onSettingChanged('streamingCleanScreenshot', e.target.checked)}
+                {streamingTakeScreenshot && (
+                    <>
+                        <SwitchLabelWithHoverEffect
+                            control={
+                                <Switch
+                                    checked={streamingCleanScreenshot}
+                                    onChange={(e) => onSettingChanged('streamingCleanScreenshot', e.target.checked)}
+                                />
+                            }
+                            label={t('extension.settings.cleanScreenshot')}
+                            labelPlacement="start"
                         />
-                    }
-                    label={t('extension.settings.cleanScreenshot')}
-                    labelPlacement="start"
-                />
-                <SwitchLabelWithHoverEffect
-                    control={
-                        <Switch
-                            checked={streamingCropScreenshot}
-                            onChange={(e) => onSettingChanged('streamingCropScreenshot', e.target.checked)}
+                        <SwitchLabelWithHoverEffect
+                            control={
+                                <Switch
+                                    checked={streamingCropScreenshot}
+                                    onChange={(e) => onSettingChanged('streamingCropScreenshot', e.target.checked)}
+                                />
+                            }
+                            label={t('extension.settings.cropScreenshot')}
+                            labelPlacement="start"
                         />
-                    }
-                    label={t('extension.settings.cropScreenshot')}
-                    labelPlacement="start"
-                />
+                    </>
+                )}
                 <SettingsSection>{t('settings.subtitles')}</SettingsSection>
                 <SwitchLabelWithHoverEffect
                     control={
@@ -197,16 +201,18 @@ const StreamingVideoSettingsTab: React.FC<Props> = ({
                     label={t('extension.settings.autoLoadDetectedSubs')}
                     labelPlacement="start"
                 />
-                <SwitchLabelWithHoverEffect
-                    control={
-                        <Switch
-                            checked={streamingAutoSyncPromptOnFailure}
-                            onChange={(e) => onSettingChanged('streamingAutoSyncPromptOnFailure', e.target.checked)}
-                        />
-                    }
-                    label={t('extension.settings.autoLoadDetectedSubsFailure')}
-                    labelPlacement="start"
-                />
+                {streamingAutoSync && (
+                    <SwitchLabelWithHoverEffect
+                        control={
+                            <Switch
+                                checked={streamingAutoSyncPromptOnFailure}
+                                onChange={(e) => onSettingChanged('streamingAutoSyncPromptOnFailure', e.target.checked)}
+                            />
+                        }
+                        label={t('extension.settings.autoLoadDetectedSubsFailure')}
+                        labelPlacement="start"
+                    />
+                )}
                 {pageConfigs && (
                     <>
                         <SettingsSection>{t('settings.pages')}</SettingsSection>

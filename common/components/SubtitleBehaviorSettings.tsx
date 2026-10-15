@@ -107,29 +107,32 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                             ))}
                         </RadioGroup>
                     </FormControl>
-                    <SettingsTextField
-                        select
-                        label={t('settings.subtitleListTimestampDecimalPlaces')}
-                        value={subtitleListTimestampDecimalPlaces}
-                        slotProps={{
-                            select: {
-                                inputProps: { 'aria-label': t('settings.subtitleListTimestampDecimalPlaces') },
-                            },
-                        }}
-                        disabled={subtitleListTimestampDisplay === SubtitleListTimestampDisplay.hidden}
-                        onChange={(event) =>
-                            onSettingChanged(
-                                'subtitleListTimestampDecimalPlaces',
-                                Number(event.target.value) as AsbplayerSettings['subtitleListTimestampDecimalPlaces']
-                            )
-                        }
-                    >
-                        {[0, 1, 2, 3].map((places) => (
-                            <MenuItem key={places} value={places}>
-                                {places === 0 ? '08:54' : `08:54.${'617'.slice(0, places)}`}
-                            </MenuItem>
-                        ))}
-                    </SettingsTextField>
+                    {subtitleListTimestampDisplay !== SubtitleListTimestampDisplay.hidden && (
+                        <SettingsTextField
+                            select
+                            label={t('settings.subtitleListTimestampDecimalPlaces')}
+                            value={subtitleListTimestampDecimalPlaces}
+                            slotProps={{
+                                select: {
+                                    inputProps: { 'aria-label': t('settings.subtitleListTimestampDecimalPlaces') },
+                                },
+                            }}
+                            onChange={(event) =>
+                                onSettingChanged(
+                                    'subtitleListTimestampDecimalPlaces',
+                                    Number(
+                                        event.target.value
+                                    ) as AsbplayerSettings['subtitleListTimestampDecimalPlaces']
+                                )
+                            }
+                        >
+                            {[0, 1, 2, 3].map((places) => (
+                                <MenuItem key={places} value={places}>
+                                    {places === 0 ? '08:54' : `08:54.${'617'.slice(0, places)}`}
+                                </MenuItem>
+                            ))}
+                        </SettingsTextField>
+                    )}
                 </>
             )}
             {insideApp && (
@@ -144,17 +147,18 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                         label={t('settings.thumbnailPreview')}
                         labelPlacement="start"
                     />
-                    <SwitchLabelWithHoverEffect
-                        control={
-                            <Switch
-                                checked={subtitleAboveThumbnail}
-                                onChange={() => onSettingChanged('subtitleAboveThumbnail', !subtitleAboveThumbnail)}
-                                disabled={!thumbnailPreview}
-                            />
-                        }
-                        label={t('settings.subtitleAboveThumbnail')}
-                        labelPlacement="start"
-                    />
+                    {thumbnailPreview && (
+                        <SwitchLabelWithHoverEffect
+                            control={
+                                <Switch
+                                    checked={subtitleAboveThumbnail}
+                                    onChange={() => onSettingChanged('subtitleAboveThumbnail', !subtitleAboveThumbnail)}
+                                />
+                            }
+                            label={t('settings.subtitleAboveThumbnail')}
+                            labelPlacement="start"
+                        />
+                    )}
                 </>
             )}
             <SettingsSection>{t('settings.behavior')}</SettingsSection>
@@ -178,7 +182,7 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                 label={t('settings.autoCopy')}
                 labelPlacement="start"
             />
-            {(!extensionInstalled || extensionSupportsAutoCopyableTrackSetting) && (
+            {autoCopyCurrentSubtitle && (!extensionInstalled || extensionSupportsAutoCopyableTrackSetting) && (
                 <FormControl>
                     <FormLabel component="legend">{t('settings.autoCopyableTracks')}</FormLabel>
                     <FormGroup row>
@@ -239,14 +243,16 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                     }}
                     onChange={(event) => onSettingChanged('subtitleRegexFilter', event.target.value)}
                 />
-                <SettingsTextField
-                    size="small"
-                    label={t('settings.subtitleRegexFilterTextReplacement')}
-                    fullWidth
-                    value={subtitleRegexFilterTextReplacement}
-                    color="primary"
-                    onChange={(event) => onSettingChanged('subtitleRegexFilterTextReplacement', event.target.value)}
-                />
+                {subtitleRegexFilter.trim() !== '' && (
+                    <SettingsTextField
+                        size="small"
+                        label={t('settings.subtitleRegexFilterTextReplacement')}
+                        fullWidth
+                        value={subtitleRegexFilterTextReplacement}
+                        color="primary"
+                        onChange={(event) => onSettingChanged('subtitleRegexFilterTextReplacement', event.target.value)}
+                    />
+                )}
             </ResponsiveSettingsStack>
             <FormControl>
                 <FormLabel>{t('settings.subtitleHtml')}</FormLabel>
