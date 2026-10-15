@@ -3,6 +3,7 @@ import { ASB_SUBTITLE_INDEX_ATTRIBUTE } from '@project/common/annotations/dom-an
 import { extractText } from '@project/common/util';
 import { highlightJitenWord, isJitenTarget } from '@project/common/jiten/jiten';
 import type { JitenTarget } from '@project/common/jiten/jiten';
+import { readJitenWordState } from '@project/common/jiten/reader-events';
 
 export function readJitenWords(subtitle: SubtitleModel, surrounding: SubtitleModel[]): JitenTarget[] {
     const sentence = extractText(subtitle, surrounding);
@@ -52,6 +53,7 @@ export function readJitenWords(subtitle: SubtitleModel, surrounding: SubtitleMod
                     surfaceForm,
                 };
                 if (!isJitenTarget(target)) continue;
+                target.state = readJitenWordState(target.wordId, target.readingIndex);
                 target.sentence = highlightJitenWord(sentence, target);
                 const key = `${target.wordId}/${target.readingIndex}`;
                 if (!words.has(key)) words.set(key, target);

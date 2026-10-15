@@ -1,6 +1,15 @@
 import i18n from 'i18next';
 import type { ExportParams } from '@project/common/anki';
 
+export interface JitenWordState {
+    isNew: boolean;
+    deckIds: number[];
+    updatedAt: number;
+}
+
+// Targets can survive in mining history; their membership snapshots must expire.
+const wordStateMaxAge = 30_000;
+
 export interface JitenTarget {
     wordId: number;
     readingIndex: number;
@@ -9,6 +18,7 @@ export interface JitenTarget {
     sentence?: string;
     surfaceForm?: string;
     sourceTitle?: string;
+    state?: JitenWordState;
 }
 
 export interface JitenStatus {
@@ -81,7 +91,14 @@ export const isJitenTarget = (value: unknown): value is JitenTarget => {
         typeof target.reading === 'string' &&
         (target.sentence === undefined || typeof target.sentence === 'string') &&
         (target.surfaceForm === undefined || typeof target.surfaceForm === 'string') &&
-        (target.sourceTitle === undefined || typeof target.sourceTitle === 'string')
+        (target.sourceTitle === undefined || typeof target.sourceTitle === 'string') &&
+        (target.state === undefined ||
+            (target.state !== null &&
+                typeof target.state === 'object' &&
+                typeof target.state.isNew === 'boolean' &&
+                Number.isFinite(target.state.updatedAt) &&
+                Array.isArray(target.state.deckIds) &&
+                target.state.deckIds.every((id) => Number.isInteger(id) && id > 0)))
     );
 };
 
@@ -152,35 +169,60 @@ export class JitenClient {
     async newWords(targets: JitenTarget[], deckId: number) {
         if (!deckId) throw new Error(message('deckRequired'));
         if (!targets.length) throw new Error(message('parseFirst'));
-        const states = await this.request<{ result: number[][]; decks: number[][] }>(
-            '/reader/lookup-vocabulary',
-            'POST',
-            { words: targets.map((target) => [target.wordId, target.readingIndex]) }
+        const missing = targets.filter(
+            (target) => !target.state || Date.now() - target.state.updatedAt >= wordStateMaxAge
         );
-        if (states.result?.length !== targets.length || states.decks?.length !== targets.length) {
-            throw new Error(message('wordLookupFailed'));
+        if (missing.length) {
+            const states = await this.request<{ result: number[][]; decks: number[][] }>(
+                '/reader/lookup-vocabulary',
+                'POST',
+                { words: missing.map((target) => [target.wordId, target.readingIndex]) }
+            );
+            if (
+                states.result?.length !== missing.length ||
+                states.decks?.length !== missing.length ||
+                !states.result.every((state) => Array.isArray(state) && state.every(Number.isInteger)) ||
+                !states.decks.every(
+                    (decks) => Array.isArray(decks) && decks.every((id) => Number.isInteger(id) && id > 0)
+                )
+            ) {
+                throw new Error(message('wordLookupFailed'));
+            }
+            missing.forEach((target, index) => {
+                target.state = {
+                    isNew: states.result[index].length === 1 && states.result[index][0] === 0,
+                    deckIds: states.decks[index],
+                    updatedAt: Date.now(),
+                };
+            });
         }
-        return targets.filter(
-            (_, index) =>
-                states.result[index].length === 1 &&
-                states.result[index][0] === 0 &&
-                !states.decks[index].includes(deckId)
-        );
+        return targets.filter((target) => target.state!.isNew && !target.state!.deckIds.includes(deckId));
     }
 
     async mine(target: JitenTarget, deckId: number, params: ExportParams, sentenceId?: number) {
         const error = jitenValidationError(target, params.text ?? '', params.source ?? '');
         if (error) throw new Error(error);
-        const state = await this.request<{ decks: number[][] }>('/reader/lookup-vocabulary', 'POST', {
-            words: [[target.wordId, target.readingIndex]],
-        });
-        if (!Array.isArray(state.decks?.[0])) throw new Error(message('wordLookupFailed'));
-        if (!state.decks[0].includes(deckId)) {
-            await this.request(`/srs/study-decks/${deckId}/words`, 'POST', {
-                wordId: target.wordId,
-                readingIndex: target.readingIndex,
-                occurrences: 1,
+        let deckIds =
+            target.state && Date.now() - target.state.updatedAt < wordStateMaxAge ? target.state.deckIds : undefined;
+        if (!deckIds) {
+            const state = await this.request<{ decks: number[][] }>('/reader/lookup-vocabulary', 'POST', {
+                words: [[target.wordId, target.readingIndex]],
             });
+            if (!Array.isArray(state.decks?.[0])) throw new Error(message('wordLookupFailed'));
+            deckIds = state.decks[0];
+        }
+        if (!deckIds.includes(deckId)) {
+            try {
+                await this.request(`/srs/study-decks/${deckId}/words`, 'POST', {
+                    wordId: target.wordId,
+                    readingIndex: target.readingIndex,
+                    occurrences: 1,
+                });
+            } catch (error) {
+                delete target.state;
+                throw error;
+            }
+            deckIds.push(deckId);
         }
         return this.attach(target, params, sentenceId);
     }

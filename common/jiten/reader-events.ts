@@ -1,9 +1,16 @@
 import type { SubtitleModel } from '@project/common';
 import { isJitenTarget, jitenSurfaceForm, stripJitenMarkers } from '@project/common/jiten/jiten';
-import type { JitenTarget } from '@project/common/jiten/jiten';
+import type { JitenTarget, JitenWordState } from '@project/common/jiten/jiten';
+
+const wordStates = new WeakMap<Window, Map<string, JitenWordState>>();
+
+export const readJitenWordState = (wordId: number, readingIndex: number, targetWindow: Window = window) =>
+    wordStates.get(targetWindow)?.get(`${wordId}/${readingIndex}`);
 
 export function listenJitenTarget(onTarget: (target: JitenTarget) => void, targetWindow: Window = window) {
     const activeWords = new Map<string, JitenTarget>();
+    const states = wordStates.get(targetWindow) ?? new Map<string, JitenWordState>();
+    wordStates.set(targetWindow, states);
     const receive = (event: MessageEvent) => {
         const data = event.data;
         const type = data?.type;
@@ -12,10 +19,33 @@ export function listenJitenTarget(onTarget: (target: JitenTarget) => void, targe
             event.origin !== targetWindow.origin ||
             data?.source !== 'jiten-reader' ||
             data.version !== 1 ||
-            !isJitenTarget(data)
+            !['active-word-changed', 'card-mined', 'card-state-changed'].includes(type) ||
+            !Number.isInteger(data.wordId) ||
+            data.wordId <= 0 ||
+            !Number.isInteger(data.readingIndex) ||
+            data.readingIndex < 0 ||
+            data.readingIndex > 255
         )
             return;
         const key = `${data.wordId}/${data.readingIndex}`;
+        if (
+            Array.isArray(data.cardState) &&
+            data.cardState.length > 0 &&
+            data.cardState.every((state: unknown) => typeof state === 'string') &&
+            Array.isArray(data.deckIds) &&
+            data.deckIds.every((id: unknown) => typeof id === 'number' && Number.isInteger(id) && id > 0)
+        ) {
+            const state = states.get(key) ?? { isNew: false, deckIds: [], updatedAt: 0 };
+            state.isNew = data.cardState.length === 1 && data.cardState[0] === 'new';
+            state.deckIds = [...data.deckIds];
+            state.updatedAt = Date.now();
+            states.set(key, state);
+        }
+        const state = states.get(key);
+        if (type === 'card-mined' && state && Number.isInteger(data.deckId) && data.deckId > 0) {
+            if (!state.deckIds.includes(data.deckId)) state.deckIds.push(data.deckId);
+        }
+        if (type === 'card-state-changed' || !isJitenTarget(data)) return;
         if (type === 'active-word-changed') {
             activeWords.set(key, data);
             return;
@@ -37,6 +67,7 @@ export function listenJitenTarget(onTarget: (target: JitenTarget) => void, targe
             sentence: data.sentence ?? context?.sentence,
             surfaceForm: jitenSurfaceForm(data) ?? active?.surfaceForm,
             sourceTitle: data.sourceTitle,
+            state,
         };
         onTarget(target);
     };
