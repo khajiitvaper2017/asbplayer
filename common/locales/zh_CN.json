@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "关于 asbplayer",
+        "title": "关于",
         "license": "许可证",
         "deps": "依赖项",
         "depName": "名称",
         "purpose": "用途",
         "appVersion": "应用版本",
-        "extensionVersion": "扩展版本"
+        "extensionVersion": "扩展版本",
+        "description": "基于 asbplayer 的分支，用于观看带字幕的本地及在线视频，并将单词、例句、图片和音频保存到 Jiten。",
+        "sourceCode": "源代码",
+        "releases": "发布版本",
+        "upstreamProject": "原版 asbplayer"
     },
     "postMineAction": {
         "none": "无",

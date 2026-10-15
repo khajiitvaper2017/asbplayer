@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "A proposito di asbplayer",
+        "title": "Informazioni",
         "license": "Licenza",
         "deps": "Dipendenze",
         "depName": "Nome",
         "purpose": "Finalità",
         "appVersion": "Versione Applicazione",
-        "extensionVersion": "Versione Estensione"
+        "extensionVersion": "Versione Estensione",
+        "description": "Una versione derivata di asbplayer per guardare video locali e in streaming con sottotitoli e salvare parole, frasi, immagini e audio su Jiten.",
+        "sourceCode": "Codice sorgente",
+        "releases": "Versioni",
+        "upstreamProject": "asbplayer originale"
     },
     "postMineAction": {
         "none": "Nessuno",

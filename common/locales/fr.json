@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "À propos d'asbplayer",
+        "title": "À propos",
         "license": "Licence",
         "deps": "Dépendances",
         "depName": "Nom",
         "purpose": "But",
         "appVersion": "Version de l'app",
-        "extensionVersion": "Version de l'extension"
+        "extensionVersion": "Version de l'extension",
+        "description": "Une version dérivée d’asbplayer pour regarder des vidéos locales et en streaming avec des sous-titres et enregistrer des mots, des phrases, des images et de l’audio dans Jiten.",
+        "sourceCode": "Code source",
+        "releases": "Versions",
+        "upstreamProject": "asbplayer original"
     },
     "postMineAction": {
         "none": "Néant",

@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "asbplayer 소개",
+        "title": "정보",
         "license": "라이센스",
         "deps": "의존관계에 있는 라이브러리",
         "depName": "프로젝트 타이틀",
         "purpose": "용도",
         "appVersion": "앱 버전",
-        "extensionVersion": "확장 기능 버전"
+        "extensionVersion": "확장 기능 버전",
+        "description": "자막이 있는 로컬 및 스트리밍 동영상을 시청하고 단어, 문장, 이미지, 오디오를 Jiten에 저장할 수 있는 asbplayer의 파생 버전입니다.",
+        "sourceCode": "소스 코드",
+        "releases": "릴리스",
+        "upstreamProject": "원본 asbplayer"
     },
     "postMineAction": {
         "none": "아무것도 하지 않기",

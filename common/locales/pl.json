@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "About asbplayer",
+        "title": "O programie",
         "license": "License",
         "deps": "Dependencies",
         "depName": "Name",
         "purpose": "Purpose",
         "appVersion": "App version",
-        "extensionVersion": "Extension version"
+        "extensionVersion": "Extension version",
+        "description": "Odmiana asbplayer do oglądania lokalnych filmów i transmisji strumieniowych z napisami oraz zapisywania słów, zdań, obrazów i dźwięku w Jiten.",
+        "sourceCode": "Kod źródłowy",
+        "releases": "Wydania",
+        "upstreamProject": "Oryginalny asbplayer"
     },
     "postMineAction": {
         "none": "Nic nie rób",

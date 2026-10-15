@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "О asbplayer",
+        "title": "О программе",
         "license": "Лицензия",
         "deps": "Зависимости",
         "depName": "Название",
         "purpose": "Цель",
         "appVersion": "Версия",
-        "extensionVersion": "Версия расширения"
+        "extensionVersion": "Версия расширения",
+        "description": "Версия asbplayer для просмотра локальных и потоковых видео с субтитрами и сохранения слов, предложений, изображений и аудио в Jiten.",
+        "sourceCode": "Исходный код",
+        "releases": "Релизы",
+        "upstreamProject": "Оригинальный asbplayer"
     },
     "postMineAction": {
         "none": "Не делать ничего",

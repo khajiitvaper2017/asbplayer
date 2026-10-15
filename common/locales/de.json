@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "Über asbplayer",
+        "title": "Über",
         "license": "Lizenz",
         "deps": "Abhängigkeiten",
         "depName": "Name",
         "purpose": "Verwendung",
         "appVersion": "App Version",
-        "extensionVersion": "Erweiterungsversion"
+        "extensionVersion": "Erweiterungsversion",
+        "description": "Ein Fork von asbplayer zum Ansehen lokaler Videos und Streams mit Untertiteln und zum Speichern von Wörtern, Sätzen, Bildern und Audio in Jiten.",
+        "sourceCode": "Quellcode",
+        "releases": "Veröffentlichungen",
+        "upstreamProject": "Originales asbplayer"
     },
     "postMineAction": {
         "none": "Keine",

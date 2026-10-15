@@ -1,5 +1,6 @@
 import React from 'react';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import MuiLink from '@mui/material/Link';
 import type { LinkProps } from '@mui/material/Link';
 import LogoIcon from '@project/common/components/LogoIcon';
@@ -918,7 +919,7 @@ const About = ({ appVersionRepoPath, extensionVersion }: Props) => {
                 <LogoIcon style={{ width: 48, height: 48 }} />
                 <br />
                 <Link variant="h5" href="https://github.com/khajiitvaper2017/asbplayer/tree/jiten-fork">
-                    asbplayer
+                    asbplayer-jiten
                 </Link>
                 <br />
                 {appVersionRepoPath && (
@@ -939,7 +940,17 @@ const About = ({ appVersionRepoPath, extensionVersion }: Props) => {
                     </Typography>
                 )}
             </Box>
-            <p />
+            <Typography variant="body2" sx={{ my: 2 }}>
+                {t('about.description')}
+            </Typography>
+            <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
+                <Link href="https://asbplayer-jiten-docs.pages.dev/docs/intro">{t('action.userGuide')}</Link>
+                <Link href="https://github.com/khajiitvaper2017/asbplayer/tree/jiten-fork">
+                    {t('about.sourceCode')}
+                </Link>
+                <Link href="https://github.com/khajiitvaper2017/asbplayer/releases">{t('about.releases')}</Link>
+                <Link href="https://github.com/asbplayer/asbplayer">{t('about.upstreamProject')}</Link>
+            </Stack>
             <SettingsSection>{t('about.license')}</SettingsSection>
             <Paper variant="outlined" style={{ padding: theme.spacing(2), maxHeight: '40vh', overflowY: 'auto' }}>
                 <Typography

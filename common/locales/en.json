@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "About asbplayer",
+        "title": "About",
         "license": "License",
         "deps": "Dependencies",
         "depName": "Name",
         "purpose": "Purpose",
         "appVersion": "App version",
-        "extensionVersion": "Extension version"
+        "extensionVersion": "Extension version",
+        "description": "A fork of asbplayer for watching local and streaming video with subtitles and saving words, sentences, pictures, and audio to Jiten.",
+        "sourceCode": "Source code",
+        "releases": "Releases",
+        "upstreamProject": "Original asbplayer"
     },
     "postMineAction": {
         "none": "None",

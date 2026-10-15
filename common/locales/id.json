@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "Tentang asbplayer",
+        "title": "Tentang",
         "license": "Lisensi",
         "deps": "Dependensi",
         "depName": "Nama",
         "purpose": "Tujuan",
         "appVersion": "Versi Aplikasi",
-        "extensionVersion": "Versi Ekstensi"
+        "extensionVersion": "Versi Ekstensi",
+        "description": "Versi turunan asbplayer untuk menonton video lokal dan streaming dengan subtitel serta menyimpan kata, kalimat, gambar, dan audio ke Jiten.",
+        "sourceCode": "Kode sumber",
+        "releases": "Rilis",
+        "upstreamProject": "asbplayer asli"
     },
     "postMineAction": {
         "none": "Tidak Ada",

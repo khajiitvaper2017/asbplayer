@@ -39,13 +39,17 @@
         "findPlaceholder": "テキストまたは /regex/ で検索"
     },
     "about": {
-        "title": "asbplayerについて",
+        "title": "このアプリについて",
         "license": "ライセンス",
         "deps": "依存関係のあるライブラリ",
         "depName": "プロジェクト名",
         "purpose": "用途",
         "appVersion": "アプリバージョン",
-        "extensionVersion": "拡張機能バージョン"
+        "extensionVersion": "拡張機能バージョン",
+        "description": "字幕付きのローカル動画やストリーミング動画を視聴し、単語・例文・画像・音声を Jiten に保存できる asbplayer の派生版です。",
+        "sourceCode": "ソースコード",
+        "releases": "リリース",
+        "upstreamProject": "元の asbplayer"
     },
     "postMineAction": {
         "none": "何もしない",

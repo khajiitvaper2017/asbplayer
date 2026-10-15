@@ -39,13 +39,17 @@
         "findPlaceholder": "Search by text or /regex/"
     },
     "about": {
-        "title": "Tietoja asbplayeristä",
+        "title": "Tietoja",
         "license": "Käyttölupa",
         "deps": "Riippuvuudet",
         "depName": "Nimi",
         "purpose": "Tarkoitus",
         "appVersion": "Sovelluksen versio",
-        "extensionVersion": "Laajennuksen versio"
+        "extensionVersion": "Laajennuksen versio",
+        "description": "asbplayerin muunnelma paikallisten ja suoratoistovideoiden katseluun tekstityksillä sekä sanojen, lauseiden, kuvien ja äänen tallentamiseen Jiteniin.",
+        "sourceCode": "Lähdekoodi",
+        "releases": "Julkaisut",
+        "upstreamProject": "Alkuperäinen asbplayer"
     },
     "postMineAction": {
         "none": "Tyhjä",
