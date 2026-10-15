@@ -435,6 +435,47 @@ const AnkiDialog = ({
         [audioClip]
     );
 
+    useEffect(() => {
+        if (!open) return;
+
+        setImage((previousImage) => {
+            previousImage?.dispose();
+            const image = MediaFragment.fromCard(
+                card,
+                settings.maxImageWidth,
+                settings.maxImageHeight,
+                settings.mediaFragmentFormat,
+                settings.mediaFragmentTrimStart,
+                settings.mediaFragmentTrimEnd,
+                settings.mediaFragmentMaxClipLength,
+                settings.trimBlackBars
+            );
+            setImageTimestampInterval(
+                image?.extension === 'webm' && image.endTimestamp !== undefined
+                    ? [image.timestamp, image.endTimestamp]
+                    : undefined
+            );
+            return image;
+        });
+    }, [
+        card,
+        open,
+        settings.maxImageWidth,
+        settings.maxImageHeight,
+        settings.mediaFragmentFormat,
+        settings.mediaFragmentTrimStart,
+        settings.mediaFragmentTrimEnd,
+        settings.mediaFragmentMaxClipLength,
+        settings.trimBlackBars,
+    ]);
+
+    useEffect(() => {
+        if (!open && image) {
+            image.dispose();
+            setImage(undefined);
+        }
+    }, [open, image]);
+
     const handleViewImage = useCallback(
         async (e: React.MouseEvent<HTMLDivElement>) => {
             if (image?.error !== undefined) {

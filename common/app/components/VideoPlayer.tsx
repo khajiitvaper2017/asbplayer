@@ -6,11 +6,9 @@ import type { MutableRefObject } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { makeStyles } from '@mui/styles';
-import { useWindowSize } from '@project/common/app/hooks/use-window-size';
 import type {
     SubtitleModel,
     AudioTrackModel,
-    OffscreenDomCache,
     CardTextFieldValues,
     ControlType,
     IndexedSubtitleModel,
@@ -66,7 +64,7 @@ import type ChromeExtension from '@project/common/app/services/chrome-extension'
 import Alert from '@project/common/app/components/Alert';
 import type { AlertNotification } from '@project/common/app/components/Alert';
 import Button from '@mui/material/Button';
-import { useSubtitleDomCache } from '@project/common/app/hooks/use-subtitle-dom-cache';
+import { useJitenSubtitleElement, useJitenSubtitleSource } from '@project/common/app/hooks/use-jiten-subtitles';
 import { useAppKeyBinder } from '@project/common/app/hooks/use-app-key-binder';
 import type { Direction } from '@project/common/app/hooks/use-swipe';
 import { useSwipe } from '@project/common/app/hooks/use-swipe';
@@ -103,6 +101,10 @@ const useStyles = makeStyles<Theme>((theme) => ({
     },
     video: {
         margin: 'auto',
+        width: '100%',
+        height: '100%',
+        minHeight: 0,
+        objectFit: 'contain',
     },
     cursorHidden: {
         cursor: 'none',
@@ -118,9 +120,10 @@ function notifyReady(
     element: ExperimentalHTMLVideoElement,
     playerChannel: PlayerChannel,
     setAudioTracks: React.Dispatch<React.SetStateAction<AudioTrackModel[] | undefined>>,
-    setSelectedAudioTrack: React.Dispatch<React.SetStateAction<string | undefined>>
+    setSelectedAudioTrack: React.Dispatch<React.SetStateAction<string | undefined>>,
+    popOut: boolean
 ) {
-    if (window.outerWidth && element.videoWidth > 0 && element.videoHeight > 0) {
+    if (popOut && window.outerWidth && element.videoWidth > 0 && element.videoHeight > 0) {
         const availWidth = window.screen.availWidth - (window.outerWidth - window.innerWidth);
         const availHeight = window.screen.availHeight - (window.outerHeight - window.innerHeight);
         const resizeRatio = Math.min(1, Math.min(availWidth / element.videoWidth, availHeight / element.videoHeight));
@@ -178,7 +181,7 @@ const showingSubtitleHtml = (
 ) => {
     if (subtitle.textImage) {
         const imageScale =
-            (imageBasedSubtitleScaleFactor * (videoRef.current?.width ?? window.screen.availWidth)) /
+            (imageBasedSubtitleScaleFactor * (videoRef.current?.clientWidth ?? window.screen.availWidth)) /
             subtitle.textImage.screen.width;
         const width = imageScale * subtitle.textImage.image.width;
         return `
@@ -196,25 +199,24 @@ const showingSubtitleHtml = (
     return `<span class="${allSubtitleClasses}" style="${subtitleStyles}" data-track="${subtitle.track}" ${ASB_SUBTITLE_INDEX_ATTRIBUTE}="${subtitle.index}">${subtitle.text}</span>`;
 };
 
-interface CachedShowingSubtitleProps {
+interface ShowingSubtitleProps {
     subtitle: IndexedSubtitleModel;
     visible: boolean;
-    domCache: OffscreenDomCache;
     renderHtml: (subtitle: IndexedSubtitleModel) => string;
     className?: string;
     onMouseOver: React.MouseEventHandler<HTMLDivElement>;
     onMouseOut: React.MouseEventHandler<HTMLDivElement>;
 }
 
-const CachedShowingSubtitle = React.memo(function CachedShowingSubtitle({
+const ShowingSubtitle = React.memo(function ShowingSubtitle({
     subtitle,
     visible,
-    domCache,
     renderHtml,
     className,
     onMouseOver,
     onMouseOut,
-}: CachedShowingSubtitleProps) {
+}: ShowingSubtitleProps) {
+    const ref = useJitenSubtitleElement(subtitle.index, renderHtml(subtitle));
     return (
         <div
             className={className ? className : ''}
@@ -222,17 +224,7 @@ const CachedShowingSubtitle = React.memo(function CachedShowingSubtitle({
             style={visible ? { pointerEvents: 'auto' } : { visibility: 'hidden', pointerEvents: 'none' }}
             onMouseOver={onMouseOver}
             onMouseOut={onMouseOut}
-            ref={(ref) => {
-                if (!ref) {
-                    return;
-                }
-
-                while (ref.firstChild) {
-                    domCache.return(ref.lastChild! as HTMLElement);
-                }
-
-                ref.appendChild(domCache.get(String(subtitle.index), () => renderHtml(subtitle)));
-            }}
+            ref={ref}
         />
     );
 });
@@ -287,6 +279,8 @@ export interface SeekRequest {
 }
 
 interface Props {
+    embedded?: boolean;
+    disableKeyEvents?: boolean;
     settings: AsbplayerSettings;
     settingsProvider: SettingsProvider;
     extension: ChromeExtension;
@@ -343,7 +337,9 @@ const saveLastControlType = async (controlType: ControlType): Promise<void> => {
     storage.set(lastControlTypeKey, String(controlType));
 };
 
-export default function VideoPlayer({
+function VideoPlayer({
+    embedded = false,
+    disableKeyEvents = false,
     settings,
     settingsProvider,
     extension,
@@ -374,11 +370,6 @@ export default function VideoPlayer({
         hiddenVideoRef.current = node;
         setHiddenVideoReady(node !== null);
     }, []);
-    const [windowWidth, windowHeight] = useWindowSize(true);
-    if (videoRef.current) {
-        videoRef.current.width = windowWidth;
-        videoRef.current.height = windowHeight;
-    }
     const playerChannel = useMemo(() => {
         asbTrace('playback/video-player', 'Creating player channel');
         return new PlayerChannel(channel);
@@ -464,10 +455,6 @@ export default function VideoPlayer({
     const handleBlurOverlayToggle = useCallback(() => setBlurOverlayVisible((v) => !v), []);
     const mobileOverlayRef = useRef<HTMLDivElement>(null);
     const bottomSubtitleContainerRef = useRef<HTMLDivElement>(null);
-    const domCacheRef = useRef<OffscreenDomCache | undefined>(undefined);
-    const updateSubtitleDomCacheRef = useRef<((subtitles: readonly IndexedSubtitleModel[]) => void) | undefined>(
-        undefined
-    );
     const thumbnailsRef = useRef<Map<number, string>>(new Map()); // cache thumbnails, in intervals of 5s
     const isGeneratingRef = useRef(false); // avoid subsequent calls to generate thumbnail while generating one
 
@@ -484,6 +471,9 @@ export default function VideoPlayer({
     }, [subtitleSettings]);
 
     const keyBinder = useAppKeyBinder(miscSettings.keyBindSet, extension);
+    const disableKeyEventsRef = useRef(disableKeyEvents);
+    disableKeyEventsRef.current = disableKeyEvents;
+    const keyEventsDisabled = useCallback(() => disableKeyEventsRef.current, []);
 
     useEffect(() => {
         if (i18n.language !== miscSettings.language) {
@@ -601,17 +591,17 @@ export default function VideoPlayer({
             clock.setTime(videoElement.currentTime * 1000, { paused: videoElement.paused });
 
             if (videoElement.readyState === 4) {
-                notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack);
+                notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack, popOut);
                 setVideoWidth(videoElement.videoWidth);
                 setVideoHeight(videoElement.videoHeight);
             } else {
                 videoElement.onloadeddata = () => {
-                    notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack);
+                    notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack, popOut);
                     setVideoWidth(videoElement.videoWidth);
                     setVideoHeight(videoElement.videoHeight);
                 };
                 videoElement.ondurationchange = () =>
-                    notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack);
+                    notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack, popOut);
             }
 
             videoElement.oncanplay = () => {
@@ -625,7 +615,7 @@ export default function VideoPlayer({
 
             if (isMobile) videoElement.volume = 1; // Force volume to 1 on mobile - users can control device volume
         },
-        [clock, playerChannel]
+        [clock, playerChannel, popOut]
     );
 
     const updateSubtitlesWithOffset = useCallback((offset: number, notifyPlayer: boolean, notificationKey: string) => {
@@ -895,7 +885,7 @@ export default function VideoPlayer({
         playerChannel.onClose(() => {
             asbTrace('playback/video-player', 'Received player-channel close command');
             playerChannel.close();
-            window.close();
+            if (!embedded) window.close();
         });
 
         playerChannel.onSubtitles((subtitles) => {
@@ -927,8 +917,6 @@ export default function VideoPlayer({
             asbTrace('playback/video-player', 'Received subtitle update from player channel', {
                 subtitleCount: updatedSubtitles.length,
             });
-            updateSubtitleDomCacheRef.current?.(updatedSubtitles);
-
             const updatedByIndex = new Map(updatedSubtitles.map((s) => [s.index, s] as const));
             if (showSubtitlesRef.current.some((s) => updatedByIndex.has(s.index))) {
                 setShowSubtitles((prevShowSubtitles) =>
@@ -977,20 +965,28 @@ export default function VideoPlayer({
             });
         });
 
-        window.onbeforeunload = () => {
-            if (!poppingInRef.current) {
-                playerChannel.close();
-            }
+        const onBeforeUnload = () => {
+            if (!poppingInRef.current) playerChannel.close();
         };
+        window.addEventListener('beforeunload', onBeforeUnload);
 
         setPlayerChannelSubscribed(true);
         playerChannel.playModes(playbackEngineRef.current?.playbackModes ?? new Set([PlayMode.normal]));
         asbTrace('playback/video-player', 'Player channel subscribed');
         return () => {
             asbTrace('playback/video-player', 'Closing player channel');
+            window.removeEventListener('beforeunload', onBeforeUnload);
             playerChannel.close();
         };
-    }, [clock, playerChannel, requestFullscreen, togglePlaybackMode, updatePlaybackRate, updateSubtitlesWithOffset]);
+    }, [
+        clock,
+        playerChannel,
+        requestFullscreen,
+        togglePlaybackMode,
+        updatePlaybackRate,
+        updateSubtitlesWithOffset,
+        embedded,
+    ]);
 
     const handlePlay = useCallback(() => {
         if (videoRef.current) {
@@ -1207,12 +1203,12 @@ export default function VideoPlayer({
                 event.preventDefault();
                 playerChannel.currentTime(subtitle.start / 1000);
             },
-            () => !videoRef.current,
+            () => keyEventsDisabled() || !videoRef.current,
             () => clock.time({ maxMs: lengthMs }),
             () => subtitles,
             () => settings.seekableTracks
         );
-    }, [keyBinder, playerChannel, subtitles, lengthMs, clock, settings]);
+    }, [keyBinder, playerChannel, subtitles, lengthMs, clock, settings, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindSeekToBeginningOfCurrentSubtitle(
@@ -1224,12 +1220,12 @@ export default function VideoPlayer({
                     playerChannel.play();
                 }
             },
-            () => !videoRef.current,
+            () => keyEventsDisabled() || !videoRef.current,
             () => clock.time({ maxMs: lengthMs }),
             () => subtitles,
             () => settings.seekableTracks
         );
-    }, [keyBinder, playerChannel, subtitles, lengthMs, clock, settings]);
+    }, [keyBinder, playerChannel, subtitles, lengthMs, clock, settings, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindSeekBackwardOrForward(
@@ -1244,9 +1240,9 @@ export default function VideoPlayer({
                     playerChannel.currentTime(Math.max(0, (timestamp - seekDuration) / 1000));
                 }
             },
-            () => !videoRef.current
+            () => keyEventsDisabled() || !videoRef.current
         );
-    }, [keyBinder, playerChannel, lengthMs, clock, miscSettings]);
+    }, [keyBinder, playerChannel, lengthMs, clock, miscSettings, keyEventsDisabled]);
 
     const calculateSurroundingSubtitles = useCallback(
         (index: number) => {
@@ -1266,134 +1262,110 @@ export default function VideoPlayer({
                 event.preventDefault();
                 handleOffsetChange(offset);
             },
-            () => false,
+            keyEventsDisabled,
             () => subtitles
         );
-    }, [keyBinder, handleOffsetChange, subtitles]);
+    }, [keyBinder, handleOffsetChange, subtitles, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindResetOffet(
-            (event) => {
-                event.preventDefault();
-                handleOffsetChange(0);
-            },
-            () => false
-        );
-    }, [keyBinder, handleOffsetChange]);
+        return keyBinder.bindResetOffet((event) => {
+            event.preventDefault();
+            handleOffsetChange(0);
+        }, keyEventsDisabled);
+    }, [keyBinder, handleOffsetChange, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindAdjustPlaybackRate(
-            (event, increase) => {
-                const playbackEngine = playbackEngineRef.current;
-                if (!playbackEngine) return;
-                event.preventDefault();
+        return keyBinder.bindAdjustPlaybackRate((event, increase) => {
+            const playbackEngine = playbackEngineRef.current;
+            if (!playbackEngine) return;
+            event.preventDefault();
 
-                notifyPlaybackRate(
-                    playbackEngine.adjustPlaybackRate(
-                        increase ? miscSettings.speedChangeStep : -miscSettings.speedChangeStep
-                    )
+            notifyPlaybackRate(
+                playbackEngine.adjustPlaybackRate(
+                    increase ? miscSettings.speedChangeStep : -miscSettings.speedChangeStep
+                )
+            );
+        }, keyEventsDisabled);
+    }, [updatePlaybackRate, keyBinder, miscSettings, notifyPlaybackRate, keyEventsDisabled]);
+
+    useEffect(() => {
+        return keyBinder.bindToggleSubtitles((event) => {
+            event.preventDefault();
+            setDisplaySubtitles(!displaySubtitles);
+            playbackPreferences.displaySubtitles = !displaySubtitles;
+        }, keyEventsDisabled);
+    }, [keyBinder, displaySubtitles, playbackPreferences, keyEventsDisabled]);
+
+    useEffect(() => {
+        return keyBinder.bindToggleSubtitleTrackInVideo((event, track) => {
+            event.preventDefault();
+            setDisabledSubtitleTracks((tracks) => {
+                const newTracks = { ...tracks };
+                newTracks[track] = !tracks[track];
+                return newTracks;
+            });
+        }, keyEventsDisabled);
+    }, [keyBinder, keyEventsDisabled]);
+
+    useEffect(() => {
+        return keyBinder.bindAdjustSubtitlePositionOffset((event, increase) => {
+            const newSubtitleSettings = { ...subtitleSettings };
+
+            event.preventDefault();
+            if (increase) {
+                newSubtitleSettings.subtitlePositionOffset = subtitleSettings.subtitlePositionOffset + 20;
+            } else {
+                newSubtitleSettings.subtitlePositionOffset = subtitleSettings.subtitlePositionOffset - 20;
+            }
+
+            onSettingsChanged(newSubtitleSettings);
+            setSubtitleSettings(newSubtitleSettings);
+        }, keyEventsDisabled);
+    }, [keyBinder, subtitleSettings, onSettingsChanged, keyEventsDisabled]);
+
+    useEffect(() => {
+        return keyBinder.bindAdjustTopSubtitlePositionOffset((event, increase) => {
+            const newSubtitleSettings = { ...subtitleSettings };
+
+            event.preventDefault();
+            if (increase) {
+                newSubtitleSettings.topSubtitlePositionOffset = subtitleSettings.topSubtitlePositionOffset + 20;
+            } else {
+                newSubtitleSettings.topSubtitlePositionOffset = subtitleSettings.topSubtitlePositionOffset - 20;
+            }
+
+            onSettingsChanged(newSubtitleSettings);
+            setSubtitleSettings(newSubtitleSettings);
+        }, keyEventsDisabled);
+    }, [keyBinder, subtitleSettings, onSettingsChanged, keyEventsDisabled]);
+
+    useEffect(() => {
+        return keyBinder.bindToggleSubtitleTrackInList((event, track) => {
+            event.preventDefault();
+            playerChannel.toggleSubtitleTrackInList(track);
+        }, keyEventsDisabled);
+    }, [keyBinder, playerChannel, keyEventsDisabled]);
+
+    useEffect(() => {
+        return keyBinder.bindUnblurTrack((event, targetTrack) => {
+            event.preventDefault();
+            let newSubtitleSettings = { ...subtitleSettings };
+
+            for (let currentTrack = 0; currentTrack < trackCount; ++currentTrack) {
+                const originalValue = textSubtitleSettingsForTrack(subtitleSettings, currentTrack).subtitleBlur!;
+                const targetValue = currentTrack === targetTrack ? !originalValue : originalValue;
+                const change = changeForTextSubtitleSetting(
+                    { subtitleBlur: targetValue },
+                    newSubtitleSettings,
+                    currentTrack
                 );
-            },
-            () => false
-        );
-    }, [updatePlaybackRate, keyBinder, miscSettings, notifyPlaybackRate]);
+                newSubtitleSettings = { ...newSubtitleSettings, ...change };
+            }
 
-    useEffect(() => {
-        return keyBinder.bindToggleSubtitles(
-            (event) => {
-                event.preventDefault();
-                setDisplaySubtitles(!displaySubtitles);
-                playbackPreferences.displaySubtitles = !displaySubtitles;
-            },
-            () => false
-        );
-    }, [keyBinder, displaySubtitles, playbackPreferences]);
-
-    useEffect(() => {
-        return keyBinder.bindToggleSubtitleTrackInVideo(
-            (event, track) => {
-                event.preventDefault();
-                setDisabledSubtitleTracks((tracks) => {
-                    const newTracks = { ...tracks };
-                    newTracks[track] = !tracks[track];
-                    return newTracks;
-                });
-            },
-            () => false
-        );
-    }, [keyBinder]);
-
-    useEffect(() => {
-        return keyBinder.bindAdjustSubtitlePositionOffset(
-            (event, increase) => {
-                const newSubtitleSettings = { ...subtitleSettings };
-
-                event.preventDefault();
-                if (increase) {
-                    newSubtitleSettings.subtitlePositionOffset = subtitleSettings.subtitlePositionOffset + 20;
-                } else {
-                    newSubtitleSettings.subtitlePositionOffset = subtitleSettings.subtitlePositionOffset - 20;
-                }
-
-                onSettingsChanged(newSubtitleSettings);
-                setSubtitleSettings(newSubtitleSettings);
-            },
-            () => false
-        );
-    }, [keyBinder, subtitleSettings, onSettingsChanged]);
-
-    useEffect(() => {
-        return keyBinder.bindAdjustTopSubtitlePositionOffset(
-            (event, increase) => {
-                const newSubtitleSettings = { ...subtitleSettings };
-
-                event.preventDefault();
-                if (increase) {
-                    newSubtitleSettings.topSubtitlePositionOffset = subtitleSettings.topSubtitlePositionOffset + 20;
-                } else {
-                    newSubtitleSettings.topSubtitlePositionOffset = subtitleSettings.topSubtitlePositionOffset - 20;
-                }
-
-                onSettingsChanged(newSubtitleSettings);
-                setSubtitleSettings(newSubtitleSettings);
-            },
-            () => false
-        );
-    }, [keyBinder, subtitleSettings, onSettingsChanged]);
-
-    useEffect(() => {
-        return keyBinder.bindToggleSubtitleTrackInList(
-            (event, track) => {
-                event.preventDefault();
-                playerChannel.toggleSubtitleTrackInList(track);
-            },
-            () => false
-        );
-    }, [keyBinder, playerChannel]);
-
-    useEffect(() => {
-        return keyBinder.bindUnblurTrack(
-            (event, targetTrack) => {
-                event.preventDefault();
-                let newSubtitleSettings = { ...subtitleSettings };
-
-                for (let currentTrack = 0; currentTrack < trackCount; ++currentTrack) {
-                    const originalValue = textSubtitleSettingsForTrack(subtitleSettings, currentTrack).subtitleBlur!;
-                    const targetValue = currentTrack === targetTrack ? !originalValue : originalValue;
-                    const change = changeForTextSubtitleSetting(
-                        { subtitleBlur: targetValue },
-                        newSubtitleSettings,
-                        currentTrack
-                    );
-                    newSubtitleSettings = { ...newSubtitleSettings, ...change };
-                }
-
-                onSettingsChanged(newSubtitleSettings);
-                setSubtitleSettings(newSubtitleSettings);
-            },
-            () => false
-        );
-    }, [keyBinder, subtitleSettings, trackCount, onSettingsChanged]);
+            onSettingsChanged(newSubtitleSettings);
+            setSubtitleSettings(newSubtitleSettings);
+        }, keyEventsDisabled);
+    }, [keyBinder, subtitleSettings, trackCount, onSettingsChanged, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindOffsetToSubtitle(
@@ -1401,12 +1373,12 @@ export default function VideoPlayer({
                 event.preventDefault();
                 handleOffsetChange(offset);
             },
-            () => false,
+            keyEventsDisabled,
             () => clock.time({ maxMs: lengthMs }),
             () => subtitles,
             () => miscSettings.seekableTracks
         );
-    }, [keyBinder, handleOffsetChange, subtitles, clock, lengthMs, miscSettings.seekableTracks]);
+    }, [keyBinder, handleOffsetChange, subtitles, clock, lengthMs, miscSettings.seekableTracks, keyEventsDisabled]);
 
     const extractSubtitles = useCallback(() => {
         if (!subtitles || subtitles.length === 0) {
@@ -1563,7 +1535,13 @@ export default function VideoPlayer({
     useJitenTarget(
         useCallback(
             (target: JitenTarget) => {
-                if (settings.miningDestination !== 'jiten' || !settings.jitenAutoAttach || ankiDialogOpen) return;
+                if (
+                    (embedded && keyEventsDisabled()) ||
+                    settings.miningDestination !== 'jiten' ||
+                    !settings.jitenAutoAttach ||
+                    ankiDialogOpen
+                )
+                    return;
                 const subtitle = findJitenSubtitle(target, subtitles ?? [], clock.time({ maxMs: lengthMs }));
                 if (!subtitle) return;
                 mineCurrentSubtitle(
@@ -1585,6 +1563,8 @@ export default function VideoPlayer({
                 clock,
                 lengthMs,
                 calculateSurroundingSubtitles,
+                embedded,
+                keyEventsDisabled,
             ]
         )
     );
@@ -1715,21 +1695,18 @@ export default function VideoPlayer({
                     event.preventDefault();
                     inferAndExecuteMiningBehavior(PostMineAction.mineNewJitenWords);
                 },
-                () => ankiDialogOpen
+                () => keyEventsDisabled() || ankiDialogOpen
             ),
-        [keyBinder, inferAndExecuteMiningBehavior, ankiDialogOpen]
+        [keyBinder, inferAndExecuteMiningBehavior, ankiDialogOpen, keyEventsDisabled]
     );
 
     useEffect(() => {
-        return keyBinder.bindAnkiExport(
-            (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                inferAndExecuteMiningBehavior(PostMineAction.showAnkiDialog);
-            },
-            () => false
-        );
-    }, [inferAndExecuteMiningBehavior, keyBinder]);
+        return keyBinder.bindAnkiExport((event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            inferAndExecuteMiningBehavior(PostMineAction.showAnkiDialog);
+        }, keyEventsDisabled);
+    }, [inferAndExecuteMiningBehavior, keyBinder, keyEventsDisabled]);
 
     useEffect(() => {
         return miningContext.onEvent('stopped-mining', () => {
@@ -1750,15 +1727,12 @@ export default function VideoPlayer({
     }, [miningContext, wasPlayingOnAnkiDialogRequest, miscSettings, playerChannel]);
 
     useEffect(() => {
-        return keyBinder.bindUpdateLastCard(
-            (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                inferAndExecuteMiningBehavior(PostMineAction.updateLastCard);
-            },
-            () => false
-        );
-    }, [inferAndExecuteMiningBehavior, keyBinder]);
+        return keyBinder.bindUpdateLastCard((event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            inferAndExecuteMiningBehavior(PostMineAction.updateLastCard);
+        }, keyEventsDisabled);
+    }, [inferAndExecuteMiningBehavior, keyBinder, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindTakeScreenshot(
@@ -1782,19 +1756,26 @@ export default function VideoPlayer({
                     );
                 }
             },
-            () => false
+            () => keyEventsDisabled() && !ankiDialogOpen
         );
-    }, [clock, lengthMs, keyBinder, lastMinedRecord, mineSubtitle, popOut, ankiDialogOpen, onAnkiDialogRewind]);
+    }, [
+        clock,
+        lengthMs,
+        keyBinder,
+        lastMinedRecord,
+        mineSubtitle,
+        popOut,
+        ankiDialogOpen,
+        onAnkiDialogRewind,
+        keyEventsDisabled,
+    ]);
 
     useEffect(() => {
-        return keyBinder.bindToggleRecording(
-            (event) => {
-                event.preventDefault();
-                toggleSelectMiningInterval(PostMineAction.showAnkiDialog);
-            },
-            () => false
-        );
-    }, [keyBinder, toggleSelectMiningInterval]);
+        return keyBinder.bindToggleRecording((event) => {
+            event.preventDefault();
+            toggleSelectMiningInterval(PostMineAction.showAnkiDialog);
+        }, keyEventsDisabled);
+    }, [keyBinder, toggleSelectMiningInterval, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindCopy(
@@ -1802,7 +1783,7 @@ export default function VideoPlayer({
                 event.preventDefault();
                 inferAndExecuteMiningBehavior(PostMineAction.none);
             },
-            () => false,
+            keyEventsDisabled,
             () => {
                 const extracted = extractSubtitles();
 
@@ -1813,62 +1794,47 @@ export default function VideoPlayer({
                 return extracted.currentSubtitle;
             }
         );
-    }, [extractSubtitles, inferAndExecuteMiningBehavior, keyBinder]);
+    }, [extractSubtitles, inferAndExecuteMiningBehavior, keyBinder, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindPlay(
-            (event) => {
-                event.preventDefault();
+        return keyBinder.bindPlay((event) => {
+            event.preventDefault();
 
-                if (playing()) {
-                    playerChannel.pause();
-                } else {
-                    playerChannel.play();
-                }
-            },
-            () => false
-        );
-    }, [keyBinder, playerChannel]);
+            if (playing()) {
+                playerChannel.pause();
+            } else {
+                playerChannel.play();
+            }
+        }, keyEventsDisabled);
+    }, [keyBinder, playerChannel, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindAutoPause(
-            (event) => {
-                event.preventDefault();
-                togglePlaybackMode(PlayMode.autoPause);
-            },
-            () => false
-        );
-    }, [keyBinder, togglePlaybackMode]);
+        return keyBinder.bindAutoPause((event) => {
+            event.preventDefault();
+            togglePlaybackMode(PlayMode.autoPause);
+        }, keyEventsDisabled);
+    }, [keyBinder, togglePlaybackMode, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindCondensedPlayback(
-            (event) => {
-                event.preventDefault();
-                togglePlaybackMode(PlayMode.condensed);
-            },
-            () => false
-        );
-    }, [keyBinder, togglePlaybackMode]);
+        return keyBinder.bindCondensedPlayback((event) => {
+            event.preventDefault();
+            togglePlaybackMode(PlayMode.condensed);
+        }, keyEventsDisabled);
+    }, [keyBinder, togglePlaybackMode, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindFastForwardPlayback(
-            (event) => {
-                event.preventDefault();
-                togglePlaybackMode(PlayMode.fastForward);
-            },
-            () => false
-        );
-    }, [keyBinder, togglePlaybackMode]);
+        return keyBinder.bindFastForwardPlayback((event) => {
+            event.preventDefault();
+            togglePlaybackMode(PlayMode.fastForward);
+        }, keyEventsDisabled);
+    }, [keyBinder, togglePlaybackMode, keyEventsDisabled]);
 
     useEffect(() => {
-        return keyBinder.bindToggleRepeat(
-            (event) => {
-                event.preventDefault();
-                togglePlaybackMode(PlayMode.repeat);
-            },
-            () => false
-        );
-    }, [keyBinder, togglePlaybackMode]);
+        return keyBinder.bindToggleRepeat((event) => {
+            event.preventDefault();
+            togglePlaybackMode(PlayMode.repeat);
+        }, keyEventsDisabled);
+    }, [keyBinder, togglePlaybackMode, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindCycleAutoPauseResumeMode(
@@ -1890,9 +1856,9 @@ export default function VideoPlayer({
                     ],
                 });
             },
-            () => subtitles.length === 0
+            () => keyEventsDisabled() || subtitles.length === 0
         );
-    }, [keyBinder, subtitles.length, t]);
+    }, [keyBinder, subtitles.length, t, keyEventsDisabled]);
 
     useEffect(() => {
         return keyBinder.bindToggleSubtitleVisibility(
@@ -1914,9 +1880,9 @@ export default function VideoPlayer({
                     ],
                 });
             },
-            () => subtitles.length === 0
+            () => keyEventsDisabled() || subtitles.length === 0
         );
-    }, [keyBinder, subtitles.length, t]);
+    }, [keyBinder, subtitles.length, t, keyEventsDisabled]);
 
     const handleSubtitlesToggle = useCallback(() => {
         setDisplaySubtitles(!displaySubtitles);
@@ -1945,8 +1911,8 @@ export default function VideoPlayer({
 
     const handleClose = useCallback(() => {
         playerChannel.close();
-        window.close();
-    }, [playerChannel]);
+        if (!embedded) window.close();
+    }, [playerChannel, embedded]);
 
     const handleHideSubtitlePlayerToggle = useCallback(() => {
         playerChannel.hideSubtitlePlayerToggle();
@@ -2021,10 +1987,7 @@ export default function VideoPlayer({
         [trackStyles, subtitleSettings.imageBasedSubtitleScaleFactor]
     );
 
-    const { getSubtitleDomCache, updateSubtitleDomCache } = useSubtitleDomCache(subtitles, getSubtitleHtml);
-
-    domCacheRef.current = getSubtitleDomCache();
-    updateSubtitleDomCacheRef.current = updateSubtitleDomCache;
+    useJitenSubtitleSource(subtitles, !embedded);
 
     const handleSwipe = useCallback(
         (direction: Direction) => {
@@ -2101,16 +2064,13 @@ export default function VideoPlayer({
     // (and therefore the VideoPlayer takes up all the space) when there isn't enough room for the subtitle player
     // to be displayed.
     const notEnoughRoomForSubtitlePlayer =
-        !subtitlePlayerHidden &&
-        parent?.document?.body !== undefined &&
-        parent.document.body.clientWidth === document.body.clientWidth;
+        !subtitlePlayerHidden && (containerRef.current?.clientWidth ?? 0) >= document.body.clientWidth;
 
     const elementForSubtitle = (subtitle: IndexedSubtitleModel, visible: boolean) => (
-        <CachedShowingSubtitle
+        <ShowingSubtitle
             key={subtitle.index}
             subtitle={subtitle}
             visible={visible}
-            domCache={domCacheRef.current ?? getSubtitleDomCache()}
             renderHtml={getSubtitleHtml}
             onMouseOver={handleSubtitleMouseOver}
             onMouseOut={handleSubtitleMouseOut}
@@ -2180,6 +2140,7 @@ export default function VideoPlayer({
     return (
         <div
             ref={containerRef}
+            style={embedded ? { height: '100%' } : undefined}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             className={`${classes.root} asbplayer-token-container`}
@@ -2325,3 +2286,5 @@ export default function VideoPlayer({
         </div>
     );
 }
+
+export default React.memo(VideoPlayer);

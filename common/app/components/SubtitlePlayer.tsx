@@ -14,6 +14,7 @@ import type {
 } from 'react-virtuoso';
 import { TableVirtuoso } from 'react-virtuoso';
 import { useResize } from '@project/common/app/hooks/use-resize';
+import { useJitenSubtitleElement } from '@project/common/app/hooks/use-jiten-subtitles';
 import type { ScreenLocation } from '@project/common/app/hooks/use-dragging';
 import { useDragging } from '@project/common/app/hooks/use-dragging';
 import { useTranslation } from 'react-i18next';
@@ -422,6 +423,7 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
 }: SubtitleRowCellsProps) {
     const classes = useSubtitleRowStyles();
     const { t } = useTranslation();
+    const subtitleRef = useJitenSubtitleElement<HTMLSpanElement>(subtitle.index, subtitle.text, 'panel');
     const className = `${compressed ? classes.compressedSubtitle : classes.subtitle} asb-subtitles`.trim();
     const formatTimestamp = (timestamp: string) =>
         timestamp.replace(/\.\d+$/, (fraction) =>
@@ -433,9 +435,7 @@ const SubtitleRowCells = React.memo(function SubtitleRowCells({
     ) : (
         <span
             className={disabledClassName}
-            dangerouslySetInnerHTML={{
-                __html: subtitle.text,
-            }}
+            ref={subtitleRef}
             data-track={subtitle.track}
             {...{ [ASB_SUBTITLE_INDEX_ATTRIBUTE]: subtitle.index }}
             onMouseOver={onMouseOver}

@@ -20,6 +20,7 @@ import type {
 import type { JitenTarget } from '@project/common/jiten/jiten';
 import { useJitenTarget } from '@project/common/app/hooks/use-jiten-target';
 import { readJitenWords } from '@project/common/jiten/reader-words';
+import { useJitenSubtitleSource } from '@project/common/app/hooks/use-jiten-subtitles';
 import { AutoPausePreference, PlayMode, PostMinePlayback, PostMineAction } from '@project/common';
 import type { AsbplayerSettings, SettingsProvider } from '@project/common/settings';
 import { isTrackAutoCopyable, VideoSubtitleSplitBehavior } from '@project/common/settings';
@@ -89,7 +90,7 @@ const useStyles = makeStyles<Theme, StylesProps>(() => ({
         width: '100%',
         height: '100%',
     },
-    videoFrame: {
+    videoContainer: {
         width: '100%',
         height: '100%',
         border: 0,
@@ -140,7 +141,8 @@ interface PlayerProps {
     playbackPreferences: PlaybackPreferenceController;
     keyBinder: KeyBinder;
     extension: ChromeExtension;
-    videoFrameRef?: MutableRefObject<HTMLIFrameElement | null>;
+    videoContainerRef?: MutableRefObject<HTMLDivElement | null>;
+    renderVideo?: (videoFile: string, channel: string, disableKeyEvents: boolean) => React.ReactNode;
     videoChannelRef?: MutableRefObject<VideoChannel | null>;
     drawerOpen: boolean;
     appBarHidden: boolean;
@@ -196,7 +198,8 @@ function PlayerComponent(
         playbackPreferences,
         keyBinder,
         extension,
-        videoFrameRef,
+        videoContainerRef,
+        renderVideo,
         videoChannelRef,
         drawerOpen,
         appBarHidden,
@@ -220,7 +223,7 @@ function PlayerComponent(
         onSubtitles,
         onLoadFiles,
         onLoadSubtitles,
-        disableKeyEvents,
+        disableKeyEvents: parentDisableKeyEvents,
         jumpToSubtitle,
         onJumpToSubtitleHandled,
         rewindSubtitle,
@@ -252,6 +255,9 @@ function PlayerComponent(
     const videoFileUrl = sources?.videoFileUrl;
     const playbackPositionKey = videoFile?.file.name;
     const syntheticPlayback = videoFileUrl === undefined && tab === undefined;
+    useJitenSubtitleSource(subtitles, tab === undefined);
+    const [videoFocused, setVideoFocused] = useState(false);
+    const disableKeyEvents = parentDisableKeyEvents || (videoFocused && Boolean(videoFileUrl && !videoPopOut));
     const playModeEnabled = subtitles && subtitles.length > 0 && Boolean(videoFileUrl);
     const [subtitlePlayerResizing, setSubtitlePlayerResizing] = useState<boolean>(false);
     const [loadingSubtitles, setLoadingSubtitles] = useState<boolean>(false);
@@ -1004,6 +1010,7 @@ function PlayerComponent(
 
     useEffect(() => {
         if (videoPopOut && videoFileUrl && channelId) {
+            // shortcut: popout has its own Reader context; one request across windows needs Reader support.
             window.open(
                 origin + '?video=' + encodeURIComponent(videoFileUrl) + '&channel=' + channelId + '&popout=true',
                 'asbplayer-video-' + videoFileUrl,
@@ -1012,7 +1019,7 @@ function PlayerComponent(
         }
 
         setLastJumpToTopTimestamp(Date.now());
-    }, [videoPopOut, channelId, videoFileUrl, videoFrameRef, videoChannelRef, origin]);
+    }, [videoPopOut, channelId, videoFileUrl, videoContainerRef, videoChannelRef, origin]);
 
     const handlePlay = useCallback(() => play(clock, mediaAdapter, true), [clock, mediaAdapter, play]);
     const handlePause = useCallback(() => pause(clock, mediaAdapter, true), [clock, mediaAdapter]);
@@ -1430,30 +1437,28 @@ function PlayerComponent(
                 anchor="top"
             />
             <Grid container direction="row" wrap="nowrap" className={classes.container}>
-                {videoInWindow && (
+                {videoInWindow && channelId && (
                     <Grid item style={{ flexGrow: 1, minWidth: minVideoPlayerWidth, position: 'relative' }}>
-                        <iframe
-                            ref={videoFrameRef}
-                            className={classes.videoFrame}
-                            style={{
-                                pointerEvents: subtitlePlayerResizing ? 'none' : 'auto',
+                        <div
+                            ref={videoContainerRef}
+                            className={classes.videoContainer}
+                            onPointerDownCapture={() => setVideoFocused(true)}
+                            onFocusCapture={() => setVideoFocused(true)}
+                            onBlurCapture={(event) => {
+                                if (!event.currentTarget.contains(event.relatedTarget)) setVideoFocused(false);
                             }}
-                            src={
-                                origin +
-                                '?video=' +
-                                encodeURIComponent(videoFileUrl!) +
-                                '&channel=' +
-                                channelId +
-                                '&popout=false'
-                            }
-                            title="asbplayer"
-                        />
+                            style={{ pointerEvents: subtitlePlayerResizing ? 'none' : 'auto' }}
+                        >
+                            {renderVideo?.(videoFileUrl!, channelId, parentDisableKeyEvents || !videoFocused)}
+                        </div>
                     </Grid>
                 )}
 
                 <Grid
                     item
                     hidden={actuallyHideSubtitlePlayer}
+                    onPointerDownCapture={() => setVideoFocused(false)}
+                    onFocusCapture={() => setVideoFocused(false)}
                     style={{
                         flexGrow: videoInWindow ? 0 : 1,
                         width: 'auto',

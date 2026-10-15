@@ -319,12 +319,12 @@ function App({
     const inVideoPlayer = useMemo(() => searchParams.get('video') !== null, [searchParams]);
     const [videoFullscreen, setVideoFullscreen] = useState<boolean>(false);
     const keyBinder = useAppKeyBinder(settings.keyBindSet, extension);
-    const videoFrameRef = useRef<HTMLIFrameElement>(null);
+    const videoContainerRef = useRef<HTMLDivElement>(null);
     const videoChannelRef = useRef<VideoChannel>(null);
     const [videoPlayerSeekRequest, setVideoPlayerSeekRequest] = useState<SeekRequest>();
     const [width] = useWindowSize(!inVideoPlayer);
-    const drawerRatio = videoFrameRef.current ? 0.2 : 0.3;
-    const minDrawerSize = videoFrameRef.current ? 150 : 300;
+    const drawerRatio = videoContainerRef.current ? 0.2 : 0.3;
+    const minDrawerSize = videoContainerRef.current ? 150 : 300;
     const drawerWidth = Math.max(minDrawerSize, width * drawerRatio);
     const copyHistoryRepository = useMemo(() => {
         if (extension.supportsCopyHistoryRequest) {
@@ -807,9 +807,7 @@ function App({
     }, [videoFullscreen]);
     useEffect(() => {
         const listener = () => {
-            if (!document.fullscreenElement) {
-                setVideoFullscreen(false);
-            }
+            setVideoFullscreen(document.fullscreenElement !== null);
         };
         document.addEventListener('fullscreenchange', listener);
         return () => document.removeEventListener('fullscreenchange', listener);
@@ -1367,7 +1365,7 @@ function App({
         const unsubscribe = extension.subscribe((message) => {
             void onMessage(message);
         });
-        extension.videoPlayer = false;
+        extension.videoPlayer = Boolean(sources.videoFileUrl && !videoPopOut);
         extension.loadedSubtitles = subtitles.length > 0;
         extension.setSubtitleTracks(
             subtitles,
@@ -1381,6 +1379,7 @@ function App({
         subtitles,
         inVideoPlayer,
         sources.videoFileUrl,
+        videoPopOut,
         sources.subtitleFiles,
         tab,
         handleFiles,
@@ -1821,7 +1820,7 @@ function App({
     const loading = loadingSources.length !== 0;
     const nothingLoaded =
         tab === undefined &&
-        ((loading && !videoFrameRef.current) || (sources.subtitleFiles.length === 0 && !sources.videoFile));
+        ((loading && !videoContainerRef.current) || (sources.subtitleFiles.length === 0 && !sources.videoFile));
     const appBarHidden = sources.videoFile !== undefined && ((theaterMode && !videoPopOut) || videoFullscreen);
     const effectiveDrawerOpen = copyHistoryOpen && !videoFullscreen;
     return (
@@ -2056,7 +2055,28 @@ function App({
                                     jumpToSubtitle={jumpToSubtitle}
                                     onJumpToSubtitleHandled={handleJumpToSubtitleHandled}
                                     rewindSubtitle={rewindSubtitle}
-                                    videoFrameRef={videoFrameRef}
+                                    renderVideo={(videoFile, channel, disableVideoKeyEvents) => (
+                                        <VideoPlayer
+                                            key={videoFile}
+                                            embedded
+                                            videoFile={videoFile}
+                                            channel={channel}
+                                            popOut={false}
+                                            settingsProvider={settingsProvider}
+                                            settings={settings}
+                                            extension={extension}
+                                            miningContext={miningContext}
+                                            ankiDialogOpen={ankiDialogOpen}
+                                            seekRequest={videoPlayerSeekRequest}
+                                            disableKeyEvents={disableVideoKeyEvents}
+                                            onSettingsChanged={onSettingsChanged}
+                                            profile={profile}
+                                            onAnkiDialogRequest={handleAnkiDialogRequestFromVideoPlayer}
+                                            onAnkiDialogRewind={handleAnkiDialogRewindFromVideoPlayer}
+                                            onError={handleError}
+                                        />
+                                    )}
+                                    videoContainerRef={videoContainerRef}
                                     videoChannelRef={videoChannelRef}
                                     extension={extension}
                                     drawerOpen={effectiveDrawerOpen}
