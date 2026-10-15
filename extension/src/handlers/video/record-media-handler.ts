@@ -150,7 +150,7 @@ export default class RecordMediaHandler {
             }
         }
 
-        const { isBulkExport, noteId, postMineAction, ...messageWithoutBulkFlag } = message;
+        const { isBulkExport, postMineAction, ...messageWithoutBulkFlag } = message;
         const card: CardModel = {
             image: imageModel,
             audio: audioModel,
@@ -158,9 +158,9 @@ export default class RecordMediaHandler {
         };
 
         if (isBulkExport) {
-            void this._cardPublisher.publishBulk(card, tabId, recordMediaCommand.src);
+            void this._cardPublisher.publish(card, PostMineAction.none, tabId, recordMediaCommand.src);
         } else {
-            void this._cardPublisher.publish(card, postMineAction, tabId, recordMediaCommand.src, noteId);
+            void this._cardPublisher.publish(card, postMineAction, tabId, recordMediaCommand.src);
         }
     }
 }

@@ -76,10 +76,7 @@ export class TabAnkiUiController {
         const activeProfilePromise = this._settings.activeProfile();
         const globalStatePromise = globalStateProvider.getAll();
         const client = await this._client(language, ankiDialogSettings);
-        const capture =
-            ankiDialogSettings.miningDestination === 'jiten'
-                ? await readJitenCapture(card.subtitle, card.surroundingSubtitles)
-                : undefined;
+        const capture = await readJitenCapture(card.subtitle, card.surroundingSubtitles);
         const state: AnkiUiInitialState = {
             type: 'initial',
             open: true,
@@ -88,7 +85,7 @@ export class TabAnkiUiController {
             source: sourceString(card.subtitleFileName, card.mediaTimestamp ?? 0),
             dialogRequestedTimestamp: 0,
             ...card,
-            miningDestination: ankiDialogSettings.miningDestination,
+            miningDestination: 'jiten',
             jitenTarget: card.jitenTarget ?? capture?.jitenTarget,
             jitenWords: card.jitenWords?.length ? card.jitenWords : capture?.jitenWords,
             profiles: await profilesPromise,

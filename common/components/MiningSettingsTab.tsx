@@ -30,7 +30,7 @@ const MiningSettingsTab: React.FC<Props> = ({
     showWebmMediaFragmentSettings = true,
 }) => {
     const { t } = useTranslation();
-    const jiten = settings.miningDestination === 'jiten';
+    const jiten = true;
     const webmCaptureSupported = showWebmMediaFragmentSettings && isWebmMediaFragmentSupported();
     const {
         audioPaddingStart,
@@ -55,15 +55,6 @@ const MiningSettingsTab: React.FC<Props> = ({
     } = settings;
     return (
         <Stack spacing={1}>
-            <TextField
-                select
-                label={t('jiten.destination')}
-                value={settings.miningDestination}
-                onChange={(event) => void onSettingChanged('miningDestination', event.target.value as 'anki' | 'jiten')}
-            >
-                <MenuItem value="anki">Anki</MenuItem>
-                <MenuItem value="jiten">Jiten</MenuItem>
-            </TextField>
             <FormControl>
                 <FormLabel component="legend">{t('settings.clickToMineDefaultAction')}</FormLabel>
                 <RadioGroup row={false}>
@@ -84,7 +75,7 @@ const MiningSettingsTab: React.FC<Props> = ({
                                 }
                             />
                         }
-                        label={t(jiten ? 'jiten.showMiningDialog' : 'postMineAction.showAnkiDialog')}
+                        label={t('jiten.showMiningDialog')}
                     />
                     <LabelWithHoverEffect
                         control={
@@ -97,7 +88,7 @@ const MiningSettingsTab: React.FC<Props> = ({
                                 }
                             />
                         }
-                        label={t('postMineAction.updateLastCard')}
+                        label={t('jiten.attach')}
                     />
                     {jiten && (
                         <LabelWithHoverEffect
@@ -115,39 +106,6 @@ const MiningSettingsTab: React.FC<Props> = ({
                                 />
                             }
                             label={t('jiten.mineNewWords')}
-                        />
-                    )}
-                    {!jiten && (
-                        <LabelWithHoverEffect
-                            control={
-                                <Radio
-                                    checked={clickToMineDefaultAction === PostMineAction.showUpdateCardDialog}
-                                    value={PostMineAction.showUpdateCardDialog}
-                                    onChange={(event) =>
-                                        event.target.checked &&
-                                        void onSettingChanged(
-                                            'clickToMineDefaultAction',
-                                            PostMineAction.showUpdateCardDialog
-                                        )
-                                    }
-                                />
-                            }
-                            label={t('postMineAction.showUpdateCardDialog')}
-                        />
-                    )}
-                    {!jiten && (
-                        <LabelWithHoverEffect
-                            control={
-                                <Radio
-                                    checked={clickToMineDefaultAction === PostMineAction.exportCard}
-                                    value={PostMineAction.exportCard}
-                                    onChange={(event) =>
-                                        event.target.checked &&
-                                        void onSettingChanged('clickToMineDefaultAction', PostMineAction.exportCard)
-                                    }
-                                />
-                            }
-                            label={t('postMineAction.exportCard')}
                         />
                     )}
                     <LabelWithHoverEffect

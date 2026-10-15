@@ -128,7 +128,7 @@ export default class AnkiUiController {
         }
 
         const hasSnapshot = miningDestination !== undefined;
-        const destination = hasSnapshot ? miningDestination : this._settings.miningDestination;
+        const destination = 'jiten';
         const capture =
             !hasSnapshot && destination === 'jiten'
                 ? await readJitenCapture(subtitle, surroundingSubtitles)

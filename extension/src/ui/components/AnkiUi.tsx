@@ -1,4 +1,3 @@
-import { asbError } from '@project/common/util/log';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
     MediaFragmentModel,
@@ -19,7 +18,6 @@ import type {
     AnkiDialogSettingsMessage,
     ActiveProfileMessage,
     AnkiDialogSettings,
-    AnkiUiBridgeExportedMessage,
     AnkiDialogDismissedQuickSelectFtueMessage,
 } from '@project/common';
 import { useTranslation } from 'react-i18next';
@@ -37,9 +35,7 @@ import Snackbar from '@mui/material/Snackbar';
 import type Bridge from '@project/extension/src/ui/bridge';
 import type { PaletteMode } from '@mui/material/styles';
 import type { AnkiDialogState } from '@project/common/components/AnkiDialog';
-import { BridgeFetcher } from '@project/extension/src/ui/bridge-fetcher';
 import type { ExportParams } from '@project/common/anki';
-import { Anki } from '@project/common/anki';
 import { v4 as uuidv4 } from 'uuid';
 import { base64ToBlob, blobToBase64 } from '@project/common/base64';
 import { isMobile } from '@project/common/device-detection/mobile';
@@ -62,7 +58,7 @@ const blobToDataUrl = async (blob: Blob): Promise<string> => {
 
 export default function AnkiUi({ bridge }: Props) {
     const { t } = useTranslation();
-    const [destination, setDestination] = useState<'anki' | 'jiten'>('anki');
+    const destination = 'jiten';
     const [jitenTarget, setJitenTarget] = useState<JitenTarget>();
     const [jitenWords, setJitenWords] = useState<JitenTarget[]>([]);
     const [jitenPending, setJitenPending] = useState<{ targets: JitenTarget[]; deckId: number }>();
@@ -98,10 +94,6 @@ export default function AnkiUi({ bridge }: Props) {
     const [inTutorial, setInTutorial] = useState<boolean>(false);
 
     const theme = useMemo(() => createTheme((settings?.themeType ?? 'dark') as PaletteMode), [settings?.themeType]);
-    const anki = useMemo(
-        () => (settings ? new Anki(settings, new BridgeFetcher(bridge)) : undefined),
-        [settings, bridge]
-    );
     const jitenClient = useMemo(() => new JitenClient(undefined, jitenFetcher(bridge)), [bridge]);
     const dialogStateRef = useRef<AnkiDialogState>(undefined);
 
@@ -149,7 +141,6 @@ export default function AnkiUi({ bridge }: Props) {
 
             const s = (message as UpdateStateMessage).state as AnkiUiState;
 
-            setDestination(s.miningDestination ?? s.settings.miningDestination);
             setJitenTarget(s.jitenTarget);
             setJitenWords(s.jitenWords ?? []);
             if (s.type === 'initial') {
@@ -275,56 +266,6 @@ export default function AnkiUi({ bridge }: Props) {
     const mineNewWords = useCallback(
         (params: ExportParams, targets: JitenTarget[]) => submitJiten(params, true, targets),
         [submitJiten]
-    );
-
-    const handleProceed = useCallback(
-        async (params: ExportParams) => {
-            if (destination === 'jiten') {
-                await submitJiten(params);
-                return;
-            }
-            setDisabled(true);
-
-            try {
-                await anki!.export(params);
-
-                const message: AnkiUiBridgeExportedMessage = {
-                    command: 'exported',
-                    mode: params.mode,
-                };
-                bridge.sendMessageFromServer(message);
-
-                if (params.mode !== 'gui') {
-                    setOpen(false);
-                    const message: AnkiUiBridgeResumeMessage = {
-                        command: 'resume',
-                        uiState: savedState(),
-                        cardExported: true,
-                    };
-                    bridge.sendMessageFromServer(message);
-                }
-
-                if (params.mode === 'updateLast' || params.mode === 'updateSpecific') {
-                    bridge.sendMessageFromServer({ command: 'card-updated-dialog' });
-                } else if (params.mode === 'default') {
-                    bridge.sendMessageFromServer({ command: 'card-exported-dialog' });
-                }
-            } catch (e) {
-                asbError('anki/ui', e);
-                setAlertSeverity('error');
-
-                if (e instanceof Error) {
-                    setAlert(e.message);
-                } else {
-                    setAlert(String(e));
-                }
-
-                setAlertOpen(true);
-            } finally {
-                setDisabled(false);
-            }
-        },
-        [anki, bridge, savedState, destination, submitJiten]
     );
 
     const handleCancel = useCallback(() => {
@@ -488,21 +429,17 @@ export default function AnkiUi({ bridge }: Props) {
                         {alert}
                     </Alert>
                 </Snackbar>
-                {settings && card && anki && (
+                {settings && card && (
                     <AnkiDialog
-                        jiten={
-                            destination === 'jiten'
-                                ? {
-                                      target: jitenTarget,
-                                      targets: jitenPending?.targets,
-                                      result: jitenResult,
-                                      onMineNewWords: mineNewWords,
-                                      loadNewWords,
-                                      preventMultipleWords: settings.jitenPreventMultipleWords,
-                                      showUnmatchedAttachmentTarget: settings.jitenShowUnmatchedAttachmentTarget,
-                                  }
-                                : undefined
-                        }
+                        jiten={{
+                            target: jitenTarget,
+                            targets: jitenPending?.targets,
+                            result: jitenResult,
+                            onMineNewWords: mineNewWords,
+                            loadNewWords,
+                            preventMultipleWords: settings.jitenPreventMultipleWords,
+                            showUnmatchedAttachmentTarget: settings.jitenShowUnmatchedAttachmentTarget,
+                        }}
                         open={open}
                         disabled={disabled}
                         card={card}
@@ -510,8 +447,7 @@ export default function AnkiUi({ bridge }: Props) {
                         profiles={profiles}
                         activeProfile={activeProfile}
                         onSetActiveProfile={handleSetActiveProfile}
-                        anki={anki}
-                        onProceed={handleProceed}
+                        onProceed={submitJiten}
                         onRerecord={canRerecord ? handleRerecord : undefined}
                         onCancel={handleCancel}
                         onOpenSettings={handleOpenSettings}

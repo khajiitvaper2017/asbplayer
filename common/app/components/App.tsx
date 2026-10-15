@@ -65,7 +65,6 @@ import { useCopyHistory } from '@project/common/app/hooks/use-copy-history';
 import { useFileSession } from '@project/common/app/hooks/use-file-session';
 import { useI18n } from '@project/common/app/hooks/use-i18n';
 import { useAppKeyBinder } from '@project/common/app/hooks/use-app-key-binder';
-import { useAnki } from '@project/common/app/hooks/use-anki';
 import { usePlaybackPreferences } from '@project/common/app/hooks/use-playback-preferences';
 import { MiningContext } from '@project/common/app/services/mining-context';
 import { useAppWebSocketClient } from '@project/common/app/hooks/use-app-web-socket-client';
@@ -294,7 +293,6 @@ function App({
     settings,
     globalState,
     extension,
-    fetcher,
     onSettingsChanged,
     profile,
     onGlobalStateChanged,
@@ -319,7 +317,6 @@ function App({
     const [subtitles, setSubtitles] = useState<DisplaySubtitleModel[]>([]);
     const playbackPreferences = usePlaybackPreferences();
     const theme = useMemo<Theme>(() => createTheme(settings.themeType), [settings.themeType]);
-    const anki = useAnki({ settings, fetcher });
     const jitenClient = useMemo(() => new JitenClient(settings.jitenApiKey), [settings.jitenApiKey]);
     const searchParams = useMemo(() => new URLSearchParams(location.search), []);
     const inVideoPlayer = useMemo(() => searchParams.get('video') !== null, [searchParams]);
@@ -365,7 +362,6 @@ function App({
     const [ankiDialogOpen, setAnkiDialogOpen] = useState<boolean>(false);
     const [ankiDialogDisabled, setAnkiDialogDisabled] = useState<boolean>(false);
     const [ankiDialogCard, setAnkiDialogCard] = useState<CardModel>();
-    const [dialogDestination, setDialogDestination] = useState<'anki' | 'jiten'>('anki');
     const [dialogJitenTarget, setDialogJitenTarget] = useState<JitenTarget>();
     const [dialogJitenBatch, setDialogJitenBatch] = useState<{ targets: JitenTarget[]; deckId: number }>();
     const [jitenResult, setJitenResult] = useState<JitenAttachmentResult>();
@@ -448,7 +444,7 @@ function App({
             }
 
             const item = ankiDialogItem ?? copyHistoryItemsRef.current[copyHistoryItemsRef.current.length - 1];
-            setDialogDestination(settings.miningDestination);
+
             setDialogJitenTarget(item.jitenTarget ?? readJitenTarget());
             setDialogJitenBatch(undefined);
             setJitenResult(undefined);
@@ -613,70 +609,22 @@ function App({
     );
 
     const handleAnkiDialogProceed = useCallback(
-        async (params: ExportParams, destination = dialogDestination) => {
-            if (destination === 'jiten') {
-                if (!dialogJitenTarget) {
-                    handleError(t('jiten.mineInReaderFirst'));
-                    return;
-                }
-                setDialogJitenBatch(undefined);
-                await handleJitenAttach(
-                    params,
-                    dialogJitenTarget,
-                    undefined,
-                    dialogJitenBatch ? undefined : jitenResult?.sentenceId
-                );
+        async (params: ExportParams) => {
+            if (!dialogJitenTarget) {
+                handleError(t('jiten.mineInReaderFirst'));
                 return;
             }
-            setAnkiDialogDisabled(true);
-
-            try {
-                const result = await anki.export(params);
-
-                if (params.mode !== 'gui') {
-                    if (params.mode === 'default') {
-                        setAlertSeverity('success');
-                        setAlert(t('info.exportedCard', { result }));
-                        setAlertOpen(true);
-                    } else if (params.mode === 'updateLast') {
-                        setAlertSeverity('success');
-                        setAlert(t('info.updatedCard', { result }));
-                        setAlertOpen(true);
-                    }
-
-                    setAnkiDialogOpen(false);
-
-                    if (miningContext.mining) {
-                        miningContext.stopped();
-                    }
-                }
-
-                if (settings.lastSelectedAnkiExportMode !== params.mode) {
-                    onSettingsChanged({ lastSelectedAnkiExportMode: params.mode });
-                }
-            } catch (e) {
-                handleError(e);
-            } finally {
-                setAnkiDialogDisabled(false);
-                setDisableKeyEvents(false);
-            }
+            setDialogJitenBatch(undefined);
+            await handleJitenAttach(
+                params,
+                dialogJitenTarget,
+                undefined,
+                dialogJitenBatch ? undefined : jitenResult?.sentenceId
+            );
         },
-        [
-            anki,
-            dialogDestination,
-            dialogJitenTarget,
-            dialogJitenBatch,
-            jitenResult,
-            handleJitenAttach,
-            miningContext,
-            settings.lastSelectedAnkiExportMode,
-            onSettingsChanged,
-            handleError,
-            t,
-        ]
+        [dialogJitenTarget, handleError, t, handleJitenAttach, dialogJitenBatch, jitenResult]
     );
 
-    // Avoid unnecessary re-renders by having handleCopy operate on a ref to settings
     const settingsRef = useRef(settings);
     settingsRef.current = settings;
     const handleCopy = useCallback(
@@ -698,12 +646,8 @@ function App({
                 void saveCopyHistoryItem(newCard);
             }
 
-            const jiten = settingsRef.current.miningDestination === 'jiten';
+            const jiten = true;
             if (jitenSubmitting.current && postMineAction !== PostMineAction.none) return;
-            if (!jiten && postMineAction === PostMineAction.mineNewJitenWords) {
-                handleAnkiDialogRequest(newCard);
-                return;
-            }
             if (
                 jiten &&
                 postMineAction !== undefined &&
@@ -813,15 +757,12 @@ function App({
                         mode: postMineAction === PostMineAction.updateLastCard ? 'updateLast' : 'default',
                     };
                     if (jiten) {
-                        setDialogDestination('jiten');
                         setDialogJitenBatch(batch);
                         setDialogJitenTarget(newCard.jitenTarget ?? readJitenTarget());
                         setAnkiDialogCard(newCard);
                         setJitenResult(undefined);
                         await handleJitenAttach(params, target!, batch);
                         params.image?.dispose();
-                    } else {
-                        void handleAnkiDialogProceed(params, 'anki');
                     }
                     break;
                 }
@@ -833,7 +774,6 @@ function App({
             extension,
             miningContext,
             saveCopyHistoryItem,
-            handleAnkiDialogProceed,
             handleAnkiDialogRequest,
             handleJitenAttach,
             jitenClient,
@@ -1039,7 +979,7 @@ function App({
     const handleAnki = useCallback(
         (card: CardModel) => {
             if (jitenSubmitting.current) return;
-            setDialogDestination(settings.miningDestination);
+
             setDialogJitenTarget(card.jitenTarget ?? readJitenTarget());
             setDialogJitenBatch(undefined);
             setJitenResult(undefined);
@@ -1048,7 +988,7 @@ function App({
             setAnkiDialogDisabled(false);
             setDisableKeyEvents(true);
         },
-        [settings.miningDestination]
+        []
     );
 
     const handleAnkiDialogCancel = useCallback(() => {
@@ -1946,24 +1886,18 @@ function App({
                             />
                             {ankiDialogCard && (
                                 <AnkiDialog
-                                    jiten={
-                                        dialogDestination === 'jiten'
-                                            ? {
-                                                  target: dialogJitenTarget,
-                                                  targets: dialogJitenBatch?.targets,
-                                                  result: jitenResult,
-                                                  onMineNewWords: handleJitenMineNewWords,
-                                                  loadNewWords: loadJitenNewWords,
-                                                  preventMultipleWords: settings.jitenPreventMultipleWords,
-                                                  showUnmatchedAttachmentTarget:
-                                                      settings.jitenShowUnmatchedAttachmentTarget,
-                                              }
-                                            : undefined
-                                    }
+                                    jiten={{
+                                        target: dialogJitenTarget,
+                                        targets: dialogJitenBatch?.targets,
+                                        result: jitenResult,
+                                        onMineNewWords: handleJitenMineNewWords,
+                                        loadNewWords: loadJitenNewWords,
+                                        preventMultipleWords: settings.jitenPreventMultipleWords,
+                                        showUnmatchedAttachmentTarget: settings.jitenShowUnmatchedAttachmentTarget,
+                                    }}
                                     open={ankiDialogOpen}
                                     disabled={ankiDialogDisabled}
                                     card={ankiDialogCard}
-                                    anki={anki}
                                     settings={settings}
                                     lastSelectedExportMode={lastSelectedAnkiExportMode}
                                     onCancel={handleAnkiDialogCancel}
@@ -1992,24 +1926,18 @@ function App({
                             />
                             {ankiDialogCard && (
                                 <AnkiDialog
-                                    jiten={
-                                        dialogDestination === 'jiten'
-                                            ? {
-                                                  target: dialogJitenTarget,
-                                                  targets: dialogJitenBatch?.targets,
-                                                  result: jitenResult,
-                                                  onMineNewWords: handleJitenMineNewWords,
-                                                  loadNewWords: loadJitenNewWords,
-                                                  preventMultipleWords: settings.jitenPreventMultipleWords,
-                                                  showUnmatchedAttachmentTarget:
-                                                      settings.jitenShowUnmatchedAttachmentTarget,
-                                              }
-                                            : undefined
-                                    }
+                                    jiten={{
+                                        target: dialogJitenTarget,
+                                        targets: dialogJitenBatch?.targets,
+                                        result: jitenResult,
+                                        onMineNewWords: handleJitenMineNewWords,
+                                        loadNewWords: loadJitenNewWords,
+                                        preventMultipleWords: settings.jitenPreventMultipleWords,
+                                        showUnmatchedAttachmentTarget: settings.jitenShowUnmatchedAttachmentTarget,
+                                    }}
                                     open={ankiDialogOpen}
                                     disabled={ankiDialogDisabled}
                                     card={ankiDialogCard}
-                                    anki={anki}
                                     settings={settings}
                                     lastSelectedExportMode={lastSelectedAnkiExportMode}
                                     onCancel={handleAnkiDialogCancel}

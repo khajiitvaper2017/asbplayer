@@ -1545,10 +1545,7 @@ export default class Binding {
             void navigator.clipboard.writeText(subtitle.text);
         }
 
-        const jitenCapture =
-            this.ankiUiController.settings?.miningDestination === 'jiten'
-                ? await readJitenCapture(subtitle, surroundingSubtitles)
-                : { miningDestination: 'anki' as const };
+        const jitenCapture = await readJitenCapture(subtitle, surroundingSubtitles);
         const mediaTimestamp = subtitleTimestampWithDelay(subtitle, this.imageDelay);
 
         if (this.takeScreenshot) {

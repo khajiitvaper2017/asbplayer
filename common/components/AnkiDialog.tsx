@@ -13,9 +13,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import type { SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
 import { MediaFragment } from '@project/common';
 import type { AnkiSettings, Profile } from '@project/common/settings';
-import { sortedAnkiFieldModels } from '@project/common/settings';
 import { AudioClip } from '@project/common/audio-clip';
-import Badge from '@mui/material/Badge';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
@@ -35,22 +33,16 @@ import Typography from '@mui/material/Typography';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import DoneIcon from '@mui/icons-material/Done';
-import ListField from '@project/common/components/ListField';
-import type { Anki, ExportParams } from '@project/common/anki';
+import type { ExportParams } from '@project/common/anki';
 import { isFirefox } from '@project/common/browser-detection';
 import SentenceField from '@project/common/components/SentenceField';
-import DefinitionField from '@project/common/components/DefinitionField';
-import CustomField from '@project/common/components/CustomField';
 import AudioField from '@project/common/components/AudioField';
 import ImageField from '@project/common/components/ImageField';
 import ImageDialog from '@project/common/components/ImageDialog';
 import MiniProfileSelector from '@project/common/components/MiniProfileSelector';
 import Alert from '@mui/material/Alert';
-import { isMacOs } from '@project/common/device-detection/mac';
 import AnkiDialogButton from '@project/common/components/AnkiDialogButton';
 import type { Theme } from '@mui/material';
-import TutorialBubble from '@project/common/components/TutorialBubble';
-import AnkiDialogTutorialBubble from '@project/common/components/AnkiDialogTutorialBubble';
 import Link from '@mui/material/Link';
 import { Checkbox, FormControlLabel, Radio, RadioGroup, Stack } from '@mui/material';
 import {
@@ -61,8 +53,6 @@ import {
     stripJitenMarkers,
 } from '@project/common/jiten/jiten';
 import type { JitenTarget, JitenAttachmentResult } from '@project/common/jiten/jiten';
-
-const quickSelectShortcut = isMacOs ? '⌘+⇧+Enter' : 'Alt+Shift+Enter';
 
 const useStyles = makeStyles<Theme>((theme) => ({
     root: {
@@ -167,13 +157,6 @@ const ValueLabelComponent = ({ children, open, value }: ValueLabelComponentProps
     );
 };
 
-enum TutorialStep {
-    dialog = 1,
-    wordField = 2,
-    configure = 3,
-    export = 4,
-}
-
 export interface AnkiDialogState {
     text: string;
     subtitle: SubtitleModel;
@@ -194,7 +177,7 @@ export interface AnkiDialogState {
 }
 
 interface AnkiDialogProps {
-    jiten?: {
+    jiten: {
         target?: JitenTarget;
         targets?: JitenTarget[];
         result?: JitenAttachmentResult;
@@ -212,7 +195,6 @@ interface AnkiDialogProps {
     onOpenSettings?: () => void;
     onCopyToClipboard: (blob: Blob) => void;
     settings: AnkiSettings;
-    anki: Anki;
     source?: string;
     initialTimestampInterval?: number[];
     timestampBoundaryInterval?: number[];
@@ -267,7 +249,6 @@ const AnkiDialog = ({
     onRerecord,
     onCopyToClipboard,
     settings,
-    anki,
     source: initialSource,
     timestampInterval: initialSelectedTimestampInterval,
     timestampBoundaryInterval: forceTimestampBoundaryInterval,
@@ -279,10 +260,6 @@ const AnkiDialog = ({
     profiles,
     activeProfile,
     onSetActiveProfile,
-    lastSelectedExportMode,
-    showQuickSelectFtue,
-    onDismissShowQuickSelectFtue,
-    inTutorial,
 }: AnkiDialogProps) => {
     const classes = useStyles();
     const [definition, setDefinition] = useState<string>('');
@@ -305,7 +282,6 @@ const AnkiDialog = ({
     const [lastAppliedTimestampIntervalToAudio, setLastAppliedTimestampIntervalToAudio] = useState<number[]>();
     const [width, setWidth] = useState<number>(0);
     const [audioClip, setAudioClip] = useState<AudioClip>();
-    const [ankiIsAvailable, setAnkiIsAvailable] = useState<boolean>(true);
     const [imageDialogOpen, setImageDialogOpen] = useState<boolean>(false);
     const [image, setImage] = useState<MediaFragment>();
     const [imageTimestampInterval, setImageTimestampInterval] = useState<number[]>();
@@ -315,7 +291,7 @@ const AnkiDialog = ({
         setWidth(element?.getBoundingClientRect().width ?? 0);
     }, []);
     const { t } = useTranslation();
-    const jitenMode = jiten !== undefined;
+    const jitenMode = true;
     const allowManualHighlight = jitenMode && Boolean(jiten.showUnmatchedAttachmentTarget);
     const jitenText = highlightJitenWord(allowManualHighlight ? text : stripJitenMarkers(text), jiten?.target);
     const attachmentSurface = jitenSurfaceForm(jiten?.target);
@@ -461,17 +437,6 @@ const AnkiDialog = ({
     ]);
 
     useEffect(() => {
-        if (jitenMode) return;
-        anki.version()
-            .then(() => {
-                setAnkiIsAvailable(true);
-            })
-            .catch(() => {
-                setAnkiIsAvailable(false);
-            });
-    }, [anki, jitenMode]);
-
-    useEffect(() => {
         setTags(settings.tags);
     }, [settings.tags]);
 
@@ -561,61 +526,6 @@ const AnkiDialog = ({
         },
         [audioClip]
     );
-
-    const handleCustomFieldChange = useCallback(
-        (customFieldName: string, value: string) => {
-            const newCustomFieldValues: { [fieldName: string]: string } = {};
-            Object.assign(newCustomFieldValues, customFieldValues);
-            newCustomFieldValues[customFieldName] = value;
-            setCustomFieldValues(newCustomFieldValues);
-        },
-        [customFieldValues]
-    );
-
-    useEffect(() => {
-        if (!open) {
-            return;
-        }
-
-        setImage((previousImage) => {
-            previousImage?.dispose();
-            const image = MediaFragment.fromCard(
-                card,
-                settings.maxImageWidth,
-                settings.maxImageHeight,
-                settings.mediaFragmentFormat,
-                settings.mediaFragmentTrimStart,
-                settings.mediaFragmentTrimEnd,
-                settings.mediaFragmentMaxClipLength,
-                settings.trimBlackBars
-            );
-
-            setImageTimestampInterval(
-                image?.extension === 'webm' && image.endTimestamp !== undefined
-                    ? [image.timestamp, image.endTimestamp]
-                    : undefined
-            );
-
-            return image;
-        });
-    }, [
-        card,
-        open,
-        settings.maxImageWidth,
-        settings.maxImageHeight,
-        settings.mediaFragmentFormat,
-        settings.mediaFragmentTrimStart,
-        settings.mediaFragmentTrimEnd,
-        settings.mediaFragmentMaxClipLength,
-        settings.trimBlackBars,
-    ]);
-
-    useEffect(() => {
-        if (!open && image) {
-            image.dispose();
-            setImage(undefined);
-        }
-    }, [open, image]);
 
     const handleViewImage = useCallback(
         async (e: React.MouseEvent<HTMLDivElement>) => {
@@ -802,13 +712,11 @@ const AnkiDialog = ({
     );
 
     const disableApplyTextSelection = card.surroundingSubtitles.filter((s) => s.text.trim() !== '').length === 0;
-    const ankiFieldModels = jitenMode
-        ? ['sentence', 'image', 'audio', 'source'].map((key, order) => ({
-              key,
-              custom: false,
-              field: { display: true, order },
-          }))
-        : sortedAnkiFieldModels(settings);
+    const ankiFieldModels = ['sentence', 'image', 'audio', 'source'].map((key, order) => ({
+        key,
+        custom: false,
+        field: { display: true, order },
+    }));
 
     useEffect(() => {
         if (!open) {
@@ -821,26 +729,7 @@ const AnkiDialog = ({
         setLastAppliedTimestampIntervalToText(undefined);
     }, []);
 
-    const handleTrack1TextChange = useCallback((text: string) => {
-        setTrack1(text);
-        setLastAppliedTimestampIntervalToText(undefined);
-    }, []);
-
-    const handleTrack2TextChange = useCallback((text: string) => {
-        setTrack2(text);
-        setLastAppliedTimestampIntervalToText(undefined);
-    }, []);
-
-    const handleTrack3TextChange = useCallback((text: string) => {
-        setTrack3(text);
-        setLastAppliedTimestampIntervalToText(undefined);
-    }, []);
-
-    const updateLastButtonRef = useRef<HTMLButtonElement | null>(null);
-    const openInAnkiButtonRef = useRef<HTMLButtonElement | null>(null);
     const exportButtonRef = useRef<HTMLButtonElement | null>(null);
-    const lastSelectedExportModeRef = useRef<AnkiExportMode>(undefined);
-    lastSelectedExportModeRef.current = lastSelectedExportMode;
     const [focusedAction, setFocusedAction] = useState<AnkiExportMode>();
 
     const focusedButton = () => {
@@ -850,7 +739,7 @@ const AnkiDialog = ({
             return undefined;
         }
 
-        for (const buttonRef of [exportButtonRef, openInAnkiButtonRef, updateLastButtonRef]) {
+        for (const buttonRef of [exportButtonRef]) {
             if (buttonRef.current === activeElement) {
                 return buttonRef.current;
             }
@@ -860,14 +749,14 @@ const AnkiDialog = ({
     };
 
     const focusOnPreferredAction = useCallback(() => {
-        const preferredExportMode = jitenMode ? 'default' : lastSelectedExportModeRef.current;
+        const preferredExportMode = 'default';
 
         if (preferredExportMode === undefined) {
             return;
         }
 
         setFocusedAction(preferredExportMode);
-    }, [jitenMode]);
+    }, []);
 
     const handleActionBlur = useCallback(() => setFocusedAction(undefined), []);
 
@@ -877,22 +766,7 @@ const AnkiDialog = ({
         }
     }, [open, disabled, focusOnPreferredAction]);
 
-    const handleProceed = useCallback(
-        async (mode: AnkiExportMode, noteIds?: number[]) => {
-            if (mode === 'updateSpecific') {
-                for (const noteId of noteIds ?? []) {
-                    await onProceed(buildExportParams(mode, noteId));
-                }
-            } else {
-                void onProceed(buildExportParams(mode));
-            }
-        },
-        [buildExportParams, onProceed]
-    );
-
-    const handleOpenInAnki = useCallback(() => handleProceed('gui'), [handleProceed]);
-    const handleUpdateLastCard = useCallback(() => handleProceed('updateLast'), [handleProceed]);
-    const handleExport = useCallback(() => handleProceed('default'), [handleProceed]);
+    const handleExport = useCallback(() => onProceed(buildExportParams('default')), [onProceed, buildExportParams]);
 
     useEffect(() => {
         const listener = (e: KeyboardEvent) => {
@@ -911,9 +785,6 @@ const AnkiDialog = ({
         return () => document.removeEventListener('keydown', listener);
     }, [focusOnPreferredAction]);
 
-    const [tutorialStep, setTutorialStep] = useState<TutorialStep>(TutorialStep.dialog);
-    const effectiveInTutorial = inTutorial && !jitenMode && !imageDialogOpen;
-
     return (
         <>
             <Dialog
@@ -925,15 +796,9 @@ const AnkiDialog = ({
                 onClose={jitenMode && disabled ? undefined : onCancel}
             >
                 <Toolbar>
-                    <AnkiDialogTutorialBubble
-                        disabled={!effectiveInTutorial}
-                        onConfirm={() => setTutorialStep(TutorialStep.wordField)}
-                        show={tutorialStep === TutorialStep.dialog}
-                    >
-                        <Typography variant="h6" className={classes.title}>
-                            {t(jitenMode ? 'jiten.miningDialog' : 'ankiDialog.title')}
-                        </Typography>
-                    </AnkiDialogTutorialBubble>
+                    <Typography variant="h6" className={classes.title}>
+                        {t('jiten.miningDialog')}
+                    </Typography>
                     {profiles !== undefined && onSetActiveProfile && (
                         <MiniProfileSelector
                             profiles={profiles}
@@ -942,28 +807,9 @@ const AnkiDialog = ({
                         />
                     )}
                     {onOpenSettings && (
-                        <TutorialBubble
-                            placement="bottom"
-                            disabled={!effectiveInTutorial}
-                            show={tutorialStep === TutorialStep.configure}
-                            text={t('ftue.configureAnki')}
-                            onConfirm={() => setTutorialStep(TutorialStep.export)}
-                        >
-                            <IconButton
-                                edge="end"
-                                onClick={() => {
-                                    if (tutorialStep === TutorialStep.configure) {
-                                        setTutorialStep(TutorialStep.export);
-                                    }
-
-                                    onOpenSettings();
-                                }}
-                            >
-                                <Badge invisible={jitenMode || ankiIsAvailable} badgeContent={'!'} color="error">
-                                    <SettingsIcon />
-                                </Badge>
-                            </IconButton>
-                        </TutorialBubble>
+                        <IconButton edge="end" onClick={onOpenSettings}>
+                            <SettingsIcon />
+                        </IconButton>
                     )}
                     {onCancel && (
                         <IconButton edge="end" disabled={jitenMode && disabled} onClick={onCancel}>
@@ -1108,9 +954,6 @@ const AnkiDialog = ({
                                             }
                                         />
                                     )}
-                                    {!model.custom && model.key === 'definition' && model.field.display && (
-                                        <DefinitionField text={definition} onTextChange={setDefinition} />
-                                    )}
                                     {image && !model.custom && model.key === 'image' && model.field.display && (
                                         <ImageField
                                             onViewImage={handleViewImage}
@@ -1140,64 +983,9 @@ const AnkiDialog = ({
                                             onChange={(e) => setSource(e.target.value)}
                                         />
                                     )}
-                                    {!model.custom && model.key === 'url' && model.field.display && card.url && (
-                                        <TextField
-                                            variant="filled"
-                                            color="primary"
-                                            fullWidth
-                                            label={t('ankiDialog.url')}
-                                            value={url}
-                                            onChange={(e) => setUrl(e.target.value)}
-                                        />
-                                    )}
-                                    {!model.custom && model.key === 'track1' && model.field.display && (
-                                        <SentenceField
-                                            text={track1}
-                                            label={t('ankiDialog.track1')}
-                                            width={width}
-                                            onChangeText={handleTrack1TextChange}
-                                            selectedSubtitles={selectedSubtitles.filter((s) => s.track === 0)}
-                                        />
-                                    )}
-                                    {!model.custom && model.key === 'track2' && model.field.display && (
-                                        <SentenceField
-                                            text={track2}
-                                            label={t('ankiDialog.track2')}
-                                            width={width}
-                                            onChangeText={handleTrack2TextChange}
-                                            selectedSubtitles={selectedSubtitles.filter((s) => s.track === 1)}
-                                        />
-                                    )}
-                                    {!model.custom && model.key === 'track3' && model.field.display && (
-                                        <SentenceField
-                                            text={track3}
-                                            label={t('ankiDialog.track3')}
-                                            width={width}
-                                            onChangeText={handleTrack3TextChange}
-                                            selectedSubtitles={selectedSubtitles.filter((s) => s.track === 2)}
-                                        />
-                                    )}
-                                    {model.custom && model.field.display && (
-                                        <CustomField
-                                            name={model.key}
-                                            text={customFieldValues[model.key] || ''}
-                                            onTextChange={handleCustomFieldChange}
-                                        />
-                                    )}
                                 </React.Fragment>
                             );
                         })}
-                        {!jitenMode && (
-                            <ListField
-                                variant="filled"
-                                label="Tags"
-                                helperText={t('ankiDialog.tagList')}
-                                fullWidth
-                                color="primary"
-                                items={tags}
-                                onItemsChange={setTags}
-                            />
-                        )}
                         {timestampInterval && timestampBoundaryInterval && timestampMarks && (
                             <Grid container direction="row">
                                 <Grid item style={{ flexGrow: 1 }}>
@@ -1279,78 +1067,34 @@ const AnkiDialog = ({
                             </Grid>
                         )}
                     </form>
-                    {showQuickSelectFtue && !jitenMode && lastSelectedExportMode !== undefined && (
-                        <Alert
-                            severity="info"
-                            action={
-                                <Button onClick={onDismissShowQuickSelectFtue} size="small">
-                                    {t('action.ok')}
-                                </Button>
-                            }
-                        >
-                            {t('ankiDialog.quickSelectFtue', { shortcut: quickSelectShortcut })}
-                        </Alert>
-                    )}
                 </DialogContent>
                 <DialogActions>
-                    {jitenMode ? (
-                        <>
-                            <Button disabled={disabled} onClick={onCancel}>
-                                {t('action.cancel')}
-                            </Button>
-                            {jiten?.onMineNewWords && (
-                                <AnkiDialogButton
-                                    disabled={disabled || selectedMineWords.length === 0}
-                                    focusVisible={false}
-                                    onBlurVisible={handleActionBlur}
-                                    onClick={() =>
-                                        void jiten.onMineNewWords?.(buildExportParams('default'), selectedMineWords)
-                                    }
-                                >
-                                    {t('jiten.mineNewWords')}
-                                </AnkiDialogButton>
-                            )}
+                    <>
+                        <Button disabled={disabled} onClick={onCancel}>
+                            {t('action.cancel')}
+                        </Button>
+                        {jiten?.onMineNewWords && (
                             <AnkiDialogButton
-                                ref={exportButtonRef}
-                                disabled={disabled || !showAttachmentTarget || Boolean(jitenError)}
-                                focusVisible={focusedAction === 'default'}
+                                disabled={disabled || selectedMineWords.length === 0}
+                                focusVisible={false}
                                 onBlurVisible={handleActionBlur}
-                                onClick={handleExport}
+                                onClick={() =>
+                                    void jiten.onMineNewWords?.(buildExportParams('default'), selectedMineWords)
+                                }
                             >
-                                {t(disabled ? 'jiten.attaching' : 'jiten.attach')}
+                                {t('jiten.mineNewWords')}
                             </AnkiDialogButton>
-                        </>
-                    ) : (
-                        <>
-                            <AnkiDialogButton
-                                ref={openInAnkiButtonRef}
-                                disabled={disabled}
-                                focusVisible={focusedAction === 'gui'}
-                                onBlurVisible={handleActionBlur}
-                                onClick={handleOpenInAnki}
-                            >
-                                {t('ankiDialog.openInAnki')}
-                            </AnkiDialogButton>
-                            <AnkiDialogButton
-                                ref={updateLastButtonRef}
-                                disabled={disabled}
-                                focusVisible={focusedAction === 'updateLast'}
-                                onBlurVisible={handleActionBlur}
-                                onClick={handleUpdateLastCard}
-                            >
-                                {t('ankiDialog.updateLastCard')}
-                            </AnkiDialogButton>
-                            <AnkiDialogButton
-                                ref={exportButtonRef}
-                                disabled={disabled}
-                                focusVisible={focusedAction === 'default'}
-                                onBlurVisible={handleActionBlur}
-                                onClick={handleExport}
-                            >
-                                {t('ankiDialog.export')}
-                            </AnkiDialogButton>
-                        </>
-                    )}
+                        )}
+                        <AnkiDialogButton
+                            ref={exportButtonRef}
+                            disabled={disabled || !showAttachmentTarget || Boolean(jitenError)}
+                            focusVisible={focusedAction === 'default'}
+                            onBlurVisible={handleActionBlur}
+                            onClick={handleExport}
+                        >
+                            {t(disabled ? 'jiten.attaching' : 'jiten.attach')}
+                        </AnkiDialogButton>
+                    </>
                 </DialogActions>
             </Dialog>
             <ImageDialog
