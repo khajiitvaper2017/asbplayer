@@ -205,15 +205,20 @@ export default function AnkiUi({ bridge }: Props) {
         [jitenClient, jitenWords, settings?.jitenMiningDeckId]
     );
     const submitJiten = useCallback(
-        async (params: ExportParams, mine = false) => {
+        async (params: ExportParams, mine = false, selectedTargets?: JitenTarget[]) => {
             if (submitting.current) return;
             submitting.current = true;
             setDisabled(true);
             try {
-                let pending = jitenPending;
+                let pending = mine
+                    ? selectedTargets && jitenPending
+                        ? { ...jitenPending, targets: selectedTargets }
+                        : jitenPending
+                    : undefined;
+                if (!mine) setJitenPending(undefined);
                 if (mine && !pending) {
                     const text = stripJitenMarkers(params.text ?? '');
-                    const candidates = jitenWords.filter(
+                    const candidates = (selectedTargets ?? jitenWords).filter(
                         (target) => target.surfaceForm && text.includes(target.surfaceForm)
                     );
                     pending = {
@@ -221,32 +226,32 @@ export default function AnkiUi({ bridge }: Props) {
                         deckId: settings?.jitenMiningDeckId ?? 0,
                     };
                 }
-                const targets = pending?.targets ?? (jitenTarget ? [jitenTarget] : []);
+                const targets = mine ? (pending?.targets ?? []) : jitenTarget ? [jitenTarget] : [];
                 if (!targets.length) {
                     setAlert(t(mine ? 'jiten.noNewWords' : 'jiten.mineInReaderFirst'));
                     setAlertSeverity('info');
                     setAlertOpen(true);
                     return;
                 }
+                const resumingTarget =
+                    jitenPending &&
+                    targets[0].wordId === jitenPending.targets[0]?.wordId &&
+                    targets[0].readingIndex === jitenPending.targets[0].readingIndex;
                 const submission = await jitenClient.submit(
                     targets,
                     {
                         ...params,
-                        text:
-                            mine && !jitenPending
-                                ? highlightJitenWord(stripJitenMarkers(params.text ?? ''), targets[0])
-                                : params.text,
+                        text: mine ? highlightJitenWord(stripJitenMarkers(params.text ?? ''), targets[0]) : params.text,
                         image: settings?.jitenAttachVisual ? params.image : undefined,
                         audioClip: settings?.jitenAttachAudio ? params.audioClip : undefined,
                     },
-                    pending?.deckId,
-                    mine && !jitenPending ? undefined : jitenResult?.sentenceId
+                    mine ? pending?.deckId : undefined,
+                    (mine ? !resumingTarget : jitenPending) ? undefined : jitenResult?.sentenceId
                 );
                 const last = submission.outcomes.at(-1)!;
                 setJitenResult(last.result);
                 const notification = jitenOutcomeMessage(submission.outcomes);
                 if (last.result.failed) {
-                    setJitenTarget(last.target);
                     if (pending) setJitenPending({ ...pending, targets: submission.remainingTargets });
                     setAlertSeverity('warning');
                     setAlert(notification);
@@ -273,7 +278,10 @@ export default function AnkiUi({ bridge }: Props) {
         },
         [jitenClient, jitenPending, jitenWords, jitenTarget, jitenResult, settings, bridge, savedState, t]
     );
-    const mineNewWords = useCallback((params: ExportParams) => submitJiten(params, true), [submitJiten]);
+    const mineNewWords = useCallback(
+        (params: ExportParams, targets: JitenTarget[]) => submitJiten(params, true, targets),
+        [submitJiten]
+    );
 
     const handleProceed = useCallback(
         async (params: ExportParams) => {
@@ -496,6 +504,8 @@ export default function AnkiUi({ bridge }: Props) {
                                       result: jitenResult,
                                       onMineNewWords: mineNewWords,
                                       loadNewWords,
+                                      preventMultipleWords: settings.jitenPreventMultipleWords,
+                                      showUnmatchedAttachmentTarget: settings.jitenShowUnmatchedAttachmentTarget,
                                   }
                                 : undefined
                         }

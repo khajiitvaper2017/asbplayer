@@ -48,6 +48,8 @@ export const defaultSettings: AsbplayerSettings = {
     jitenApiKey: '',
     jitenMiningDeckId: 0,
     jitenAutoAttach: true,
+    jitenPreventMultipleWords: false,
+    jitenShowUnmatchedAttachmentTarget: false,
     jitenAttachVisual: true,
     jitenAttachAudio: true,
     ankiConnectUrl: 'http://127.0.0.1:8765',

@@ -682,6 +682,8 @@ export const jitenSettingsKeys = [
     'miningDestination',
     'jitenMiningDeckId',
     'jitenAutoAttach',
+    'jitenPreventMultipleWords',
+    'jitenShowUnmatchedAttachmentTarget',
     'jitenAttachVisual',
     'jitenAttachAudio',
 ] as const;
@@ -696,6 +698,8 @@ export interface JitenSettings {
     readonly jitenApiKey: string;
     readonly jitenMiningDeckId: number;
     readonly jitenAutoAttach: boolean;
+    readonly jitenPreventMultipleWords: boolean;
+    readonly jitenShowUnmatchedAttachmentTarget: boolean;
     readonly jitenAttachVisual: boolean;
     readonly jitenAttachAudio: boolean;
 }

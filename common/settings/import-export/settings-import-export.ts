@@ -100,6 +100,12 @@ const settingsSchema = {
             type: 'integer',
             minimum: 0,
         },
+        jitenShowUnmatchedAttachmentTarget: {
+            type: 'boolean',
+        },
+        jitenPreventMultipleWords: {
+            type: 'boolean',
+        },
         jitenAutoAttach: {
             type: 'boolean',
         },

@@ -529,7 +529,6 @@ function App({
                 const { result } = last;
                 if (result.failed && batch) {
                     setDialogJitenBatch({ ...batch, targets: submission.remainingTargets });
-                    setDialogJitenTarget(last.target);
                 } else if (!result.failed) {
                     setDialogJitenBatch(undefined);
                 }
@@ -558,16 +557,16 @@ function App({
     );
 
     const handleJitenMineNewWords = useCallback(
-        async (params: ExportParams) => {
+        async (params: ExportParams, selectedTargets: JitenTarget[]) => {
             if (jitenSubmitting.current || !ankiDialogCard) return;
             jitenSubmitting.current = true;
             setAnkiDialogDisabled(true);
-            let batch = dialogJitenBatch;
+            let batch = dialogJitenBatch ? { ...dialogJitenBatch, targets: selectedTargets } : undefined;
             try {
                 if (!batch) {
                     const deckId = settings.jitenMiningDeckId;
                     const text = stripJitenMarkers(params.text ?? '');
-                    const candidates = (ankiDialogCard.jitenWords ?? []).filter(
+                    const candidates = selectedTargets.filter(
                         (target) => target.surfaceForm && text.includes(target.surfaceForm)
                     );
                     batch = { targets: await jitenClient.newWords(candidates, deckId), deckId };
@@ -586,18 +585,19 @@ function App({
                 setAlertOpen(true);
                 return;
             }
+            const resumingTarget =
+                dialogJitenBatch &&
+                target.wordId === dialogJitenBatch.targets[0]?.wordId &&
+                target.readingIndex === dialogJitenBatch.targets[0].readingIndex;
             setDialogJitenBatch(batch);
-            setDialogJitenTarget(target);
             await handleJitenAttach(
                 {
                     ...params,
-                    text: dialogJitenBatch
-                        ? params.text
-                        : highlightJitenWord(stripJitenMarkers(params.text ?? ''), target),
+                    text: highlightJitenWord(stripJitenMarkers(params.text ?? ''), target),
                 },
                 target,
                 batch,
-                dialogJitenBatch ? jitenResult?.sentenceId : undefined
+                resumingTarget ? jitenResult?.sentenceId : undefined
             );
         },
         [
@@ -619,7 +619,13 @@ function App({
                     handleError(t('jiten.mineInReaderFirst'));
                     return;
                 }
-                await handleJitenAttach(params, dialogJitenTarget, dialogJitenBatch, jitenResult?.sentenceId);
+                setDialogJitenBatch(undefined);
+                await handleJitenAttach(
+                    params,
+                    dialogJitenTarget,
+                    undefined,
+                    dialogJitenBatch ? undefined : jitenResult?.sentenceId
+                );
                 return;
             }
             setAnkiDialogDisabled(true);
@@ -759,11 +765,14 @@ function App({
                           )
                         : extractText(card.subtitle, card.surroundingSubtitles);
                     const source = `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`;
-                    if (jiten && jitenValidationError(target, text, source)) {
+                    if (
+                        jiten &&
+                        (jitenValidationError(target, text, source) ||
+                            (settingsRef.current.jitenPreventMultipleWords && (batch?.targets.length ?? 0) > 1))
+                    ) {
                         handleAnkiDialogRequest(newCard);
                         if (batch) {
                             setDialogJitenBatch(batch);
-                            setDialogJitenTarget(target);
                         }
                         break;
                     }
@@ -805,8 +814,8 @@ function App({
                     };
                     if (jiten) {
                         setDialogDestination('jiten');
-                        setDialogJitenTarget(target);
                         setDialogJitenBatch(batch);
+                        setDialogJitenTarget(newCard.jitenTarget ?? readJitenTarget());
                         setAnkiDialogCard(newCard);
                         setJitenResult(undefined);
                         await handleJitenAttach(params, target!, batch);
@@ -1945,6 +1954,9 @@ function App({
                                                   result: jitenResult,
                                                   onMineNewWords: handleJitenMineNewWords,
                                                   loadNewWords: loadJitenNewWords,
+                                                  preventMultipleWords: settings.jitenPreventMultipleWords,
+                                                  showUnmatchedAttachmentTarget:
+                                                      settings.jitenShowUnmatchedAttachmentTarget,
                                               }
                                             : undefined
                                     }
@@ -1988,6 +2000,9 @@ function App({
                                                   result: jitenResult,
                                                   onMineNewWords: handleJitenMineNewWords,
                                                   loadNewWords: loadJitenNewWords,
+                                                  preventMultipleWords: settings.jitenPreventMultipleWords,
+                                                  showUnmatchedAttachmentTarget:
+                                                      settings.jitenShowUnmatchedAttachmentTarget,
                                               }
                                             : undefined
                                     }

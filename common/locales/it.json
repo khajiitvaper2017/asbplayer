@@ -813,6 +813,8 @@
         "miningDeck": "Mining deck",
         "chooseMiningDeck": "Select a custom word-list deck",
         "mineNewWords": "Mine new words to Jiten",
+        "showUnmatchedAttachmentTarget": "Show attachment target even when sentence doesn't match",
+        "preventMultipleWords": "Prevent mining multiple words from same subtitle",
         "wordsToMine": "Words to mine",
         "checkingWords": "Checking words…",
         "attachmentTarget": "Attachment target",

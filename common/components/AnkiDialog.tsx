@@ -24,6 +24,7 @@ import DialogContent from '@mui/material/DialogContent';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import BorderColorIcon from '@mui/icons-material/BorderColor';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CloseIcon from '@mui/icons-material/Close';
@@ -35,7 +36,6 @@ import Typography from '@mui/material/Typography';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import DoneIcon from '@mui/icons-material/Done';
-import BorderColorIcon from '@mui/icons-material/BorderColor';
 import ListField from '@project/common/components/ListField';
 import type { Anki, ExportParams } from '@project/common/anki';
 import { isFirefox } from '@project/common/browser-detection';
@@ -55,6 +55,7 @@ import TutorialBubble from '@project/common/components/TutorialBubble';
 import AnkiDialogTutorialBubble from '@project/common/components/AnkiDialogTutorialBubble';
 import CardSelectView from '@project/common/components/CardSelectView';
 import Link from '@mui/material/Link';
+import { Checkbox, FormControlLabel, Radio, RadioGroup, Stack } from '@mui/material';
 import {
     highlightJitenWord,
     jitenSurfaceForm,
@@ -200,7 +201,9 @@ interface AnkiDialogProps {
         target?: JitenTarget;
         targets?: JitenTarget[];
         result?: JitenAttachmentResult;
-        onMineNewWords?: (params: ExportParams) => Promise<void>;
+        preventMultipleWords?: boolean;
+        showUnmatchedAttachmentTarget?: boolean;
+        onMineNewWords?: (params: ExportParams, targets: JitenTarget[]) => Promise<void>;
         loadNewWords?: () => Promise<JitenTarget[]>;
     };
     open: boolean;
@@ -322,7 +325,11 @@ const AnkiDialog = ({
     }, []);
     const { t } = useTranslation();
     const jitenMode = jiten !== undefined;
-    const jitenText = highlightJitenWord(text, jiten?.target);
+    const allowManualHighlight = jitenMode && Boolean(jiten.showUnmatchedAttachmentTarget);
+    const jitenText = highlightJitenWord(allowManualHighlight ? text : stripJitenMarkers(text), jiten?.target);
+    const attachmentSurface = jitenSurfaceForm(jiten?.target);
+    const attachmentMatches = Boolean(attachmentSurface && stripJitenMarkers(text).includes(attachmentSurface));
+    const showAttachmentTarget = Boolean(jiten?.target && (attachmentMatches || jiten.showUnmatchedAttachmentTarget));
     const jitenError = jitenMode ? jitenValidationError(jiten.target, jitenText, source) : undefined;
     const [newWords, setNewWords] = useState<JitenTarget[]>();
     const [newWordsError, setNewWordsError] = useState<string>();
@@ -341,16 +348,17 @@ const AnkiDialog = ({
             active = false;
         };
     }, [open, loadNewWords, pendingWords]);
-    const mineWords = (newWords ?? []).filter((target) => {
+    const mineWords = (pendingWords ?? newWords ?? []).filter((target) => {
         const form = jitenSurfaceForm(target);
         return form && stripJitenMarkers(jitenText).includes(form);
     });
+    const [selectedWords, setSelectedWords] = useState<JitenTarget[]>();
+    useEffect(() => setSelectedWords(undefined), [open, card, pendingWords, jiten?.preventMultipleWords]);
+    const selectedMineWords = mineWords.filter((target) =>
+        selectedWords ? selectedWords.includes(target) : !jiten?.preventMultipleWords || mineWords.length === 1
+    );
     const [sentenceSelection, setSentenceSelection] = useState<[number, number]>();
-    useEffect(() => setSentenceSelection(undefined), [jitenText, open]);
-    const batchWord = jiten?.targets ? jiten.target : undefined;
-    useEffect(() => {
-        if (batchWord) setText((text) => highlightJitenWord(stripJitenMarkers(text), batchWord));
-    }, [batchWord]);
+    useEffect(() => setSentenceSelection(undefined), [jitenText, open, allowManualHighlight]);
     const handleHighlightWord = () => {
         if (!sentenceSelection) return;
         const [start, end] = sentenceSelection;
@@ -361,11 +369,6 @@ const AnkiDialog = ({
         );
         setLastAppliedTimestampIntervalToText(undefined);
     };
-    const highlighted = jitenText.match(/\*\*([^*]+)\*\*/)?.[1];
-    const highlightMismatch =
-        jiten?.target &&
-        highlighted &&
-        ![jitenSurfaceForm(jiten.target), jiten.target.spelling, jiten.target.reading].includes(highlighted);
 
     const buildExportParams = useCallback(
         (mode: AnkiExportMode, noteId?: number): ExportParams => ({
@@ -994,51 +997,75 @@ const AnkiDialog = ({
                 <DialogContent ref={dialogRefCallback}>
                     {jiten && (
                         <>
-                            {loadNewWords && !jiten.targets && (
-                                <Typography sx={{ mb: 1 }}>
-                                    {t('jiten.wordsToMine')}:{' '}
+                            {(loadNewWords || pendingWords) && (
+                                <Stack
+                                    component={jiten.preventMultipleWords ? RadioGroup : 'div'}
+                                    sx={{ mb: 1 }}
+                                    role={jiten.preventMultipleWords ? 'radiogroup' : 'group'}
+                                    aria-label={t('jiten.wordsToMine')}
+                                >
+                                    <Typography>{t('jiten.wordsToMine')}:</Typography>
                                     {newWordsError ??
-                                        (newWords === undefined
+                                        (!pendingWords && newWords === undefined
                                             ? t('jiten.checkingWords')
                                             : mineWords.length
-                                              ? mineWords.map((target, index) => (
-                                                    <React.Fragment key={`${target.wordId}/${target.readingIndex}`}>
-                                                        {index > 0 && ', '}
-                                                        <Link
-                                                            href={jitenWordUrl(target)}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                        >
-                                                            {renderJitenWord(target)}
-                                                        </Link>
-                                                    </React.Fragment>
-                                                ))
+                                              ? mineWords.map((target) => {
+                                                    const key = `${target.wordId}/${target.readingIndex}`;
+                                                    const checked = selectedMineWords.includes(target);
+                                                    const controlProps = {
+                                                        checked,
+                                                        disabled,
+                                                        onChange: () =>
+                                                            setSelectedWords(
+                                                                jiten.preventMultipleWords
+                                                                    ? [target]
+                                                                    : checked
+                                                                      ? selectedMineWords.filter(
+                                                                            (word) => word !== target
+                                                                        )
+                                                                      : [...selectedMineWords, target]
+                                                            ),
+                                                    };
+                                                    return (
+                                                        <FormControlLabel
+                                                            key={key}
+                                                            control={
+                                                                jiten.preventMultipleWords ? (
+                                                                    <Radio
+                                                                        {...controlProps}
+                                                                        name="jiten-word"
+                                                                        value={key}
+                                                                    />
+                                                                ) : (
+                                                                    <Checkbox {...controlProps} />
+                                                                )
+                                                            }
+                                                            label={
+                                                                <Link
+                                                                    href={jitenWordUrl(target)}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                >
+                                                                    {renderJitenWord(target)}
+                                                                </Link>
+                                                            }
+                                                        />
+                                                    );
+                                                })
                                               : t('jiten.noNewWords'))}
-                                </Typography>
+                                </Stack>
                             )}
-                            {jiten.targets && (
+                            {showAttachmentTarget && jiten.target && (
                                 <Typography sx={{ mb: 1 }}>
-                                    {t('jiten.pendingWords', {
-                                        words: jiten.targets.map((target) => target.spelling).join(', '),
-                                    })}
-                                </Typography>
-                            )}
-                            {jiten.target && (
-                                <Typography sx={{ mb: 1 }}>
-                                    {!jiten.targets && <>{t('jiten.attachmentTarget')}: </>}
+                                    {t('jiten.attachmentTarget')}:
                                     <Link href={jitenWordUrl(jiten.target)} target="_blank" rel="noreferrer">
                                         {renderJitenWord(jiten.target)}
                                     </Link>
                                 </Typography>
                             )}
-                            {jitenError && (
+                            {showAttachmentTarget && jitenError && (
                                 <Alert severity="warning" sx={{ mb: 1 }}>
                                     {jitenError}
-                                </Alert>
-                            )}
-                            {highlightMismatch && (
-                                <Alert severity="warning" sx={{ mb: 1 }}>
-                                    {t('jiten.highlightMismatch')}
                                 </Alert>
                             )}
                             {jiten.result && (
@@ -1056,7 +1083,7 @@ const AnkiDialog = ({
                         className={classes.root}
                         onSelect={(event) => {
                             const input = event.target;
-                            if (jitenMode && input instanceof HTMLTextAreaElement) {
+                            if (allowManualHighlight && input instanceof HTMLTextAreaElement) {
                                 setSentenceSelection([input.selectionStart, input.selectionEnd]);
                             }
                         }}
@@ -1068,19 +1095,29 @@ const AnkiDialog = ({
                                 <React.Fragment key={key}>
                                     {!model.custom && model.key === 'sentence' && model.field.display && (
                                         <SentenceField
-                                            text={jitenMode ? jitenText : text}
+                                            text={
+                                                allowManualHighlight
+                                                    ? jitenText
+                                                    : jitenMode
+                                                      ? stripJitenMarkers(text)
+                                                      : text
+                                            }
                                             label={t('ankiDialog.sentence')}
                                             width={width}
                                             onChangeText={handleSentenceTextChange}
                                             selectedSubtitles={selectedSubtitles}
                                             endAdornment={
-                                                jitenMode ? (
+                                                allowManualHighlight ? (
                                                     <InputAdornment position="end">
                                                         <Tooltip title={t('jiten.highlightWord')}>
                                                             <span>
                                                                 <IconButton
                                                                     edge="end"
-                                                                    disabled={disabled}
+                                                                    disabled={
+                                                                        disabled ||
+                                                                        !sentenceSelection ||
+                                                                        sentenceSelection[0] === sentenceSelection[1]
+                                                                    }
                                                                     aria-label={t('jiten.highlightWord')}
                                                                     onMouseDown={(event) => event.preventDefault()}
                                                                     onClick={handleHighlightWord}
@@ -1298,17 +1335,19 @@ const AnkiDialog = ({
                             </Button>
                             {jiten?.onMineNewWords && (
                                 <AnkiDialogButton
-                                    disabled={disabled || (!jiten.targets && mineWords.length === 0)}
+                                    disabled={disabled || selectedMineWords.length === 0}
                                     focusVisible={false}
                                     onBlurVisible={handleActionBlur}
-                                    onClick={() => void jiten.onMineNewWords?.(buildExportParams('default'))}
+                                    onClick={() =>
+                                        void jiten.onMineNewWords?.(buildExportParams('default'), selectedMineWords)
+                                    }
                                 >
                                     {t('jiten.mineNewWords')}
                                 </AnkiDialogButton>
                             )}
                             <AnkiDialogButton
                                 ref={exportButtonRef}
-                                disabled={disabled || Boolean(jitenError)}
+                                disabled={disabled || !showAttachmentTarget || Boolean(jitenError)}
                                 focusVisible={focusedAction === 'default'}
                                 onBlurVisible={handleActionBlur}
                                 onClick={handleExport}

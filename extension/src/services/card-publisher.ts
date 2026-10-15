@@ -231,6 +231,10 @@ export class CardPublisher {
                     return;
                 }
             }
+            if (settings.jitenPreventMultipleWords && (pending?.targets.length ?? 0) > 1) {
+                this._showAnkiDialog(card, id, src, tabId, { jitenPending: pending });
+                return;
+            }
             const target = pending?.targets[0] ?? card.jitenTarget;
             if (!target) throw new Error(String(i18n.t('jiten.mineInReaderFirst')));
             const source = sourceString(card.subtitleFileName, card.subtitle.start);
@@ -272,7 +276,7 @@ export class CardPublisher {
             const submission = await client.submit(pending?.targets ?? [target], params, pending?.deckId);
             const last = submission.outcomes.at(-1)!;
             if (last.result.failed) {
-                this._showAnkiDialog({ ...card, text: submission.text, jitenTarget: last.target }, id, src, tabId, {
+                this._showAnkiDialog({ ...card, text: submission.text }, id, src, tabId, {
                     jitenPending: pending ? { ...pending, targets: submission.remainingTargets } : undefined,
                     jitenResult: last.result,
                 });

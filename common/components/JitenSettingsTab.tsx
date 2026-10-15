@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconButton, InputAdornment, Link, MenuItem, Stack, Switch, Typography, Checkbox } from '@mui/material';
+import { IconButton, InputAdornment, Link, MenuItem, Stack, Switch, Typography } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import SettingsTextField from '@project/common/components/SettingsTextField';
@@ -43,6 +43,9 @@ export default function JitenSettingsTab({ settings, onSettingChanged }: Props) 
 
     return (
         <Stack spacing={2}>
+            <Link href="https://jiten.moe/reader" target="_blank" rel="noreferrer">
+                {t('jiten.reader')}
+            </Link>
             <SettingsTextField
                 label={t('jiten.apiKey')}
                 type={showKey ? 'text' : 'password'}
@@ -78,6 +81,11 @@ export default function JitenSettingsTab({ settings, onSettingChanged }: Props) 
             <SettingsTextField
                 select
                 label={t('jiten.miningDeck')}
+                helperText={
+                    <Link href="https://jiten.moe/settings/account" target="_blank" rel="noreferrer">
+                        {t('jiten.account')}
+                    </Link>
+                }
                 value={
                     decks.some((deck) => deck.userStudyDeckId === settings.jitenMiningDeckId)
                         ? settings.jitenMiningDeckId
@@ -93,15 +101,46 @@ export default function JitenSettingsTab({ settings, onSettingChanged }: Props) 
                 ))}
             </SettingsTextField>
             <SwitchLabelWithHoverEffect
+                label={t('jiten.preventMultipleWords')}
+                labelPlacement="start"
+                control={
+                    <Switch
+                        checked={settings.jitenPreventMultipleWords}
+                        onChange={(_, checked) => void onSettingChanged('jitenPreventMultipleWords', checked)}
+                    />
+                }
+            />
+            <SwitchLabelWithHoverEffect
+                label={t('jiten.showUnmatchedAttachmentTarget')}
+                labelPlacement="start"
+                control={
+                    <Switch
+                        checked={settings.jitenShowUnmatchedAttachmentTarget}
+                        onChange={(_, checked) => void onSettingChanged('jitenShowUnmatchedAttachmentTarget', checked)}
+                    />
+                }
+            />
+            <SwitchLabelWithHoverEffect
                 label={t('jiten.autoAttach')}
                 labelPlacement="start"
                 control={
-                    <Checkbox
+                    <Switch
                         checked={settings.jitenAutoAttach}
                         onChange={(_, checked) => void onSettingChanged('jitenAutoAttach', checked)}
                     />
                 }
             />
+            {status && (
+                <>
+                    <Typography>{t('jiten.tier', { tier: status.tier })}</Typography>
+                    <Typography>
+                        {t('jiten.storage', {
+                            used: (status.quota.usedBytes / (1024 * 1024)).toFixed(1),
+                            maximum: (status.quota.maxBytes / (1024 * 1024)).toFixed(1),
+                        })}
+                    </Typography>
+                </>
+            )}
             <SwitchLabelWithHoverEffect
                 label={t('jiten.includeVisual')}
                 labelPlacement="start"
@@ -122,23 +161,6 @@ export default function JitenSettingsTab({ settings, onSettingChanged }: Props) 
                     />
                 }
             />
-            {status && (
-                <>
-                    <Typography>{t('jiten.tier', { tier: status.tier })}</Typography>
-                    <Typography>
-                        {t('jiten.storage', {
-                            used: (status.quota.usedBytes / (1024 * 1024)).toFixed(1),
-                            maximum: (status.quota.maxBytes / (1024 * 1024)).toFixed(1),
-                        })}
-                    </Typography>
-                </>
-            )}
-            <Link href="https://jiten.moe/reader" target="_blank" rel="noreferrer">
-                {t('jiten.reader')}
-            </Link>
-            <Link href="https://jiten.moe/settings/account" target="_blank" rel="noreferrer">
-                {t('jiten.account')}
-            </Link>
         </Stack>
     );
 }
