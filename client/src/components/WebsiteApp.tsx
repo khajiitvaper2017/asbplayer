@@ -1,4 +1,3 @@
-import type { Fetcher } from '@project/common';
 import { useChromeExtension } from '@project/common/app';
 import RootApp from '@project/common/app/components/RootApp';
 import { useEffect, useMemo } from 'react';
@@ -13,7 +12,6 @@ import { AppExtensionLogStorage } from '@project/common/app/services/app-extensi
 interface Props {
     origin: string;
     logoUrl: string;
-    fetcher: Fetcher;
 }
 
 const WebsiteApp = (props: Props) => {

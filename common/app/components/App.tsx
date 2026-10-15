@@ -14,7 +14,6 @@ import type {
     LegacyPlayerSyncMessage,
     PlayerSyncMessage,
     CopyHistoryItem,
-    Fetcher,
     CardModel,
     ShowAnkiUiMessage,
     JumpToSubtitleMessage,
@@ -274,7 +273,6 @@ interface Props {
     settings: AsbplayerSettings;
     globalState?: GlobalState;
     extension: ChromeExtension;
-    fetcher: Fetcher;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
     profile?: string;
     profiles: Profile[];
@@ -976,20 +974,17 @@ function App({
         setJumpToSubtitle(undefined);
     }, []);
 
-    const handleAnki = useCallback(
-        (card: CardModel) => {
-            if (jitenSubmitting.current) return;
+    const handleAnki = useCallback((card: CardModel) => {
+        if (jitenSubmitting.current) return;
 
-            setDialogJitenTarget(card.jitenTarget ?? readJitenTarget());
-            setDialogJitenBatch(undefined);
-            setJitenResult(undefined);
-            setAnkiDialogCard(card);
-            setAnkiDialogOpen(true);
-            setAnkiDialogDisabled(false);
-            setDisableKeyEvents(true);
-        },
-        []
-    );
+        setDialogJitenTarget(card.jitenTarget ?? readJitenTarget());
+        setDialogJitenBatch(undefined);
+        setJitenResult(undefined);
+        setAnkiDialogCard(card);
+        setAnkiDialogOpen(true);
+        setAnkiDialogDisabled(false);
+        setDisableKeyEvents(true);
+    }, []);
 
     const handleAnkiDialogCancel = useCallback(() => {
         setAnkiDialogOpen(false);

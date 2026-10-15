@@ -1,5 +1,4 @@
 import { asbError } from '@project/common/util/log';
-import type { Fetcher } from '@project/common';
 import type { AsbplayerSettings, SettingsProvider } from '@project/common/settings';
 import { isSaveOnlySettings } from '@project/common/settings';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -13,7 +12,6 @@ import type { LogProvider } from '@project/common/util/log';
 interface Props {
     origin: string;
     logoUrl: string;
-    fetcher: Fetcher;
     settingsStorage: AppSettingsStorage;
     settingsProvider: SettingsProvider;
     globalStateProvider: GlobalStateProvider;
@@ -28,7 +26,6 @@ const RootApp = ({
     settingsStorage,
     settingsProvider,
     globalStateProvider,
-    fetcher,
     logProvider,
 }: Props) => {
     const [settings, setSettings] = useState<AsbplayerSettings>();
@@ -108,7 +105,6 @@ const RootApp = ({
             settings={settings}
             globalState={globalState}
             extension={extension}
-            fetcher={fetcher}
             onSettingsChanged={handleSettingsChanged}
             profile={profilesContext.activeProfile}
             onGlobalStateChanged={handleGlobalStateChanged}

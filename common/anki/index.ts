@@ -1,1 +1,1 @@
-export * from './anki';
+export type * from './anki';
