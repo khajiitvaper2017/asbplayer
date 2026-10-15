@@ -35,10 +35,6 @@ export default defineConfig(({ mode }) => {
                         src: '../common/locales',
                         dest: '',
                     },
-                    {
-                        src: '../common/assets',
-                        dest: '',
-                    },
                 ],
             }),
             VitePWA({
