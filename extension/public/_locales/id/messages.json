@@ -6,13 +6,10 @@
         "message": "Menambang takarir saat ini. Jika video disinkronkan tanpa berkas takarir, mulai/hentikan perekaman audio."
     },
     "shortcutMineSubtitleAndOpenDialogDescription": {
-        "message": "Menambang takarir saat ini dan buka dialog ekspor Anki. Jika video disinkronkan tanpa berkas takarir, mulai/hentikan perekaman audio."
+        "message": "Tampilkan dialog penambahan kosakata"
     },
     "shortcutUpdateLastCardDescription": {
-        "message": "Perbarui kartu Anki terakhir yang dibuat dengan media yang diambil oleh asbplayer. Jika video disinkronkan tanpa berkas takarir, mulai/hentikan perekaman audio."
-    },
-    "shortcutExportCardDescription": {
-        "message": "Ekspor kartu langsung ke Anki tanpa membuka dialog."
+        "message": "Lampirkan ke Jiten"
     },
     "shortcutTakeScreenshotDescription": {
         "message": "Ambil tangkapan layar secara manual menggantikan tangkapan otomatis saat menambang."

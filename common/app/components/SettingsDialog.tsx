@@ -99,13 +99,11 @@ export default function SettingsDialog({
                     extensionSupportsPauseOnHover={extension.supportsPauseOnHover}
                     extensionSupportsPlaybackEngine={extension.supportsPlaybackEngine}
                     extensionSupportsAutoPauseResume={extension.supportsAutoPauseResume}
-                    extensionSupportsExportCardBind={extension.supportsExportCardBind}
                     extensionSupportsPageSettings={extension.supportsPageSettings}
                     extensionSupportsSeekableTrackSetting={extension.supportsSeekableTrackSetting}
                     extensionSupportsAutoCopyableTrackSetting={extension.supportsAutoCopyableTrackSetting}
                     extensionSupportsSubtitleTrackSelectorInWebApp={extension.supportsSubtitleTrackSelectorInWebApp}
                     extensionSupportsSubtitleListCustomization={extension.supportsSubtitleListCustomization}
-                    extensionSupportsUpdateLastWithSameSubtitleText={extension.supportsUpdateLastWithSameSubtitleText}
                     pageConfigs={extension.pageConfig}
                     insideApp
                     appVersionRepoPath={import.meta.env.VITE_APP_VERSION_REPO_PATH}

@@ -680,7 +680,6 @@ describe('Binding playback mode integration', () => {
                     word: 'word',
                     definition: 'definition',
                     customFieldValues: { Extra: 'extra' },
-                    noteId: 123,
                 },
             };
             for (const listener of runtimeListeners) listener(request, {}, () => undefined);
@@ -694,7 +693,6 @@ describe('Binding playback mode integration', () => {
                         word: 'word',
                         definition: 'definition',
                         customFieldValues: { Extra: 'extra' },
-                        noteId: 123,
                     }),
                 })
             );

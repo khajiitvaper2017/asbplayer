@@ -167,13 +167,11 @@ interface Props {
     extensionSupportsPauseOnHover: boolean;
     extensionSupportsPlaybackEngine: boolean;
     extensionSupportsAutoPauseResume: boolean;
-    extensionSupportsExportCardBind: boolean;
     extensionSupportsPageSettings: boolean;
     extensionSupportsSeekableTrackSetting: boolean;
     extensionSupportsAutoCopyableTrackSetting: boolean;
     extensionSupportsSubtitleTrackSelectorInWebApp: boolean;
     extensionSupportsSubtitleListCustomization: boolean;
-    extensionSupportsUpdateLastWithSameSubtitleText: boolean;
     insideApp?: boolean;
     appVersionRepoPath?: string;
     logProvider: LogProvider;
@@ -212,11 +210,9 @@ export default function SettingsForm({
     extensionSupportsPauseOnHover,
     extensionSupportsPlaybackEngine,
     extensionSupportsAutoPauseResume,
-    extensionSupportsExportCardBind,
     extensionSupportsPageSettings,
     extensionSupportsSeekableTrackSetting,
     extensionSupportsAutoCopyableTrackSetting,
-    extensionSupportsUpdateLastWithSameSubtitleText,
     insideApp,
     appVersionRepoPath,
     scrollToId,
@@ -349,9 +345,6 @@ export default function SettingsForm({
                         settings={settings}
                         onSettingChanged={handleSettingChanged}
                         showWebmMediaFragmentSettings={Boolean(insideApp)}
-                        supportsUpdateLastWithSameSubtitleText={
-                            !extensionInstalled || extensionSupportsUpdateLastWithSameSubtitleText
-                        }
                     />
                 </TabPanel>
                 <TabPanel
@@ -385,7 +378,6 @@ export default function SettingsForm({
                         onSettingChanged={handleSettingChanged}
                         chromeKeyBinds={chromeKeyBinds}
                         extensionInstalled={extensionInstalled}
-                        extensionSupportsExportCardBind={extensionSupportsExportCardBind}
                         extensionSupportsSidePanel={extensionSupportsSidePanel}
                         extensionSupportsAutoPauseResume={extensionSupportsAutoPauseResume}
                         extensionSupportsSubtitleTrackSelectorInWebApp={extensionSupportsSubtitleTrackSelectorInWebApp}

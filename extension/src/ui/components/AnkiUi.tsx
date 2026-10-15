@@ -18,7 +18,6 @@ import type {
     AnkiDialogSettingsMessage,
     ActiveProfileMessage,
     AnkiDialogSettings,
-    AnkiDialogDismissedQuickSelectFtueMessage,
 } from '@project/common';
 import { useTranslation } from 'react-i18next';
 import { JitenClient, highlightJitenWord, stripJitenMarkers, jitenOutcomeMessage } from '@project/common/jiten/jiten';
@@ -38,7 +37,6 @@ import type { AnkiDialogState } from '@project/common/components/AnkiDialog';
 import type { ExportParams } from '@project/common/anki';
 import { v4 as uuidv4 } from 'uuid';
 import { base64ToBlob, blobToBase64 } from '@project/common/base64';
-import { isMobile } from '@project/common/device-detection/mobile';
 import { StyledEngineProvider } from '@mui/material/styles';
 import LogoIcon from '@project/common/components/LogoIcon';
 
@@ -90,7 +88,6 @@ export default function AnkiUi({ bridge }: Props) {
     const [dialogRequestedTimestamp, setDialogRequestedTimestamp] = useState<number>(0);
     const [profiles, setProfiles] = useState<Profile[]>();
     const [activeProfile, setActiveProfile] = useState<string>();
-    const [ftueHasSeenAnkiDialogQuickSelect, setFtueHasSeenAnkiDialogQuickSelect] = useState<boolean>();
     const [inTutorial, setInTutorial] = useState<boolean>(false);
 
     const theme = useMemo(() => createTheme((settings?.themeType ?? 'dark') as PaletteMode), [settings?.themeType]);
@@ -178,7 +175,6 @@ export default function AnkiUi({ bridge }: Props) {
             setActiveProfile(s.activeProfile);
             setProfiles(s.profiles);
             setOpen(s.open);
-            setFtueHasSeenAnkiDialogQuickSelect(s.ftueHasSeenAnkiDialogQuickSelect);
             setInTutorial(s.inTutorial);
         });
     }, [bridge]);
@@ -306,14 +302,6 @@ export default function AnkiUi({ bridge }: Props) {
         [bridge]
     );
 
-    const handleDismissShowQuickSelectFtue = useCallback(() => {
-        setFtueHasSeenAnkiDialogQuickSelect(true);
-        const message: AnkiDialogDismissedQuickSelectFtueMessage = {
-            command: 'dismissedQuickSelectFtue',
-        };
-        bridge.sendMessageFromServer(message);
-    }, [bridge]);
-
     const lastFocusOutRef = useRef<HTMLElement>(undefined);
 
     const handleFocusOut = useCallback((event: FocusEvent) => {
@@ -409,8 +397,6 @@ export default function AnkiUi({ bridge }: Props) {
         [bridge]
     );
 
-    const showAnkiDialogQuickSelectFtue = !isMobile && ftueHasSeenAnkiDialogQuickSelect === false;
-
     return (
         <StyledEngineProvider injectFirst>
             <ThemeProvider theme={theme}>
@@ -458,11 +444,8 @@ export default function AnkiUi({ bridge }: Props) {
                         timestampInterval={timestampInterval}
                         lastAppliedTimestampIntervalToText={lastAppliedTimestampIntervalToText}
                         lastAppliedTimestampIntervalToAudio={lastAppliedTimestampIntervalToAudio}
-                        showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
-                        onDismissShowQuickSelectFtue={handleDismissShowQuickSelectFtue}
                         stateRef={dialogStateRef}
                         mp3Encoder={mp3Encoder}
-                        lastSelectedExportMode={settings.lastSelectedAnkiExportMode}
                         inTutorial={inTutorial}
                     />
                 )}

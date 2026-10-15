@@ -1761,17 +1761,6 @@ export default function VideoPlayer({
     }, [inferAndExecuteMiningBehavior, keyBinder]);
 
     useEffect(() => {
-        return keyBinder.bindExportCard(
-            (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                inferAndExecuteMiningBehavior(PostMineAction.exportCard);
-            },
-            () => false
-        );
-    }, [inferAndExecuteMiningBehavior, keyBinder]);
-
-    useEffect(() => {
         return keyBinder.bindTakeScreenshot(
             (event) => {
                 event.preventDefault();

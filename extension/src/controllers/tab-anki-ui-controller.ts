@@ -10,22 +10,18 @@ import type {
     AnkiDialogSettingsMessage,
     ActiveProfileMessage,
     SettingsUpdatedMessage,
-    AnkiUiBridgeExportedMessage,
     EncodeMp3InServiceWorkerMessage,
     CardUpdatedDialogMessage,
     CardExportedDialogMessage,
 } from '@project/common';
-import type { AnkiSettings, SettingsProvider } from '@project/common/settings';
+import type { SettingsProvider } from '@project/common/settings';
 import { readJitenCapture } from '@project/extension/src/services/jiten-reader';
 import { ankiSettingsKeys, jitenSettingsKeys } from '@project/common/settings';
 import type UiFrame from '@project/extension/src/services/ui-frame';
 import { uiFrameForHtml } from '@project/extension/src/services/ui-frame';
 import { fetchLocalization } from '@project/extension/src/services/localization-fetcher';
-import { ExtensionGlobalStateProvider } from '@project/extension/src/services/extension-global-state-provider';
 import { isOnTutorialPage } from '@/services/tutorial';
 import { frameColorSchemeStyleBlock } from '@/services/frame-color-scheme';
-
-const globalStateProvider = new ExtensionGlobalStateProvider();
 
 // We need to write the HTML into the iframe manually so that the iframe keeps it's about:blank URL.
 // Otherwise, Chrome won't insert content scripts into the iframe (e.g. Yomichan won't work).
@@ -35,7 +31,7 @@ async function html(language: string) {
                 <head>
                     <meta charset="utf-8" />
                     <meta name="viewport" content="width=device-width, initial-scale=1" />
-                    <title>asbplayer - Anki</title>
+                    <title>asbplayer - Mining</title>
                     <style>
                         @import url(${browser.runtime.getURL('/fonts/fonts.css')});
                         ${frameColorSchemeStyleBlock()}
@@ -67,15 +63,13 @@ export class TabAnkiUiController {
             'language',
             'jitenApiKey',
             'themeType',
-            'lastSelectedAnkiExportMode',
             ...ankiSettingsKeys,
             ...jitenSettingsKeys,
         ]);
         this._jitenApiKey = jitenApiKey;
         const profilesPromise = this._settings.profiles();
         const activeProfilePromise = this._settings.activeProfile();
-        const globalStatePromise = globalStateProvider.getAll();
-        const client = await this._client(language, ankiDialogSettings);
+        const client = await this._client(language);
         const capture = await readJitenCapture(card.subtitle, card.surroundingSubtitles);
         const state: AnkiUiInitialState = {
             type: 'initial',
@@ -90,7 +84,6 @@ export class TabAnkiUiController {
             jitenWords: card.jitenWords?.length ? card.jitenWords : capture?.jitenWords,
             profiles: await profilesPromise,
             activeProfile: (await activeProfilePromise)?.name,
-            ftueHasSeenAnkiDialogQuickSelect: (await globalStatePromise).ftueHasSeenAnkiDialogQuickSelectV2,
             inTutorial: this._inTutorial,
         };
         client.updateState(state);
@@ -100,7 +93,6 @@ export class TabAnkiUiController {
         const { jitenApiKey, ...ankiDialogSettings } = await this._settings.get([
             'jitenApiKey',
             'themeType',
-            'lastSelectedAnkiExportMode',
             ...ankiSettingsKeys,
             ...jitenSettingsKeys,
         ]);
@@ -126,10 +118,7 @@ export class TabAnkiUiController {
         }
     }
 
-    private async _client(language: string, ankiSettings: AnkiSettings) {
-        this._frame.fetchOptions = {
-            allowedFetchUrl: ankiSettings.ankiConnectUrl,
-        };
+    private async _client(language: string) {
         this._frame.language = language;
         const isNewClient = await this._frame.bind();
         const client = await this._frame.client();
@@ -194,27 +183,6 @@ export class TabAnkiUiController {
                                     await browser.runtime.sendMessage(settingsUpdatedCommand);
                                 })
                                 .catch((error) => asbError('anki/ui', 'Failed to set the active profile:', error));
-                            return;
-                        }
-                        case 'dismissedQuickSelectFtue':
-                            globalStateProvider
-                                .set({ ftueHasSeenAnkiDialogQuickSelectV2: true })
-                                .catch((error) => asbError('anki/ui', error));
-                            return;
-                        case 'exported': {
-                            const exportedMessage = message as AnkiUiBridgeExportedMessage;
-                            void this._settings
-                                .set({ lastSelectedAnkiExportMode: exportedMessage.mode })
-                                .then(async () => {
-                                    const settingsUpdatedCommand: TabToExtensionCommand<SettingsUpdatedMessage> = {
-                                        sender: 'asbplayer-video-tab',
-                                        message: {
-                                            command: 'settings-updated',
-                                        },
-                                    };
-                                    await browser.runtime.sendMessage(settingsUpdatedCommand);
-                                })
-                                .catch((error) => asbError('anki/ui', 'Failed to save Anki export settings:', error));
                             return;
                         }
                         case 'card-updated-dialog': {

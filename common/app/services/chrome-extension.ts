@@ -169,10 +169,6 @@ export default class ChromeExtension {
         window.addEventListener('message', this.windowEventListener);
     }
 
-    get supportsUpdateLastWithSameSubtitleText() {
-        return this.installed && gte(this.version, '1.22.0');
-    }
-
     get supportsLogs() {
         return this.installed && gte(this.version, '1.22.0');
     }
@@ -209,15 +205,7 @@ export default class ChromeExtension {
         return this.installed && gte(this.version, '1.12.0');
     }
 
-    get supportsExportCardBind() {
-        return this.installed && gte(this.version, '1.10.0');
-    }
-
     get supportsGlobalState() {
-        return this.installed && gte(this.version, '1.9.0');
-    }
-
-    get supportsLastSelectedAnkiExportModeSetting() {
         return this.installed && gte(this.version, '1.9.0');
     }
 
@@ -235,10 +223,6 @@ export default class ChromeExtension {
 
     get supportsSubtitlesWidthSetting() {
         return this.installed && gte(this.version, '1.4.0');
-    }
-
-    get supportsOrderableAnkiFields() {
-        return this.installed && gte(this.version, '1.3.0');
     }
 
     get supportsTrackSpecificSettings() {

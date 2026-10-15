@@ -20,17 +20,9 @@ interface Props {
     settings: AsbplayerSettings;
     onSettingChanged: <K extends keyof AsbplayerSettings>(key: K, value: AsbplayerSettings[K]) => Promise<void>;
     showWebmMediaFragmentSettings?: boolean;
-    supportsUpdateLastWithSameSubtitleText?: boolean;
 }
-
-const MiningSettingsTab: React.FC<Props> = ({
-    settings,
-    onSettingChanged,
-    supportsUpdateLastWithSameSubtitleText,
-    showWebmMediaFragmentSettings = true,
-}) => {
+const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWebmMediaFragmentSettings = true }) => {
     const { t } = useTranslation();
-    const jiten = true;
     const webmCaptureSupported = showWebmMediaFragmentSettings && isWebmMediaFragmentSupported();
     const {
         audioPaddingStart,
@@ -51,7 +43,6 @@ const MiningSettingsTab: React.FC<Props> = ({
         preferMp3,
         copyToClipboardOnMine,
         alwaysUseSubtitleForSentence,
-        updateLastCardForSameSubtitle,
     } = settings;
     return (
         <Stack spacing={1}>
@@ -61,13 +52,7 @@ const MiningSettingsTab: React.FC<Props> = ({
                     <LabelWithHoverEffect
                         control={
                             <Radio
-                                checked={
-                                    clickToMineDefaultAction === PostMineAction.showAnkiDialog ||
-                                    (!jiten && clickToMineDefaultAction === PostMineAction.mineNewJitenWords) ||
-                                    (jiten &&
-                                        (clickToMineDefaultAction === PostMineAction.showUpdateCardDialog ||
-                                            clickToMineDefaultAction === PostMineAction.exportCard))
-                                }
+                                checked={clickToMineDefaultAction === PostMineAction.showAnkiDialog}
                                 value={PostMineAction.showAnkiDialog}
                                 onChange={(event) =>
                                     event.target.checked &&
@@ -90,7 +75,7 @@ const MiningSettingsTab: React.FC<Props> = ({
                         }
                         label={t('jiten.attach')}
                     />
-                    {jiten && (
+                    {
                         <LabelWithHoverEffect
                             control={
                                 <Radio
@@ -107,7 +92,7 @@ const MiningSettingsTab: React.FC<Props> = ({
                             }
                             label={t('jiten.mineNewWords')}
                         />
-                    )}
+                    }
                     <LabelWithHoverEffect
                         control={
                             <Radio
@@ -188,20 +173,6 @@ const MiningSettingsTab: React.FC<Props> = ({
                 label={t('settings.alwaysUseSubtitleForSentence')}
                 labelPlacement="start"
             />
-            {supportsUpdateLastWithSameSubtitleText && (
-                <SwitchLabelWithHoverEffect
-                    control={
-                        <Switch
-                            checked={updateLastCardForSameSubtitle}
-                            onChange={(event) =>
-                                onSettingChanged('updateLastCardForSameSubtitle', event.target.checked)
-                            }
-                        />
-                    }
-                    label={t('settings.updateLastCardForSameSubtitle')}
-                    labelPlacement="start"
-                />
-            )}
             <SettingsSection>{t('settings.audio')}</SettingsSection>
             <SwitchLabelWithHoverEffect
                 control={

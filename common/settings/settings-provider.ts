@@ -1,7 +1,4 @@
 import type {
-    AnkiField,
-    AnkiFieldSettings,
-    AnkiSettings,
     AsbplayerSettings,
     KeyBindName,
     PageSettings,
@@ -54,34 +51,7 @@ export const defaultSettings: AsbplayerSettings = {
     jitenMediaSettingsInitialized: false,
     jitenAttachVisual: true,
     jitenAttachAudio: true,
-    ankiConnectUrl: 'http://127.0.0.1:8765',
-    ankiConnectApiKey: '',
-    ankiRefreshBrowserAfterUpdate: false,
-    deck: '',
-    noteType: '',
-    sentenceField: '',
-    definitionField: '',
-    audioField: '',
-    imageField: '',
-    wordField: '',
-    sourceField: '',
-    urlField: '',
-    track1Field: '',
-    track2Field: '',
-    track3Field: '',
-    ankiFieldSettings: {
-        sentence: { order: 1, display: true },
-        definition: { order: 2, display: true },
-        word: { order: 3, display: true },
-        audio: { order: 4, display: true },
-        image: { order: 5, display: true },
-        source: { order: 6, display: true },
-        url: { order: 7, display: true },
-        track1: { order: 8, display: false },
-        track2: { order: 9, display: false },
-        track3: { order: 10, display: false },
-    },
-    customAnkiFieldSettings: {},
+
     ...defaultSubtitleTextSettings,
     subtitlePositionOffset: 75,
     topSubtitlePositionOffset: 75,
@@ -156,7 +126,7 @@ export const defaultSettings: AsbplayerSettings = {
         copySubtitle: { keys: isMacOs ? '⇧+⌃+Z' : 'ctrl+shift+Z' },
         ankiExport: { keys: isMacOs ? '⇧+⌃+X' : 'ctrl+shift+X' },
         updateLastCard: { keys: isMacOs ? '⇧+⌃+U' : 'ctrl+shift+U' },
-        exportCard: { keys: '' },
+
         takeScreenshot: { keys: isMacOs ? '⇧+⌃+V' : 'ctrl+shift+V' },
         toggleRecording: { keys: isMacOs ? '⇧+⌃+R' : 'ctrl+shift+R' },
         selectSubtitleTrack: { keys: isMacOs ? '⇧+⌃+F' : 'ctrl+shift+F' },
@@ -202,7 +172,7 @@ export const defaultSettings: AsbplayerSettings = {
     miningHistoryStorageLimit: 25,
     clickToMineDefaultAction: PostMineAction.mineNewJitenWords,
     postMiningPlaybackState: PostMinePlayback.remember,
-    updateLastCardForSameSubtitle: false,
+
     themeType: 'dark',
     videoSubtitleSplitBehavior: VideoSubtitleSplitBehavior.rememberSplitPosition,
     showSubtitleListMiningButton: true,
@@ -216,8 +186,7 @@ export const defaultSettings: AsbplayerSettings = {
     subtitleRegexFilterTextReplacement: '',
     convertNetflixRuby: false,
     language: 'en',
-    customAnkiFields: {},
-    tags: [],
+
     imageBasedSubtitleScaleFactor: 1,
     streamingAppUrl: 'https://asbplayer-jiten.pages.dev/asbplayer',
     streamingDisplaySubtitles: true,
@@ -268,59 +237,6 @@ export const defaultSettings: AsbplayerSettings = {
     webSocketClientEnabled: false,
     webSocketServerUrl: 'ws://127.0.0.1:8766/ws',
     pauseOnHoverMode: 0,
-    lastSelectedAnkiExportMode: 'default',
-};
-
-export interface AnkiFieldUiModel {
-    key: string;
-    field: AnkiField;
-    custom: boolean;
-}
-
-const ankiFieldEntries = (
-    fieldsMap: Record<string, AnkiField> | AnkiFieldSettings,
-    custom: boolean
-): AnkiFieldUiModel[] => {
-    return Object.entries(fieldsMap).map(([key, value]) => ({
-        key,
-        field: value as AnkiField,
-        custom,
-    }));
-};
-
-const sortedAnkiFields = (models: AnkiFieldUiModel[]) => {
-    return models.sort((a, b) => {
-        const left = a.field;
-        const right = b.field;
-
-        if (left.order < right.order) {
-            return -1;
-        }
-
-        if (left.order > right.order) {
-            return 1;
-        }
-
-        return 0;
-    });
-};
-
-export const sortedAnkiFieldModels = (settings: AnkiSettings): AnkiFieldUiModel[] => {
-    let last = Math.max(
-        ...Object.values({ ...settings.ankiFieldSettings, ...settings.customAnkiFieldSettings }).map((f) => f.order)
-    );
-    return sortedAnkiFields([
-        ...ankiFieldEntries(settings.ankiFieldSettings, false),
-        ...ankiFieldEntries(
-            Object.fromEntries(
-                Object.keys(settings.customAnkiFields).map((name) => [
-                    name,
-                    settings.customAnkiFieldSettings[name] ?? { order: ++last, display: true },
-                ])
-            ),
-            true
-        ),
-    ]);
 };
 
 export const allTextSubtitleSettings = (subtitleSettings: SubtitleSettings) => {
@@ -519,14 +435,20 @@ const ensureStreamingPagesConsistency = (settings: Partial<AsbplayerSettings>) =
 
 export const ensureConsistencyOnRead = (settings: Partial<AsbplayerSettings>) => {
     ensureStreamingPagesConsistency(settings);
+    if (settings.miningDestination !== undefined) {
+        settings = { ...settings, miningDestination: 'jiten' };
+    }
+    // Previously saved Anki export actions now open the mining dialog.
+    if ([3, 4].includes(settings.clickToMineDefaultAction ?? PostMineAction.none)) {
+        settings = { ...settings, clickToMineDefaultAction: PostMineAction.showAnkiDialog };
+    }
 
     let keyBindSetModified = false;
     const newKeyBindSet: any = {};
-    let ankiFieldSettingsModified = false;
-    const newAnkiFieldSettings: any = {};
 
     if (settings.keyBindSet !== undefined) {
         const keyBindSet = settings.keyBindSet;
+        keyBindSetModified = Object.keys(keyBindSet).some((key) => !(key in defaultSettings.keyBindSet));
 
         for (const key of Object.keys(defaultSettings.keyBindSet)) {
             const keyBindName = key as KeyBindName;
@@ -540,26 +462,11 @@ export const ensureConsistencyOnRead = (settings: Partial<AsbplayerSettings>) =>
         }
     }
 
-    if (settings.ankiFieldSettings !== undefined) {
-        const ankiFieldSettings = settings.ankiFieldSettings;
-
-        for (const key of Object.keys(defaultSettings.ankiFieldSettings)) {
-            const fieldName = key as keyof AnkiFieldSettings;
-
-            if (ankiFieldSettings[fieldName] === undefined) {
-                newAnkiFieldSettings[fieldName] = defaultSettings.ankiFieldSettings[fieldName];
-                ankiFieldSettingsModified = true;
-            } else {
-                newAnkiFieldSettings[fieldName] = ankiFieldSettings[fieldName];
-            }
-        }
-    }
-
-    if (!ankiFieldSettingsModified && !keyBindSetModified) {
+    if (!keyBindSetModified) {
         return settings;
     }
 
-    return { ...settings, ...{ ankiFieldSettings: newAnkiFieldSettings }, ...{ keyBindSet: newKeyBindSet } };
+    return { ...settings, keyBindSet: newKeyBindSet };
 };
 
 type SettingsKey = keyof AsbplayerSettings;
@@ -619,35 +526,7 @@ export class SettingsProvider {
     }
 
     async set(settings: Partial<AsbplayerSettings>): Promise<void> {
-        await this._storage.set(await this._ensureConsistencyOnWrite(settings));
-    }
-
-    private async _ensureConsistencyOnWrite(settings: Partial<AsbplayerSettings>) {
-        if (settings.customAnkiFields === undefined) {
-            return settings;
-        }
-        const customAnkiFieldSettings =
-            settings.customAnkiFieldSettings ??
-            (
-                await this._storage.get({
-                    customAnkiFieldSettings: defaultSettings.customAnkiFieldSettings,
-                })
-            ).customAnkiFieldSettings!;
-
-        let modifyCustomAnkiFieldSettings = false;
-
-        for (const key of Object.keys(customAnkiFieldSettings)) {
-            if (!(key in settings.customAnkiFields)) {
-                delete customAnkiFieldSettings[key];
-                modifyCustomAnkiFieldSettings = true;
-            }
-        }
-
-        if (modifyCustomAnkiFieldSettings) {
-            return { ...settings, customAnkiFieldSettings };
-        }
-
-        return settings;
+        await this._storage.set(settings);
     }
 
     async activeProfile() {

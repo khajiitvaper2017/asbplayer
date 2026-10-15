@@ -133,7 +133,6 @@ export class CardPublisher {
                 definition: card.definition,
                 url: card.url,
                 customFieldValues: card.customFieldValues ?? {},
-                tags: [],
                 mode: 'default' as const,
             };
             const submission = await client.submit(pending?.targets ?? [target], params, pending?.deckId);

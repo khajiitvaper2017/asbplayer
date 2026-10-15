@@ -112,7 +112,7 @@ const harness = ({
     } as unknown as TabRegistry;
 
     const settings = new SettingsProvider(new ExtensionSettingsStorage(new MockStorageArea()));
-    const handlers = webSocketCommandHandlers(settings, tabRegistry);
+    const handlers = webSocketCommandHandlers(tabRegistry);
     return { handlers, settings, videoElementCommands, asbplayerCommands, videoElementTabCommands };
 };
 
@@ -178,57 +178,17 @@ describe('seek-timestamp', () => {
 });
 
 describe('mine-subtitle', () => {
-    it('publishes mapped Anki fields and the note ID to the targeted video element', async () => {
-        const targeted = videoElement(1, 'https://example.com/a.mp4');
-        const { handlers, settings, videoElementCommands } = harness({ videoElements: [targeted], activeTabId: 1 });
-        await settings.set({
-            wordField: 'Word',
-            definitionField: 'Definition',
-            sentenceField: 'Sentence',
-            customAnkiFields: { furigana: 'Reading' },
-        });
-
-        const published = await handlers.onMineSubtitle(
-            mineCommand({
-                fields: { Word: 'ねこ', Definition: 'cat', Sentence: 'ねこがいる', Reading: 'ねこ[猫]' },
-                postMineAction: PostMineAction.updateLastCard,
-                mediaId: streamingMediaId(targeted.id, targeted.src),
-                noteId: 555,
-            })
-        );
-
-        expect(published).toBe(true);
-        expect(videoElementCommands).toEqual([
-            {
-                sender: 'asbplayer-extension-to-video',
-                message: {
-                    command: 'copy-subtitle',
-                    word: 'ねこ',
-                    definition: 'cat',
-                    text: 'ねこがいる',
-                    customFieldValues: { furigana: 'ねこ[猫]' },
-                    postMineAction: PostMineAction.updateLastCard,
-                    noteId: 555,
-                },
-                src: targeted.src,
-            },
-        ]);
-    });
-
-    it('publishes to a targeted local asbplayer without a note ID', async () => {
+    it('publishes to a targeted local asbplayer using the mining dialog', async () => {
         const asbplayer = asbplayerInstance('asbplayer-1', 3);
-        const { handlers, settings, asbplayerCommands, videoElementCommands } = harness({
+        const { handlers, asbplayerCommands, videoElementCommands } = harness({
             asbplayers: [asbplayer],
             activeTabId: 3,
         });
-        await settings.set({ wordField: 'Word', definitionField: '', sentenceField: '', customAnkiFields: {} });
 
         const published = await handlers.onMineSubtitle(
             mineCommand({
-                fields: { Word: 'ねこ' },
                 postMineAction: PostMineAction.showAnkiDialog,
                 mediaId: localMediaId(asbplayer.id),
-                noteId: 555,
             })
         );
 
@@ -239,10 +199,6 @@ describe('mine-subtitle', () => {
                 sender: 'asbplayer-extension-to-player',
                 message: {
                     command: 'copy-subtitle-with-additional-fields',
-                    word: 'ねこ',
-                    definition: undefined,
-                    text: undefined,
-                    customFieldValues: {},
                     postMineAction: PostMineAction.showAnkiDialog,
                 },
                 asbplayerId: asbplayer.id,
@@ -250,11 +206,11 @@ describe('mine-subtitle', () => {
         ]);
     });
 
-    it('defaults to showing the Anki dialog when no post-mine action is given', async () => {
+    it('defaults to showing the mining dialog when no post-mine action is given', async () => {
         const targeted = videoElement(1, 'https://example.com/a.mp4');
         const { handlers, videoElementCommands } = harness({ videoElements: [targeted], activeTabId: 1 });
 
-        await handlers.onMineSubtitle(mineCommand({ fields: {}, postMineAction: undefined }));
+        await handlers.onMineSubtitle(mineCommand({ postMineAction: undefined }));
 
         expect(videoElementCommands[0].message.postMineAction).toEqual(PostMineAction.showAnkiDialog);
     });
@@ -266,7 +222,7 @@ describe('mine-subtitle', () => {
             activeTabId: 3,
         });
 
-        const published = await handlers.onMineSubtitle(mineCommand({ fields: {}, postMineAction: 0 }));
+        const published = await handlers.onMineSubtitle(mineCommand({ postMineAction: 0 }));
 
         expect(published).toBe(true);
         expect(videoElementCommands.map((command) => command.src)).toEqual(['https://example.com/a.mp4']);
@@ -277,7 +233,7 @@ describe('mine-subtitle', () => {
         const targeted = videoElement(1, 'https://example.com/a.mp4', { loadedSubtitles: false });
         const { handlers, videoElementCommands } = harness({ videoElements: [targeted], activeTabId: 1 });
 
-        const published = await handlers.onMineSubtitle(mineCommand({ fields: {}, postMineAction: 0 }));
+        const published = await handlers.onMineSubtitle(mineCommand({ postMineAction: 0 }));
 
         expect(published).toBe(false);
         expect(videoElementCommands).toEqual([]);
@@ -286,7 +242,7 @@ describe('mine-subtitle', () => {
     it('reports not published when no media resolves', async () => {
         const { handlers } = harness({ videoElements: [videoElement(1, 'https://example.com/a.mp4')] });
 
-        const published = await handlers.onMineSubtitle(mineCommand({ fields: {}, postMineAction: 0 }));
+        const published = await handlers.onMineSubtitle(mineCommand({ postMineAction: 0 }));
 
         expect(published).toBe(false);
     });

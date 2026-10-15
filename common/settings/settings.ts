@@ -1,10 +1,4 @@
-import type {
-    AnkiExportMode,
-    PlayMode,
-    PostMineAction,
-    PostMinePlayback,
-    SubtitleHtml,
-} from '@project/common/src/model';
+import type { PlayMode, PostMineAction, PostMinePlayback, SubtitleHtml } from '@project/common/src/model';
 import { AutoPausePreference } from '@project/common/src/model';
 import { arrayEquals } from '@project/common/util/array-equals';
 
@@ -155,7 +149,7 @@ export interface MiscSettings {
     readonly clickToMineDefaultAction: PostMineAction;
     readonly postMiningPlaybackState: PostMinePlayback;
     readonly lastSubtitleOffset: number;
-    readonly lastSelectedAnkiExportMode: AnkiExportMode;
+
     readonly tabName: string;
     readonly pauseOnHoverMode: PauseOnHoverMode;
     readonly subtitleAboveThumbnail: boolean;
@@ -218,42 +212,13 @@ export const updateAutoCopyableTracksValue = (
     add: boolean
 ) => updateBitset(autoCopyableTracks, trackIndex, add);
 
-export type AnkiSettingsFieldKey =
-    | 'sentenceField'
-    | 'definitionField'
-    | 'audioField'
-    | 'imageField'
-    | 'wordField'
-    | 'sourceField'
-    | 'urlField'
-    | 'track1Field'
-    | 'track2Field'
-    | 'track3Field';
-
 export type MediaFragmentFormatSetting = 'jpeg' | 'webm';
 
 export interface AnkiSettings {
-    readonly ankiConnectUrl: string;
-    readonly ankiConnectApiKey: string;
-    readonly ankiRefreshBrowserAfterUpdate: boolean;
-    readonly deck: string;
-    readonly noteType: string;
-    readonly sentenceField: string;
-    readonly definitionField: string;
-    readonly audioField: string;
-    readonly imageField: string;
-    readonly wordField: string;
-    readonly sourceField: string;
-    readonly urlField: string;
-    readonly track1Field: string;
-    readonly track2Field: string;
-    readonly track3Field: string;
-    readonly customAnkiFields: { [key: string]: string };
-    readonly tags: string[];
     readonly recordWithAudioPlayback: boolean;
     readonly preferMp3: boolean;
     readonly alwaysUseSubtitleForSentence: boolean;
-    readonly updateLastCardForSameSubtitle: boolean;
+
     readonly audioPaddingStart: number;
     readonly audioPaddingEnd: number;
     readonly maxImageWidth: number;
@@ -265,52 +230,13 @@ export interface AnkiSettings {
     readonly trimBlackBars: boolean;
     readonly surroundingSubtitlesCountRadius: number;
     readonly surroundingSubtitlesTimeRadius: number;
-    readonly ankiFieldSettings: AnkiFieldSettings;
-    readonly customAnkiFieldSettings: CustomAnkiFieldSettings;
 }
-
-export interface AnkiField {
-    readonly order: number;
-    readonly display: boolean;
-}
-
-export interface AnkiFieldSettings {
-    readonly sentence: AnkiField;
-    readonly definition: AnkiField;
-    readonly audio: AnkiField;
-    readonly image: AnkiField;
-    readonly word: AnkiField;
-    readonly source: AnkiField;
-    readonly url: AnkiField;
-    readonly track1: AnkiField;
-    readonly track2: AnkiField;
-    readonly track3: AnkiField;
-}
-
-export type CustomAnkiFieldSettings = { [key: string]: AnkiField };
 
 const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
-    ankiConnectUrl: true,
-    ankiConnectApiKey: true,
-    ankiRefreshBrowserAfterUpdate: true,
-    deck: true,
-    noteType: true,
-    sentenceField: true,
-    definitionField: true,
-    audioField: true,
-    imageField: true,
-    wordField: true,
-    sourceField: true,
-    urlField: true,
-    track1Field: true,
-    track2Field: true,
-    track3Field: true,
-    customAnkiFields: true,
-    tags: true,
     recordWithAudioPlayback: true,
     preferMp3: true,
     alwaysUseSubtitleForSentence: true,
-    updateLastCardForSameSubtitle: true,
+
     audioPaddingStart: true,
     audioPaddingEnd: true,
     maxImageWidth: true,
@@ -322,8 +248,6 @@ const ankiSettingsKeysObject: { [key in keyof AnkiSettings]: boolean } = {
     trimBlackBars: true,
     surroundingSubtitlesCountRadius: true,
     surroundingSubtitlesTimeRadius: true,
-    ankiFieldSettings: true,
-    customAnkiFieldSettings: true,
 };
 
 export const ankiSettingsKeys: (keyof AnkiSettings)[] = Object.keys(ankiSettingsKeysObject) as (keyof AnkiSettings)[];
@@ -572,7 +496,7 @@ export interface KeyBindSet {
     readonly copySubtitle: KeyBind;
     readonly ankiExport: KeyBind;
     readonly updateLastCard: KeyBind;
-    readonly exportCard: KeyBind;
+
     readonly takeScreenshot: KeyBind;
     readonly toggleRecording: KeyBind;
     readonly selectSubtitleTrack: KeyBind;
@@ -583,13 +507,7 @@ export interface WebSocketClientSettings {
     readonly webSocketClientEnabled: boolean;
 }
 
-export type ChromeBoundKeyBindName =
-    | 'copySubtitle'
-    | 'ankiExport'
-    | 'updateLastCard'
-    | 'updateSelectedCard'
-    | 'exportCard'
-    | 'takeScreenshot';
+export type ChromeBoundKeyBindName = 'copySubtitle' | 'ankiExport' | 'updateLastCard' | 'takeScreenshot';
 export type SubtitleAlignment = 'top' | 'bottom';
 export enum SubtitleListPreference {
     noSubtitleList = 'noSubtitleList',
@@ -695,7 +613,7 @@ export const extractJitenSettings = (settings: JitenSettings): Omit<JitenSetting
     >;
 
 export interface JitenSettings {
-    readonly miningDestination: 'anki' | 'jiten';
+    readonly miningDestination: 'jiten';
     readonly jitenApiKey: string;
     readonly jitenMiningDeckId: number;
     readonly jitenMiningDeckInitialized: boolean;
@@ -721,8 +639,7 @@ const keyBindNameMap: any = {
     'copy-subtitle': 'copySubtitle',
     'copy-subtitle-with-dialog': 'ankiExport',
     'update-last-card': 'updateLastCard',
-    'update-selected-card': 'updateSelectedCard',
-    'export-card': 'exportCard',
+
     'take-screenshot': 'takeScreenshot',
     'toggle-recording': 'toggleRecording',
     'toggle-video-select': 'selectSubtitleTrack',

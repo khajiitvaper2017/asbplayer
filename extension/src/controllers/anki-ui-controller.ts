@@ -5,7 +5,6 @@ import type {
     ActiveProfileMessage,
     AnkiDialogSettings,
     AnkiDialogSettingsMessage,
-    AnkiUiBridgeExportedMessage,
     AnkiUiBridgeRerecordMessage,
     AnkiUiBridgeResumeMessage,
     AnkiUiBridgeRewindMessage,
@@ -28,7 +27,6 @@ import type Binding from '@project/extension/src/services/binding';
 import { fetchLocalization } from '@project/extension/src/services/localization-fetcher';
 import type UiFrame from '@project/extension/src/services/ui-frame';
 import { uiFrameForHtml } from '@project/extension/src/services/ui-frame';
-import { ExtensionGlobalStateProvider } from '@project/extension/src/services/extension-global-state-provider';
 import { isOnTutorialPage } from '@/services/tutorial';
 import { frameColorSchemeStyleBlock } from '@/services/frame-color-scheme';
 
@@ -40,7 +38,7 @@ async function html(language: string) {
                 <head>
                     <meta charset="utf-8" />
                     <meta name="viewport" content="width=device-width, initial-scale=1" />
-                    <title>asbplayer - Anki</title>
+                    <title>asbplayer - Mining</title>
                     <style>
                         @import url(${browser.runtime.getURL('/fonts/fonts.css')});
                         ${frameColorSchemeStyleBlock()}
@@ -55,8 +53,6 @@ async function html(language: string) {
                 </body>
             </html>`;
 }
-
-const globalStateProvider = new ExtensionGlobalStateProvider();
 
 export default class AnkiUiController {
     private readonly frame: UiFrame;
@@ -229,7 +225,6 @@ export default class AnkiUiController {
     private async _client(context: Binding) {
         this.frame.fetchOptions = {
             videoSrc: context.registeredVideoSrc,
-            allowedFetchUrl: this._settings!.ankiConnectUrl,
         };
         this.frame.language = await context.settings.getSingle('language');
         const isNewClient = await this.frame.bind();
@@ -308,28 +303,6 @@ export default class AnkiUiController {
                                     await browser.runtime.sendMessage(settingsUpdatedCommand);
                                 })
                                 .catch((error) => asbError('anki/ui', 'Failed to set the active profile:', error));
-                            return;
-                        }
-                        case 'dismissedQuickSelectFtue':
-                            globalStateProvider
-                                .set({ ftueHasSeenAnkiDialogQuickSelectV2: true })
-                                .catch((error) => asbError('anki/ui', error));
-                            return;
-                        case 'exported': {
-                            const exportedMessage = message as AnkiUiBridgeExportedMessage;
-                            void context.settings
-                                .set({ lastSelectedAnkiExportMode: exportedMessage.mode })
-                                .then(async () => {
-                                    const settingsUpdatedCommand: VideoToExtensionCommand<SettingsUpdatedMessage> = {
-                                        sender: 'asbplayer-video',
-                                        message: {
-                                            command: 'settings-updated',
-                                        },
-                                        src: context.registeredVideoSrc,
-                                    };
-                                    await browser.runtime.sendMessage(settingsUpdatedCommand);
-                                })
-                                .catch((error) => asbError('anki/ui', 'Failed to save Anki export settings:', error));
                             return;
                         }
                         case 'card-updated-dialog': {
@@ -434,11 +407,9 @@ export default class AnkiUiController {
     private async _additionalUiState(context: Binding) {
         const profilesPromise = context.settings.profiles();
         const activeProfilePromise = context.settings.activeProfile();
-        const globalStatePromise = globalStateProvider.getAll();
         return {
             profiles: await profilesPromise,
             activeProfile: (await activeProfilePromise)?.name,
-            ftueHasSeenAnkiDialogQuickSelect: (await globalStatePromise).ftueHasSeenAnkiDialogQuickSelectV2,
         };
     }
 

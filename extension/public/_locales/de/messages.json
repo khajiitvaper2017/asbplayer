@@ -1,6 +1,6 @@
 {
     "shortcutMineSubtitleAndOpenDialogDescription": {
-        "message": "Aktuellen Untertitel extrahieren und Anki-Dialog öffnen. Audiorecorder starten / stoppen"
+        "message": "Mining-Dialog anzeigen"
     },
     "shortcutMineSubtitleDescription": {
         "message": "Aktuellen Untertitel extrahieren. Audiorecorder starten / stoppen"
@@ -15,6 +15,6 @@
         "message": "Audiorecorder manuell starten / stoppen"
     },
     "shortcutUpdateLastCardDescription": {
-        "message": "Zuletzt erstellte Anki-Karte mit aufgezeichnetem Untertitel"
+        "message": "An Jiten anhängen"
     }
 }

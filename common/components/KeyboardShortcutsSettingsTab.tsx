@@ -60,7 +60,7 @@ const keyBindSectionByName: { [key in KeyBindName]: KeyboardShortcutSection } = 
     copySubtitle: 'mining',
     ankiExport: 'mining',
     updateLastCard: 'mining',
-    exportCard: 'mining',
+
     takeScreenshot: 'mining',
     toggleRecording: 'mining',
     toggleSidePanel: 'playback',
@@ -303,7 +303,6 @@ interface Props {
     onSettingChanged: <K extends keyof AsbplayerSettings>(key: K, value: AsbplayerSettings[K]) => Promise<void>;
     chromeKeyBinds: { [key: string]: string | undefined };
     extensionInstalled?: boolean;
-    extensionSupportsExportCardBind?: boolean;
     extensionSupportsSidePanel?: boolean;
     extensionSupportsAutoPauseResume?: boolean;
     extensionSupportsSubtitleTrackSelectorInWebApp?: boolean;
@@ -330,7 +329,6 @@ const KeyboardShortcutsSettingsTab: React.FC<Props> = ({
     onSettingChanged,
     chromeKeyBinds,
     extensionInstalled,
-    extensionSupportsExportCardBind,
     extensionSupportsSidePanel,
     extensionSupportsAutoPauseResume,
     extensionSupportsSubtitleTrackSelectorInWebApp,
@@ -378,11 +376,7 @@ const KeyboardShortcutsSettingsTab: React.FC<Props> = ({
                 label: t('binds.updateLastCard'),
                 boundViaBrowser: true,
             },
-            exportCard: {
-                label: t('binds.exportCard'),
-                boundViaBrowser: true,
-                hide: extensionInstalled && !extensionSupportsExportCardBind,
-            },
+
             takeScreenshot: {
                 label: t('binds.takeScreenshot'),
                 boundViaBrowser: true,
@@ -645,7 +639,6 @@ const KeyboardShortcutsSettingsTab: React.FC<Props> = ({
             t,
             extensionInstalled,
             extensionSupportsSidePanel,
-            extensionSupportsExportCardBind,
             extensionSupportsAutoPauseResume,
             extensionSupportsSubtitleTrackSelectorInWebApp,
             onSettingChanged,

@@ -1360,7 +1360,6 @@ export default class Binding {
                 ...extractAnkiSettings(currentSettings),
                 ...extractJitenSettings(currentSettings),
                 themeType: currentSettings.themeType,
-                lastSelectedAnkiExportMode: currentSettings.lastSelectedAnkiExportMode,
             },
             this.settings,
             currentSettings.jitenApiKey
@@ -1530,8 +1529,6 @@ export default class Binding {
         definition,
         word,
         customFieldValues,
-        isBulkExport,
-        noteId,
     }: CopySubtitleMessage) {
         if (!subtitle || !surroundingSubtitles) {
             return;
@@ -1596,19 +1593,12 @@ export default class Binding {
                 definition,
                 word,
                 customFieldValues,
-                isBulkExport,
-                noteId,
                 ...this._imageCaptureParams,
             },
             src: this._registeredVideoSrc,
         };
 
         void browser.runtime.sendMessage(command);
-    }
-
-    // Public helper for controllers to reuse copy-subtitle flow (e.g., bulk export)
-    async copySubtitleForBulk(message: CopySubtitleMessage) {
-        await this._copySubtitle(message);
     }
 
     async _toggleRecordingMedia(postMineAction: PostMineAction) {

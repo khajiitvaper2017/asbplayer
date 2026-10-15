@@ -25,7 +25,6 @@ import type {
     VideoTabModel,
     CopyHistoryItem,
     AnkiDialogSettings,
-    AnkiExportMode,
     BrowserFeatures,
     IndexedSubtitleModel,
 } from '@project/common/src/model';
@@ -167,8 +166,6 @@ export interface RecordMediaAndForwardSubtitleMessage extends Message, CardTextF
     readonly imageDelay: number;
     readonly playbackRate: number;
     readonly mediaTimestamp: number;
-    readonly isBulkExport?: boolean;
-    readonly noteId?: number;
 }
 
 export interface StartRecordingMediaMessage extends Message, ImageCaptureParams {
@@ -217,8 +214,6 @@ export interface CopySubtitleMessage extends Message, CardTextFieldValues {
     readonly postMineAction: PostMineAction;
     readonly subtitle?: SubtitleModel;
     readonly surroundingSubtitles?: SubtitleModel[];
-    readonly isBulkExport?: boolean;
-    readonly noteId?: number;
 }
 
 export interface CopySubtitleWithAdditionalFieldsMessage extends Message, CardTextFieldValues {
@@ -253,7 +248,6 @@ export interface CardUpdatedDialogMessage extends Message {
 export interface CardExportedMessage extends Message, CardModel {
     readonly command: 'card-exported';
     readonly cardName: string;
-    readonly isBulkExport?: boolean;
     readonly skippedDuplicate?: boolean;
     readonly exportError?: string;
 }
@@ -278,10 +272,6 @@ export interface ShowAnkiUiMessage extends Message, CardModel {
     readonly jitenResult?: JitenAttachmentResult;
     readonly command: 'show-anki-ui';
     readonly id: string;
-}
-
-export interface ShowCardSelectUiMessage extends Message, CardModel {
-    readonly command: 'show-card-select-ui';
 }
 
 export interface RecordingStartedMessage extends Message {
@@ -540,10 +530,6 @@ export interface ActiveProfileMessage extends Message {
     readonly profile?: string;
 }
 
-export interface AnkiDialogDismissedQuickSelectFtueMessage extends Message {
-    readonly command: 'dismissedQuickSelectFtue';
-}
-
 export interface MiscSettingsToVideoMessage extends Message {
     readonly command: 'miscSettings';
     readonly value: MiscSettings;
@@ -566,11 +552,6 @@ export interface AnkiUiBridgeRerecordMessage extends Message {
     readonly uiState: AnkiUiSavedState;
     readonly recordStart: number;
     readonly recordEnd: number;
-}
-
-export interface AnkiUiBridgeExportedMessage extends Message {
-    readonly command: 'exported';
-    readonly mode: AnkiExportMode;
 }
 
 export interface VideoDataUiBridgeConfirmMessage extends Message {

@@ -13,19 +13,6 @@ const keyBindSchema = {
     },
     required: ['keys'],
 };
-const ankiFieldSchema = {
-    id: '/AnkiField',
-    type: 'object',
-    properties: {
-        order: {
-            type: 'number',
-        },
-        display: {
-            type: 'boolean',
-        },
-    },
-    required: ['order', 'display'],
-};
 const textSubtitleSettingsSchema = {
     id: '/TextSubtitleSettings',
     type: 'object',
@@ -121,72 +108,7 @@ const settingsSchema = {
         jitenAttachAudio: {
             type: 'boolean',
         },
-        ankiConnectUrl: {
-            type: 'string',
-        },
-        ankiConnectApiKey: {
-            type: 'string',
-        },
-        ankiRefreshBrowserAfterUpdate: {
-            type: 'boolean',
-        },
-        deck: {
-            type: 'string',
-        },
-        noteType: {
-            type: 'string',
-        },
-        sentenceField: {
-            type: 'string',
-        },
-        definitionField: {
-            type: 'string',
-        },
-        audioField: {
-            type: 'string',
-        },
-        imageField: {
-            type: 'string',
-        },
-        wordField: {
-            type: 'string',
-        },
-        sourceField: {
-            type: 'string',
-        },
-        urlField: {
-            type: 'string',
-        },
-        track1Field: {
-            type: 'string',
-        },
-        track2Field: {
-            type: 'string',
-        },
-        track3Field: {
-            type: 'string',
-        },
-        ankiFieldSettings: {
-            type: 'object',
-            properties: {
-                sentence: { $ref: '/AnkiField' },
-                definition: { $ref: '/AnkiField' },
-                audio: { $ref: '/AnkiField' },
-                image: { $ref: '/AnkiField' },
-                word: { $ref: '/AnkiField' },
-                source: { $ref: '/AnkiField' },
-                url: { $ref: '/AnkiField' },
-                track1: { $ref: '/AnkiField' },
-                track2: { $ref: '/AnkiField' },
-                track3: { $ref: '/AnkiField' },
-            },
-        },
-        customAnkiFieldSettings: {
-            type: 'object',
-            additionalProperties: {
-                type: '/AnkiField',
-            },
-        },
+
         subtitleSize: {
             type: 'number',
         },
@@ -392,8 +314,7 @@ const settingsSchema = {
                 copySubtitle: { $ref: '/KeyBind' },
                 ankiExport: { $ref: '/KeyBind' },
                 updateLastCard: { $ref: '/KeyBind' },
-                updateSelectedCard: { $ref: '/KeyBind' },
-                exportCard: { $ref: '/KeyBind' },
+
                 takeScreenshot: { $ref: '/KeyBind' },
                 toggleRecording: { $ref: '/KeyBind' },
                 selectSubtitleTrack: { $ref: '/KeyBind' },
@@ -472,9 +393,7 @@ const settingsSchema = {
         copyToClipboardOnMine: {
             type: 'boolean',
         },
-        updateLastCardForSameSubtitle: {
-            type: 'boolean',
-        },
+
         rememberSubtitleOffset: {
             type: 'boolean',
         },
@@ -499,18 +418,7 @@ const settingsSchema = {
         language: {
             type: 'string',
         },
-        customAnkiFields: {
-            type: 'object',
-            additionalProperties: {
-                type: 'string',
-            },
-        },
-        tags: {
-            type: 'array',
-            items: {
-                type: 'string',
-            },
-        },
+
         imageBasedSubtitleScaleFactor: {
             type: 'number',
         },
@@ -591,9 +499,7 @@ const settingsSchema = {
         pauseOnHoverMode: {
             type: 'number',
         },
-        lastSelectedAnkiExportMode: {
-            type: 'string',
-        },
+
         thumbnailPreview: {
             type: 'boolean',
         },
@@ -611,7 +517,6 @@ export type IgnorePath = readonly IgnorePathSegment[];
 
 const ignorePaths: readonly IgnorePath[] = [
     ['jitenApiKey'],
-    ['ankiConnectApiKey'],
     ['streamingPages'], // Ignored due to security risk (e.g. disable CSP)
 ];
 const validationIgnorePaths: readonly IgnorePath[] = [['streamingPages']];
@@ -689,7 +594,6 @@ export const validateSettings = (settings: any) => {
     const copy = omitPaths(settings, validationIgnorePaths);
     const validator = new Validator();
     validator.addSchema(keyBindSchema);
-    validator.addSchema(ankiFieldSchema);
     validator.addSchema(textSubtitleSettingsSchema);
     const result = validator.validate(copy, settingsSchema);
     validateAllKnownKeys(copy, []);
@@ -740,10 +644,6 @@ const schemaAtPath = (schema: any, path: string[]) => {
 const schemaForRef = (ref: string) => {
     if (ref === '/KeyBind') {
         return keyBindSchema;
-    }
-
-    if (ref === '/AnkiField') {
-        return ankiFieldSchema;
     }
 
     if (ref === '/TextSubtitleSettings') {

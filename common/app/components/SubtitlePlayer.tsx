@@ -1143,29 +1143,12 @@ export default function SubtitlePlayer({
         }
 
         webSocketClient.onMineSubtitle = async ({
-            body: { fields: receivedFields, postMineAction: receivedPostMineAction },
+            body: { postMineAction: receivedPostMineAction },
         }: MineSubtitleCommand) => {
-            const fields = receivedFields ?? {};
-            const word = fields[settings.wordField] || undefined;
-            const definition = fields[settings.definitionField] || undefined;
-            const text = fields[settings.sentenceField] || undefined;
-            const customFieldValues = Object.fromEntries(
-                Object.entries(settings.customAnkiFields)
-                    .map(([asbplayerFieldName, ankiFieldName]) => {
-                        const fieldValue = fields[ankiFieldName];
-
-                        if (fieldValue === undefined) {
-                            return undefined;
-                        }
-
-                        return [asbplayerFieldName, fieldValue];
-                    })
-                    .filter((entry) => entry !== undefined)
-            );
             const postMineAction = receivedPostMineAction ?? PostMineAction.showAnkiDialog;
-            return copyFromWebSocketClient({ postMineAction, text, word, definition, customFieldValues });
+            return copyFromWebSocketClient({ postMineAction });
         };
-    }, [webSocketClient, extension, settings, copyFromWebSocketClient]);
+    }, [webSocketClient, extension, copyFromWebSocketClient]);
 
     useEffect(() => {
         if (extension.installed) {
@@ -1222,13 +1205,6 @@ export default function SubtitlePlayer({
     useEffect(() => {
         return keyBinder.bindUpdateLastCard(
             (event) => mineCard(event, PostMineAction.updateLastCard),
-            () => disableKeyEvents || disableMiningBinds
-        );
-    }, [mineCard, keyBinder, disableKeyEvents, disableMiningBinds]);
-
-    useEffect(() => {
-        return keyBinder.bindExportCard(
-            (event) => mineCard(event, PostMineAction.exportCard),
             () => disableKeyEvents || disableMiningBinds
         );
     }, [mineCard, keyBinder, disableKeyEvents, disableMiningBinds]);

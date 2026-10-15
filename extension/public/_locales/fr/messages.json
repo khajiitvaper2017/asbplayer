@@ -6,13 +6,10 @@
         "message": "Extraire le sous-titre actuel. Lorsque la vidéo est synchronisée sans fichier de sous-titres, démarre/arrête l’enregistrement audio."
     },
     "shortcutMineSubtitleAndOpenDialogDescription": {
-        "message": "Extraire le sous-titre actuel et ouvrir la boîte de dialogue d’export Anki. Lorsque la vidéo est synchronisée sans fichier de sous-titres, démarre/arrête l’enregistrement audio."
+        "message": "Afficher la fenêtre de minage"
     },
     "shortcutUpdateLastCardDescription": {
-        "message": "Mettre à jour la dernière carte Anki créée avec les médias capturés par asbplayer. Lorsque la vidéo est synchronisée sans fichier de sous-titres, démarre/arrête l’enregistrement audio."
-    },
-    "shortcutExportCardDescription": {
-        "message": "Exporter la carte directement vers Anki, sans passer par la boîte de dialogue."
+        "message": "Joindre à Jiten"
     },
     "shortcutTakeScreenshotDescription": {
         "message": "Prendre une capture d’écran manuellement, en remplaçant celle prise automatiquement lors du minage."

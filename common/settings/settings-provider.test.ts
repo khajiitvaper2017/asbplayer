@@ -43,8 +43,6 @@ it('keeps playback-owned settings separate from UI settings', () => {
 
 it('can change the value of object-typed settings', async () => {
     const provider = new SettingsProvider(new MockSettingsStorage());
-    await provider.set({ tags: ['foo'] });
-    expect(await provider.getSingle('tags')).toEqual(['foo']);
     const newKeyBindSet = {
         ...defaultSettings.keyBindSet,
         togglePlay: { keys: 'moon-wolf' },
@@ -55,8 +53,8 @@ it('can change the value of object-typed settings', async () => {
 
 it('can change the value of value-typed settings', async () => {
     const provider = new SettingsProvider(new MockSettingsStorage());
-    await provider.set({ audioField: 'test-value' });
-    expect(await provider.getSingle('audioField')).toBe('test-value');
+    await provider.set({ language: 'test-value' });
+    expect(await provider.getSingle('language')).toBe('test-value');
     await provider.set({ videoSubtitleSplitBehavior: VideoSubtitleSplitBehavior.autoMaximizeVideo });
     expect(await provider.getSingle('videoSubtitleSplitBehavior')).toBe(VideoSubtitleSplitBehavior.autoMaximizeVideo);
     await provider.set({ subtitleListTimestampDisplay: SubtitleListTimestampDisplay.hidden });
@@ -91,26 +89,6 @@ it('provides default values for unpopulated, nested settings', async () => {
     expect(await provider.getSingle('keyBindSet')).toEqual({
         ...defaultSettings.keyBindSet,
         togglePlay: { keys: 'p' },
-    });
-
-    storage.setData({ ankiFieldSettings: { url: { order: 12 } } });
-    expect(await provider.getSingle('ankiFieldSettings')).toEqual({
-        ...defaultSettings.ankiFieldSettings,
-        url: { order: 12 },
-    });
-});
-
-it('removes corresponding field settings when custom anki fields are removed', async () => {
-    const storage = new MockSettingsStorage();
-    const provider = new SettingsProvider(storage);
-    await provider.set({
-        customAnkiFields: { foo: 'bar', baz: 'moo' },
-        customAnkiFieldSettings: { foo: { order: 1, display: true }, baz: { order: 2, display: false } },
-    });
-    await provider.set({ customAnkiFields: { foo: 'bar' } });
-    expect(await provider.get(['customAnkiFields', 'customAnkiFieldSettings'])).toEqual({
-        customAnkiFields: { foo: 'bar' },
-        customAnkiFieldSettings: { foo: { order: 1, display: true } },
     });
 });
 

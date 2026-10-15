@@ -6,10 +6,8 @@ export interface MineSubtitleCommand {
     command: 'mine-subtitle';
     messageId: string;
     body: {
-        fields: { [key: string]: string };
         postMineAction: number;
         mediaId?: string;
-        noteId?: number;
     };
 }
 

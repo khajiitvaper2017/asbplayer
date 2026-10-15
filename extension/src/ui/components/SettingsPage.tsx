@@ -95,13 +95,11 @@ const SettingsPage = ({ logProvider, settings, inTutorial, onSettingsChanged, ..
                         extensionSupportsPauseOnHover
                         extensionSupportsPlaybackEngine
                         extensionSupportsAutoPauseResume
-                        extensionSupportsExportCardBind
                         extensionSupportsPageSettings
                         extensionSupportsSeekableTrackSetting
                         extensionSupportsAutoCopyableTrackSetting
                         extensionSupportsSubtitleTrackSelectorInWebApp
                         extensionSupportsSubtitleListCustomization
-                        extensionSupportsUpdateLastWithSameSubtitleText
                         chromeKeyBinds={commands}
                         onOpenChromeExtensionShortcuts={handleOpenExtensionShortcuts}
                         onSettingsChanged={onSettingsChanged}

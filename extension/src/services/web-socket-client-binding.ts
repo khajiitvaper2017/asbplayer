@@ -18,7 +18,7 @@ export const bindWebSocketClient = async (settings: SettingsProvider, tabRegistr
     void client.bind(url).catch((error) => {
         asbError('web-socket', 'Failed to connect to the WebSocket server:', error);
     });
-    client.setHandlers(webSocketCommandHandlers(settings, tabRegistry));
+    client.setHandlers(webSocketCommandHandlers(tabRegistry));
 };
 
 export const unbindWebSocketClient = () => {

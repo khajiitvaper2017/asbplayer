@@ -133,13 +133,11 @@ const Popup = ({
                         extensionSupportsPauseOnHover
                         extensionSupportsPlaybackEngine
                         extensionSupportsAutoPauseResume
-                        extensionSupportsExportCardBind
                         extensionSupportsPageSettings
                         extensionSupportsSeekableTrackSetting
                         extensionSupportsAutoCopyableTrackSetting
                         extensionSupportsSubtitleTrackSelectorInWebApp
                         extensionSupportsSubtitleListCustomization
-                        extensionSupportsUpdateLastWithSameSubtitleText
                         forceVerticalTabs={false}
                         chromeKeyBinds={chromeCommandBindsToKeyBinds(commands)}
                         logProvider={logProvider}

@@ -27,6 +27,7 @@ Mines the active media's current subtitle using the configured Jiten action.
 
 - `0`: keep the subtitle in mining history only
 - `1`: open the Jiten mining dialog
+- `2`: attach media to the selected Jiten word
 - `5`: mine new words to Jiten
 
 The response contains the original `messageId` and a `published` boolean.

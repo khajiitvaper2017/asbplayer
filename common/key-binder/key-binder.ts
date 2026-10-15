@@ -22,11 +22,6 @@ export interface KeyBinder {
         disabledGetter: () => boolean,
         capture?: boolean
     ): () => void;
-    bindExportCard(
-        onExportCard: (event: KeyboardEvent) => void,
-        disabledGetter: () => boolean,
-        capture?: boolean
-    ): () => void;
     bindTakeScreenshot(
         onTakeScreenshot: (event: KeyboardEvent) => void,
         disabledGetter: () => boolean,
@@ -262,28 +257,6 @@ export class DefaultKeyBinder implements KeyBinder {
             }
 
             onUpdateLastCard(event);
-            return true;
-        };
-    }
-
-    bindExportCard(onExportCard: (event: KeyboardEvent) => void, disabledGetter: () => boolean, capture = false) {
-        const shortcut = this.keyBindSet.exportCard.keys;
-
-        if (!shortcut) {
-            return () => {};
-        }
-
-        const handler = this.exportCardHandler(onExportCard, disabledGetter);
-        return this._bind(shortcut, capture, handler);
-    }
-
-    exportCardHandler(onExportCard: (event: KeyboardEvent) => void, disabledGetter: () => boolean) {
-        return (event: KeyboardEvent) => {
-            if (disabledGetter()) {
-                return false;
-            }
-
-            onExportCard(event);
             return true;
         };
     }

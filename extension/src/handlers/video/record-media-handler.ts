@@ -150,17 +150,13 @@ export default class RecordMediaHandler {
             }
         }
 
-        const { isBulkExport, postMineAction, ...messageWithoutBulkFlag } = message;
+        const { postMineAction, ...captured } = message;
         const card: CardModel = {
             image: imageModel,
             audio: audioModel,
-            ...messageWithoutBulkFlag,
+            ...captured,
         };
 
-        if (isBulkExport) {
-            void this._cardPublisher.publish(card, PostMineAction.none, tabId, recordMediaCommand.src);
-        } else {
-            void this._cardPublisher.publish(card, postMineAction, tabId, recordMediaCommand.src);
-        }
+        void this._cardPublisher.publish(card, postMineAction, tabId, recordMediaCommand.src);
     }
 }

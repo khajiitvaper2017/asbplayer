@@ -168,7 +168,9 @@ export interface AnkiDialogState {
     track1: string;
     track2: string;
     track3: string;
-    customFieldValues: { [key: string]: string };
+    customFieldValues: {
+        [key: string]: string;
+    };
     lastAppliedTimestampIntervalToText?: number[];
     lastAppliedTimestampIntervalToAudio?: number[];
     initialTimestampInterval?: number[];
@@ -206,9 +208,6 @@ interface AnkiDialogProps {
     profiles?: Profile[];
     activeProfile?: string;
     onSetActiveProfile?: (profile: string | undefined) => void;
-    lastSelectedExportMode?: AnkiExportMode;
-    showQuickSelectFtue?: boolean;
-    onDismissShowQuickSelectFtue?: () => void;
     inTutorial?: boolean;
 }
 
@@ -266,12 +265,13 @@ const AnkiDialog = ({
     const [text, setText] = useState<string>('');
     const [word, setWord] = useState<string>('');
     const [source, setSource] = useState<string>('');
-    const [tags, setTags] = useState<string[]>(settings.tags);
     const [url, setUrl] = useState<string>(card.url ?? '');
     const [track1, setTrack1] = useState<string>('');
     const [track2, setTrack2] = useState<string>('');
     const [track3, setTrack3] = useState<string>('');
-    const [customFieldValues, setCustomFieldValues] = useState<{ [key: string]: string }>({});
+    const [customFieldValues, setCustomFieldValues] = useState<{
+        [key: string]: string;
+    }>({});
     const [timestampInterval, setTimestampInterval] = useState<number[]>();
     const [selectedSubtitles, setSelectedSubtitles] = useState<SubtitleModel[]>([]);
     const [initialTimestampInterval, setInitialTimestampInterval] = useState<number[]>();
@@ -291,13 +291,12 @@ const AnkiDialog = ({
         setWidth(element?.getBoundingClientRect().width ?? 0);
     }, []);
     const { t } = useTranslation();
-    const jitenMode = true;
-    const allowManualHighlight = jitenMode && Boolean(jiten.showUnmatchedAttachmentTarget);
+    const allowManualHighlight = Boolean(jiten.showUnmatchedAttachmentTarget);
     const jitenText = highlightJitenWord(allowManualHighlight ? text : stripJitenMarkers(text), jiten?.target);
     const attachmentSurface = jitenSurfaceForm(jiten?.target);
     const attachmentMatches = Boolean(attachmentSurface && stripJitenMarkers(text).includes(attachmentSurface));
     const showAttachmentTarget = Boolean(jiten?.target && (attachmentMatches || jiten.showUnmatchedAttachmentTarget));
-    const jitenError = jitenMode ? jitenValidationError(jiten.target, jitenText, source) : undefined;
+    const jitenError = jitenValidationError(jiten.target, jitenText, source);
     const [newWords, setNewWords] = useState<JitenTarget[]>();
     const [newWordsError, setNewWordsError] = useState<string>();
     const loadNewWords = jiten?.loadNewWords;
@@ -338,8 +337,8 @@ const AnkiDialog = ({
     };
 
     const buildExportParams = useCallback(
-        (mode: AnkiExportMode, noteId?: number): ExportParams => ({
-            text: jitenMode ? jitenText : text,
+        (mode: AnkiExportMode): ExportParams => ({
+            text: jitenText,
             track1,
             track2,
             track3,
@@ -350,26 +349,9 @@ const AnkiDialog = ({
             source,
             url,
             customFieldValues,
-            tags,
             mode,
-            noteId,
         }),
-        [
-            text,
-            track1,
-            track2,
-            track3,
-            definition,
-            audioClip,
-            image,
-            word,
-            source,
-            url,
-            customFieldValues,
-            tags,
-            jitenMode,
-            jitenText,
-        ]
+        [track1, track2, track3, definition, audioClip, image, word, source, url, customFieldValues, jitenText]
     );
 
     if (stateRef) {
@@ -410,10 +392,7 @@ const AnkiDialog = ({
         word: initialWord,
         customFieldValues: initialCustomFieldValues,
     } = card;
-    const initialText = jitenMode
-        ? (cardText ?? extractText(card.subtitle, card.surroundingSubtitles)) || jiten?.target?.sentence
-        : cardText;
-
+    const initialText = (cardText ?? extractText(card.subtitle, card.surroundingSubtitles)) || jiten?.target?.sentence;
     useEffect(() => {
         setText(initialText ?? extractText(card.subtitle, card.surroundingSubtitles) ?? '');
         setDefinition(initialDefinition ?? '');
@@ -435,11 +414,6 @@ const AnkiDialog = ({
         initialWord,
         initialCustomFieldValues,
     ]);
-
-    useEffect(() => {
-        setTags(settings.tags);
-    }, [settings.tags]);
-
     useEffect(() => {
         const timestampInterval =
             initialSelectedTimestampInterval || [card.subtitle.start, card.subtitle.end] || undefined;
@@ -793,7 +767,7 @@ const AnkiDialog = ({
                 disableEnforceFocus
                 fullWidth
                 maxWidth="sm"
-                onClose={jitenMode && disabled ? undefined : onCancel}
+                onClose={disabled ? undefined : onCancel}
             >
                 <Toolbar>
                     <Typography variant="h6" className={classes.title}>
@@ -812,7 +786,7 @@ const AnkiDialog = ({
                         </IconButton>
                     )}
                     {onCancel && (
-                        <IconButton edge="end" disabled={jitenMode && disabled} onClick={onCancel}>
+                        <IconButton edge="end" disabled={disabled} onClick={onCancel}>
                             <CloseIcon />
                         </IconButton>
                     )}
@@ -918,13 +892,7 @@ const AnkiDialog = ({
                                 <React.Fragment key={key}>
                                     {!model.custom && model.key === 'sentence' && model.field.display && (
                                         <SentenceField
-                                            text={
-                                                allowManualHighlight
-                                                    ? jitenText
-                                                    : jitenMode
-                                                      ? stripJitenMarkers(text)
-                                                      : text
-                                            }
+                                            text={allowManualHighlight ? jitenText : stripJitenMarkers(text)}
                                             label={t('ankiDialog.sentence')}
                                             width={width}
                                             onChangeText={handleSentenceTextChange}

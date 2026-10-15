@@ -13,8 +13,5 @@ export interface ExportParams {
     source: string | undefined;
     url: string | undefined;
     customFieldValues: { [key: string]: string };
-    tags: string[];
     mode: AnkiExportMode;
-    noteId?: number;
-    ankiConnectUrl?: string;
 }

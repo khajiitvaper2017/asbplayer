@@ -65,18 +65,18 @@ it('handles active profile setting events and ignores other profile events', asy
 
     const onSettingsUpdated = jest.fn();
     const unsubscribe = settingsStorage.onSettingsUpdated(onSettingsUpdated);
-    await settingsStorage.get({ ankiConnectUrl: '' });
+    await settingsStorage.get({ webSocketServerUrl: '' });
 
-    localStorage.setItem(prefixKey('ankiConnectUrl', 'Test'), 'http://127.0.0.1:876');
-    window.dispatchEvent(new StorageEvent('storage', { key: prefixKey('ankiConnectUrl', 'Test') }));
+    localStorage.setItem(prefixKey('webSocketServerUrl', 'Test'), 'http://127.0.0.1:876');
+    window.dispatchEvent(new StorageEvent('storage', { key: prefixKey('webSocketServerUrl', 'Test') }));
 
     expect(onSettingsUpdated).toHaveBeenCalledTimes(1);
-    expect(await settingsStorage.get({ ankiConnectUrl: '' })).toEqual({
-        ankiConnectUrl: 'http://127.0.0.1:876',
+    expect(await settingsStorage.get({ webSocketServerUrl: '' })).toEqual({
+        webSocketServerUrl: 'http://127.0.0.1:876',
     });
 
-    localStorage.setItem(prefixKey('ankiConnectUrl', 'Else'), 'http://127.0.0.1:875');
-    window.dispatchEvent(new StorageEvent('storage', { key: prefixKey('ankiConnectUrl', 'Else') }));
+    localStorage.setItem(prefixKey('webSocketServerUrl', 'Else'), 'http://127.0.0.1:875');
+    window.dispatchEvent(new StorageEvent('storage', { key: prefixKey('webSocketServerUrl', 'Else') }));
 
     expect(onSettingsUpdated).toHaveBeenCalledTimes(1);
     unsubscribe();
@@ -86,21 +86,21 @@ it('refreshes profile metadata and active profile settings from storage events',
     await settingsStorage.addProfile('Test');
     await settingsStorage.addProfile('Else');
     await settingsStorage.setActiveProfile('Test');
-    await settingsStorage.set({ ankiConnectUrl: 'test-url' });
+    await settingsStorage.set({ webSocketServerUrl: 'test-url' });
     await settingsStorage.setActiveProfile('Else');
-    await settingsStorage.set({ ankiConnectUrl: 'else-url' });
+    await settingsStorage.set({ webSocketServerUrl: 'else-url' });
     await settingsStorage.setActiveProfile('Test');
 
     const onSettingsUpdated = jest.fn();
     const unsubscribe = settingsStorage.onSettingsUpdated(onSettingsUpdated);
-    expect(await settingsStorage.get({ ankiConnectUrl: '' })).toEqual({ ankiConnectUrl: 'test-url' });
+    expect(await settingsStorage.get({ webSocketServerUrl: '' })).toEqual({ webSocketServerUrl: 'test-url' });
 
     localStorage.setItem(activeProfileKey, 'Else');
     window.dispatchEvent(new StorageEvent('storage', { key: activeProfileKey }));
 
     expect(onSettingsUpdated).toHaveBeenCalledTimes(1);
     expect(await settingsStorage.activeProfile()).toEqual({ name: 'Else' });
-    expect(await settingsStorage.get({ ankiConnectUrl: '' })).toEqual({ ankiConnectUrl: 'else-url' });
+    expect(await settingsStorage.get({ webSocketServerUrl: '' })).toEqual({ webSocketServerUrl: 'else-url' });
 
     localStorage.setItem(profilesKey, JSON.stringify([{ name: 'Test' }, { name: 'Else' }, { name: 'New' }]));
     window.dispatchEvent(new StorageEvent('storage', { key: profilesKey }));

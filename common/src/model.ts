@@ -157,11 +157,10 @@ export interface AudioModel {
     readonly error?: AudioErrorCode;
 }
 
-export type AnkiExportMode = 'gui' | 'updateLast' | 'updateSpecific' | 'default';
+export type AnkiExportMode = 'default';
 
 export interface AnkiDialogSettings extends AnkiSettings, Omit<JitenSettings, 'jitenApiKey'> {
     themeType: string;
-    lastSelectedAnkiExportMode: AnkiExportMode;
 }
 
 export interface AnkiUiState extends CardTextFieldValues {
@@ -171,7 +170,6 @@ export interface AnkiUiState extends CardTextFieldValues {
     readonly settings: AnkiDialogSettings;
     readonly profiles: Profile[];
     readonly activeProfile?: string;
-    readonly ftueHasSeenAnkiDialogQuickSelect: boolean;
     readonly subtitle: SubtitleModel;
     readonly surroundingSubtitles: SubtitleModel[];
     readonly url?: string;
@@ -185,7 +183,6 @@ export interface AnkiUiState extends CardTextFieldValues {
 
 export interface AnkiUiInitialState extends AnkiUiState {
     readonly type: 'initial';
-    readonly cardSelectOpen?: boolean;
     readonly jitenPending?: JitenPending;
     readonly jitenResult?: JitenAttachmentResult;
 }
@@ -310,8 +307,6 @@ export enum PostMineAction {
     none = 0,
     showAnkiDialog = 1,
     updateLastCard = 2,
-    exportCard = 3,
-    showUpdateCardDialog = 4,
     mineNewJitenWords = 5,
 }
 

@@ -77,7 +77,6 @@ import {
     requestPermissions,
     resolveFiles,
 } from '@project/common/file-system-access';
-import { isMobile } from 'react-device-detect';
 import type { GlobalState } from '@project/common/global-state';
 import mp3WorkerFactory from '@project/common/audio-clip/mp3-encoder-worker.ts?worker';
 import pgsParserWorkerFactory from '@project/common/subtitle-reader/pgs-parser-worker.ts?worker';
@@ -361,7 +360,10 @@ function App({
     const [ankiDialogDisabled, setAnkiDialogDisabled] = useState<boolean>(false);
     const [ankiDialogCard, setAnkiDialogCard] = useState<CardModel>();
     const [dialogJitenTarget, setDialogJitenTarget] = useState<JitenTarget>();
-    const [dialogJitenBatch, setDialogJitenBatch] = useState<{ targets: JitenTarget[]; deckId: number }>();
+    const [dialogJitenBatch, setDialogJitenBatch] = useState<{
+        targets: JitenTarget[];
+        deckId: number;
+    }>();
     const [jitenResult, setJitenResult] = useState<JitenAttachmentResult>();
     const jitenSubmitting = useRef(false);
     useEffect(() => {
@@ -497,7 +499,10 @@ function App({
         async (
             params: ExportParams,
             target: JitenTarget,
-            batch?: { targets: JitenTarget[]; deckId: number },
+            batch?: {
+                targets: JitenTarget[];
+                deckId: number;
+            },
             sentenceId?: number
         ) => {
             if (jitenSubmitting.current) return;
@@ -643,11 +648,8 @@ function App({
             } else {
                 void saveCopyHistoryItem(newCard);
             }
-
-            const jiten = true;
             if (jitenSubmitting.current && postMineAction !== PostMineAction.none) return;
             if (
-                jiten &&
                 postMineAction !== undefined &&
                 postMineAction !== PostMineAction.none &&
                 postMineAction !== PostMineAction.updateLastCard &&
@@ -667,16 +669,14 @@ function App({
                     );
                     setAlertOpen(true);
                     break;
-                case PostMineAction.showAnkiDialog:
-                    handleAnkiDialogRequest(newCard);
-                    break;
-                case PostMineAction.showUpdateCardDialog:
-                    handleAnkiDialogRequest(newCard);
-                    break;
-                case PostMineAction.exportCard:
                 case PostMineAction.updateLastCard:
                 case PostMineAction.mineNewJitenWords: {
-                    let batch: { targets: JitenTarget[]; deckId: number } | undefined;
+                    let batch:
+                        | {
+                              targets: JitenTarget[];
+                              deckId: number;
+                          }
+                        | undefined;
                     if (postMineAction === PostMineAction.mineNewJitenWords) {
                         jitenSubmitting.current = true;
                         try {
@@ -700,17 +700,14 @@ function App({
                         }
                     }
                     const target = batch?.targets[0] ?? card.jitenTarget ?? readJitenTarget();
-                    const text = jiten
-                        ? highlightJitenWord(
-                              extractText(card.subtitle, card.surroundingSubtitles) || target?.sentence || '',
-                              target
-                          )
-                        : extractText(card.subtitle, card.surroundingSubtitles);
+                    const text = highlightJitenWord(
+                        extractText(card.subtitle, card.surroundingSubtitles) || target?.sentence || '',
+                        target
+                    );
                     const source = `${newCard.subtitleFileName} (${humanReadableTime(card.mediaTimestamp)})`;
                     if (
-                        jiten &&
-                        (jitenValidationError(target, text, source) ||
-                            (settingsRef.current.jitenPreventMultipleWords && (batch?.targets.length ?? 0) > 1))
+                        jitenValidationError(target, text, source) ||
+                        (settingsRef.current.jitenPreventMultipleWords && (batch?.targets.length ?? 0) > 1)
                     ) {
                         handleAnkiDialogRequest(newCard);
                         if (batch) {
@@ -751,10 +748,9 @@ function App({
                         source,
                         url: '',
                         customFieldValues: newCard.customFieldValues ?? {},
-                        tags: settingsRef.current.tags,
-                        mode: postMineAction === PostMineAction.updateLastCard ? 'updateLast' : 'default',
+                        mode: 'default',
                     };
-                    if (jiten) {
+                    {
                         setDialogJitenBatch(batch);
                         setDialogJitenTarget(newCard.jitenTarget ?? readJitenTarget());
                         setAnkiDialogCard(newCard);
@@ -1722,13 +1718,6 @@ function App({
     }, [settings.tabName]);
 
     const { initialized: i18nInitialized } = useI18n({ language: settings.language });
-
-    const handleDismissShowAnkiDialogQuickSelectFtue = useCallback(() => {
-        onGlobalStateChanged({ ftueHasSeenAnkiDialogQuickSelectV2: true });
-    }, [onGlobalStateChanged]);
-
-    const showAnkiDialogQuickSelectFtue = !isMobile && globalState?.ftueHasSeenAnkiDialogQuickSelectV2 === false;
-
     const [needRefreshDialogOpen, setNeedRefreshDialogOpen] = useState<boolean>(false);
     const handleOpenNeedRefreshDialog = useCallback(() => setNeedRefreshDialogOpen(true), []);
     const handleCloseNeedRefreshDialog = useCallback(() => setNeedRefreshDialogOpen(false), []);
@@ -1843,11 +1832,6 @@ function App({
         ((loading && !videoFrameRef.current) || (sources.subtitleFiles.length === 0 && !sources.videoFile));
     const appBarHidden = sources.videoFile !== undefined && ((theaterMode && !videoPopOut) || videoFullscreen);
     const effectiveDrawerOpen = copyHistoryOpen && !videoFullscreen;
-    const lastSelectedAnkiExportMode =
-        !extension.installed || extension.supportsLastSelectedAnkiExportModeSetting
-            ? settings.lastSelectedAnkiExportMode
-            : 'default';
-
     return (
         <StyledEngineProvider injectFirst>
             <ThemeProvider theme={theme}>
@@ -1894,13 +1878,10 @@ function App({
                                     disabled={ankiDialogDisabled}
                                     card={ankiDialogCard}
                                     settings={settings}
-                                    lastSelectedExportMode={lastSelectedAnkiExportMode}
                                     onCancel={handleAnkiDialogCancel}
                                     onProceed={handleAnkiDialogProceed}
                                     onCopyToClipboard={handleCopyToClipboard}
                                     mp3Encoder={mp3Encoder}
-                                    showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
-                                    onDismissShowQuickSelectFtue={handleDismissShowAnkiDialogQuickSelectFtue}
                                     {...profilesContext}
                                 />
                             )}
@@ -1934,14 +1915,11 @@ function App({
                                     disabled={ankiDialogDisabled}
                                     card={ankiDialogCard}
                                     settings={settings}
-                                    lastSelectedExportMode={lastSelectedAnkiExportMode}
                                     onCancel={handleAnkiDialogCancel}
                                     onProceed={handleAnkiDialogProceed}
                                     onOpenSettings={handleOpenSettings}
                                     onCopyToClipboard={handleCopyToClipboard}
                                     mp3Encoder={mp3Encoder}
-                                    showQuickSelectFtue={showAnkiDialogQuickSelectFtue}
-                                    onDismissShowQuickSelectFtue={handleDismissShowAnkiDialogQuickSelectFtue}
                                     {...profilesContext}
                                 />
                             )}

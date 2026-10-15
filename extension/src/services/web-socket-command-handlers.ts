@@ -1,5 +1,3 @@
-import type { SettingsProvider } from '@project/common/settings';
-import { ankiSettingsKeys } from '@project/common/settings';
 import type {
     BoundMedia,
     LoadSubtitlesCommand,
@@ -10,7 +8,6 @@ import type {
 } from '@project/common/web-socket-client';
 import type TabRegistry from '@project/extension/src/services/tab-registry';
 import type {
-    CardTextFieldValues,
     CopySubtitleMessage,
     CopySubtitleWithAdditionalFieldsMessage,
     ExtensionToVideoCommand,
@@ -38,35 +35,9 @@ const withoutExtension = (fileName: string) => {
     return dot > 0 ? fileName.substring(0, dot) : fileName;
 };
 
-const ankiFieldValues = async (
-    settings: SettingsProvider,
-    receivedFields: { [key: string]: string }
-): Promise<CardTextFieldValues> => {
-    const ankiSettings = await settings.get(ankiSettingsKeys);
-    const fields = receivedFields ?? {};
-    const word = fields[ankiSettings.wordField] || undefined;
-    const definition = fields[ankiSettings.definitionField] || undefined;
-    const text = fields[ankiSettings.sentenceField] || undefined;
-    const customFieldValues = Object.fromEntries(
-        Object.entries(ankiSettings.customAnkiFields)
-            .map(([asbplayerFieldName, ankiFieldName]) => {
-                const fieldValue = fields[ankiFieldName];
-
-                if (fieldValue === undefined) {
-                    return undefined;
-                }
-
-                return [asbplayerFieldName, fieldValue];
-            })
-            .filter((entry) => entry !== undefined)
-    );
-    return { word, definition, text, customFieldValues };
-};
-
 const mineSubtitle = async (
-    settings: SettingsProvider,
     tabRegistry: TabRegistry,
-    { body: { fields: receivedFields, postMineAction: receivedPostMineAction, mediaId, noteId } }: MineSubtitleCommand
+    { body: { postMineAction: receivedPostMineAction, mediaId } }: MineSubtitleCommand
 ): Promise<boolean> => {
     const targets = (await resolveMediaTargets(tabRegistry, mediaId)).filter((target) =>
         isVideoElementTarget(target) ? target.videoElement.loadedSubtitles : target.asbplayer.loadedSubtitles
@@ -76,7 +47,6 @@ const mineSubtitle = async (
         return false;
     }
 
-    const cardTextFieldValues = await ankiFieldValues(settings, receivedFields);
     const postMineAction = receivedPostMineAction ?? PostMineAction.showAnkiDialog;
 
     await Promise.all([
@@ -84,9 +54,7 @@ const mineSubtitle = async (
             sender: 'asbplayer-extension-to-video',
             message: {
                 command: 'copy-subtitle',
-                ...cardTextFieldValues,
                 postMineAction,
-                noteId,
             },
             src,
         })),
@@ -94,7 +62,6 @@ const mineSubtitle = async (
             sender: 'asbplayer-extension-to-player',
             message: {
                 command: 'copy-subtitle-with-additional-fields',
-                ...cardTextFieldValues,
                 postMineAction,
             },
             asbplayerId,
@@ -192,11 +159,8 @@ const getSubtitles = async (
     return toSubtitleCues(filterByTracks(subtitles ?? [], trackNumbers));
 };
 
-export const webSocketCommandHandlers = (
-    settings: SettingsProvider,
-    tabRegistry: TabRegistry
-): WebSocketCommandHandlers => ({
-    onMineSubtitle: (command) => mineSubtitle(settings, tabRegistry, command),
+export const webSocketCommandHandlers = (tabRegistry: TabRegistry): WebSocketCommandHandlers => ({
+    onMineSubtitle: (command) => mineSubtitle(tabRegistry, command),
     onLoadSubtitles: (command) => loadSubtitles(tabRegistry, command),
     onSeekTimestamp: (command) => seekTimestamp(tabRegistry, command),
     onGetBoundMedia: () => getBoundMedia(tabRegistry),

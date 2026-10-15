@@ -168,9 +168,7 @@ export default defineConfig({
                 },
                 description: '__MSG_shortcutSelectSubtitleTrackDescription__',
             },
-            'export-card': {
-                description: '__MSG_shortcutExportCardDescription__',
-            },
+
             'take-screenshot': {
                 description: '__MSG_shortcutTakeScreenshotDescription__',
             },

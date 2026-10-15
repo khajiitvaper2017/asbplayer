@@ -13,7 +13,6 @@ export default class AppKeyBinder implements KeyBinder {
     private readonly mineNewJitenWordsHandlers: ((event: KeyboardEvent) => void)[] = [];
     private readonly ankiExportHandlers: ((event: KeyboardEvent) => void)[] = [];
     private readonly updateLastCardHandlers: ((event: KeyboardEvent) => void)[] = [];
-    private readonly exportCardHandlers: ((event: KeyboardEvent) => void)[] = [];
     private readonly takeScreenshotHandlers: ((event: KeyboardEvent) => void)[] = [];
     private readonly toggleRecordingHandlers: ((event: KeyboardEvent) => void)[] = [];
     private readonly selectSubtitleTrackHandlers: ((event: KeyboardEvent) => void)[] = [];
@@ -41,9 +40,6 @@ export default class AppKeyBinder implements KeyBinder {
                             break;
                         case PostMineAction.updateLastCard:
                             handlers = this.updateLastCardHandlers;
-                            break;
-                        case PostMineAction.exportCard:
-                            handlers = this.exportCardHandlers;
                             break;
                         default:
                             asbError('app/messages', 'Unknown post mine action ' + command.postMineAction);
@@ -121,22 +117,6 @@ export default class AppKeyBinder implements KeyBinder {
         }
 
         return this.defaultKeyBinder.bindUpdateLastCard(onUpdateLastCard, disabledGetter, useCapture);
-    }
-
-    bindExportCard(
-        onExportCard: (event: KeyboardEvent) => void,
-        disabledGetter: () => boolean,
-        useCapture?: boolean | undefined
-    ): () => void {
-        if (this.extension.installed) {
-            const handler = this.defaultKeyBinder.exportCardHandler(onExportCard, disabledGetter);
-            this.exportCardHandlers.push(handler);
-            return () => {
-                this._remove(handler, this.exportCardHandlers);
-            };
-        }
-
-        return this.defaultKeyBinder.bindExportCard(onExportCard, disabledGetter, useCapture);
     }
 
     bindTakeScreenshot(
