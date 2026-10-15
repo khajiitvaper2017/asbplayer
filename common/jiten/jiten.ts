@@ -358,13 +358,6 @@ export class JitenClient {
                     result[kind] = message('preserved');
                     continue;
                 }
-                const slot = kind === 'visual' ? 'image' : 'audio';
-                // shortcut: another client can race this check; use upload-if-absent when Jiten supports it.
-                const latest = await this.media(target);
-                if (latest[slot]) {
-                    result[kind] = message('preserved');
-                    continue;
-                }
                 const body = new FormData();
                 body.append('file', blob, media.name);
                 await this.request(`/srs/card-media/${target.wordId}/${target.readingIndex}`, 'POST', body);
