@@ -69,6 +69,12 @@ This setting is off by default.
 
 For one-click mining, set **Mining → Mining button default action** to **Mine new words**. If the one-word setting is on and several words are available, the dialog opens so you can choose.
 
+## Play only subtitles with New words {#new-words-playback}
+
+Open the playback mode selector in the video controls and turn on **New words**. Playback skips to subtitle lines containing at least one word Jiten Reader marks as **New**, using your seekable subtitle tracks. Gaps and lines without New words are skipped. Playback pauses after the last matching line.
+
+You can combine **New words** with **Auto-pause** and **Repeat**. Select **Normal** to turn off playback modes.
+
 ## Blur words or hide subtitle lines {#reader-styles}
 
 In the web app, open **Settings → Jiten Reader styles**. Enable word blurring or line hiding, then choose the Reader word types to match. Hover over a line to reveal it in the video or subtitle panel.

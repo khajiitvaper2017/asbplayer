@@ -325,6 +325,7 @@ export enum PlayMode {
     autoPause = 3,
     fastForward = 4,
     repeat = 5,
+    newWords = 6,
 }
 
 export interface MobileOverlayModel {

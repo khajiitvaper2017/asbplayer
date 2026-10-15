@@ -27,6 +27,7 @@ export interface PlaybackPlanFastForward {
 }
 
 export interface PlaybackPlanCondensed {
+    readonly skipTrailing?: boolean;
     readonly minimumSkipIntervalMs: number;
     readonly pauseAtStart: boolean;
 }
@@ -134,6 +135,7 @@ export const buildPlaybackPlan = <T extends IndexedSubtitleModel>({
     autoPauseTimePerCharacterMs,
     subtitleVisibility,
 }: PlaybackPlanInput<T>): PlaybackPlan<T> => {
+    const newWords = playModes.has(PlayMode.newWords);
     const autoPauseEnabled = playModes.has(PlayMode.autoPause);
     const autoPauseAtStart =
         autoPauseEnabled && autoPausePreferenceIncludes(autoPausePreference, AutoPausePreference.atStart);
@@ -211,10 +213,11 @@ export const buildPlaybackPlan = <T extends IndexedSubtitleModel>({
                   },
               }
             : {}),
-        ...(playModes.has(PlayMode.condensed)
+        ...(playModes.has(PlayMode.condensed) || newWords
             ? {
                   condensed: {
-                      minimumSkipIntervalMs: condensedMinimumSkipIntervalMs,
+                      minimumSkipIntervalMs: newWords ? 0 : condensedMinimumSkipIntervalMs,
+                      ...(newWords ? { skipTrailing: true } : {}),
                       pauseAtStart:
                           autoPauseAtStart && startOffset <= 0 && Math.abs(gapEndOffset) <= Math.abs(startOffset),
                   },
@@ -327,6 +330,7 @@ function arePlaybackTimelineBlocksEqual(left: PlaybackTimelineBlock, right: Play
 }
 
 const playbackPlanCondensedComparators: ObjectComparators<PlaybackPlanCondensed> = {
+    skipTrailing: (left, right) => left.skipTrailing === right.skipTrailing,
     minimumSkipIntervalMs: (left, right) => left.minimumSkipIntervalMs === right.minimumSkipIntervalMs,
     pauseAtStart: (left, right) => left.pauseAtStart === right.pauseAtStart,
 };

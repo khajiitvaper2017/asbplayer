@@ -46,6 +46,8 @@ const playbackModeTransitionLocKey = (mode: PlayMode, enabled: boolean): string 
             return enabled ? 'info.enabledCondensedPlayback' : 'info.disabledCondensedPlayback';
         case PlayMode.fastForward:
             return enabled ? 'info.enabledFastForwardPlayback' : 'info.disabledFastForwardPlayback';
+        case PlayMode.newWords:
+            return enabled ? 'info.enabledNewWordsPlayback' : 'info.disabledNewWordsPlayback';
         case PlayMode.repeat:
             return enabled ? 'info.enabledRepeatPlayback' : 'info.disabledRepeatPlayback';
         default:
@@ -65,11 +67,14 @@ export const playbackModeLabelLocKey = (mode: PlayMode): string => {
             return 'controls.fastForwardMode';
         case PlayMode.repeat:
             return 'controls.repeatMode';
+        case PlayMode.newWords:
+            return 'controls.newWordsMode';
     }
 };
 
 const playbackModesForSummary: readonly PlayMode[] = [
     PlayMode.condensed,
+    PlayMode.newWords,
     PlayMode.fastForward,
     PlayMode.autoPause,
     PlayMode.repeat,

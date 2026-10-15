@@ -411,7 +411,8 @@ export default class PlaybackPlanExecutor<T extends IndexedSubtitleModel> {
         try {
             const operation = ++this.operationGeneration;
             this.condensedOperation = operation;
-            const shouldPause = this.shouldPauseForCondensedSeek(target);
+            const reachedEnd = this.plan.condensed?.skipTrailing && target === this.plan.timelineSubtitles.durationMs;
+            const shouldPause = reachedEnd || this.shouldPauseForCondensedSeek(target);
             const seek = this.seek(target, { includeAtTimestamp: !shouldPause });
             const pause = {
                 timestampMs: target,
@@ -447,8 +448,12 @@ export default class PlaybackPlanExecutor<T extends IndexedSubtitleModel> {
         if (condensed === undefined) return;
 
         const lookup = this.timeline.lookupAt(timestampMs);
-        const condensedTarget = lookup.segment.condensedTarget;
-        if (condensedTarget === undefined) return;
+        const condensedTarget =
+            lookup.segment.condensedTarget ??
+            (condensed.skipTrailing && lookup.state.current === undefined && lookup.state.next === undefined
+                ? this.plan.timelineSubtitles.durationMs
+                : undefined);
+        if (condensedTarget === undefined || condensedTarget <= timestampMs) return;
         const autoPauseStartTarget = lookup.segment.nextStartActionTimestamp;
         const target =
             autoPauseStartTarget === undefined ? condensedTarget : Math.min(condensedTarget, autoPauseStartTarget);

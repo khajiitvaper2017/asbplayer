@@ -119,6 +119,19 @@ export default function PlayModeSelector({
                         <ListItemText>{t('controls.condensedMode')}</ListItemText>
                     </ListItemButton>
                 </ListItem>
+                <ListItem onClick={() => onPlayMode(PlayMode.newWords)}>
+                    <ListItemButton>
+                        <ListItemIcon>
+                            <Checkbox
+                                edge="start"
+                                checked={selectedPlayModes.has(PlayMode.newWords)}
+                                disableRipple
+                                tabIndex={-1}
+                            />
+                        </ListItemIcon>
+                        <ListItemText>{t('controls.newWordsMode')}</ListItemText>
+                    </ListItemButton>
+                </ListItem>
                 <ListItem onClick={() => onPlayMode(PlayMode.fastForward)}>
                     <ListItemButton>
                         <ListItemIcon>

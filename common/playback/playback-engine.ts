@@ -37,6 +37,7 @@ import SubtitleVisibilityController, {
 import type { SubtitleVisibilityNotification } from '@project/common/playback/controllers/subtitle-visibility-controller';
 import type { TimingDriver } from '@project/common/playback/timing/timing-driver';
 import { CachedLocalStorage } from '@project/common/app/services/cached-local-storage';
+import NewWordSubtitleFilter from '@project/common/jiten/new-word-subtitle-filter';
 
 const internalSeekWatchdogMs = 10_000;
 const subtitleOffsetStorageKey = 'offset';
@@ -153,6 +154,7 @@ export interface PlaybackEngineOptions<T extends IndexedSubtitleModel> {
  *         └── PlaybackTimelineLookaheadCursor
  */
 export default class PlaybackEngine<T extends IndexedSubtitleModel> {
+    private readonly newWordSubtitleFilter = new NewWordSubtitleFilter(() => this.rebuildPlan());
     private settings: AsbplayerSettings;
     private readonly appIntegration: boolean;
     private readonly autoPauseCorrectionDisabled: boolean;
@@ -247,6 +249,11 @@ export default class PlaybackEngine<T extends IndexedSubtitleModel> {
             play: callbacks.play,
             paused: () => this.timingDriver.paused(),
             pause: ({ timestampMs, playbackModeSubtitlesAtPause }) => {
+                if (this.plan.condensed?.skipTrailing && timestampMs >= this.plan.timelineSubtitles.durationMs) {
+                    this.autoPauseController.cancel();
+                    callbacks.pause();
+                    return;
+                }
                 this.autoPauseTimestampMs = timestampMs;
                 this.subtitleVisibilityController.autoPaused();
                 this.autoPauseController.autoPaused(playbackModeSubtitlesAtPause);
@@ -543,6 +550,7 @@ export default class PlaybackEngine<T extends IndexedSubtitleModel> {
             timestampMs: wasBound ? this.timingDriver.currentTimeMs() : undefined,
             wasBound,
         });
+        this.newWordSubtitleFilter.stop();
         ++this.unbindOperationId;
         this.clearAutoPauseTimestamp();
         this.autoPauseController.cancel();
@@ -890,9 +898,15 @@ export default class PlaybackEngine<T extends IndexedSubtitleModel> {
             ? new Set([PlayMode.normal])
             : this.playbackModeController.playModes;
 
+        const newWords = effectiveModes.has(PlayMode.newWords);
+        if (newWords && this.timingDriver.bound) this.newWordSubtitleFilter.start();
+        else this.newWordSubtitleFilter.stop();
+
         return buildPlaybackPlan({
-            subtitles: displaySubtitles.filter((subtitle) =>
-                isTrackSeekable(this.settings.seekableTracks, subtitle.track)
+            subtitles: displaySubtitles.filter(
+                (subtitle) =>
+                    isTrackSeekable(this.settings.seekableTracks, subtitle.track) &&
+                    (!newWords || this.newWordSubtitleFilter.includes(subtitle.index))
             ),
             displaySubtitles,
             durationMs: this.timingDriver.durationMs(),
