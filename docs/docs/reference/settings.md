@@ -6,19 +6,37 @@ sidebar_position: 1
 
 ## Jiten {#jiten}
 
-Configure the Jiten destination and context attachments here. See [Mining to Jiten](../guides/jiten) for setup and workflows.
+Choose how to save words and attach sentences, pictures, and audio. See [Mining to Jiten](../guides/jiten) for setup and a screenshot of these settings.
 
 ### Jiten API key {#jiten-api-key}
 
-Authenticates requests to Jiten. Copy the key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key).
+Connects asbplayer to your Jiten account. Copy the key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key).
 
 ### Mining deck {#jiten-mining-deck}
 
-The Jiten word-list deck used by **Mine new words to Jiten**.
+Words saved with **Mine new words to Jiten** go into this deck. The link below the selector opens your Jiten account settings to create a deck.
+
+### Prevent mining multiple words from same subtitle {#jiten-prevent-multiple-words}
+
+Off by default. Turn it on to choose only one word at a time. The mining dialog uses radio buttons instead of checkboxes. If a one-click mining action finds several words, it opens the dialog so you can choose.
+
+With this off, the dialog lets you select several words using checkboxes. Only selected words are mined.
+
+### Show attachment target even when sentence doesn't match {#jiten-show-unmatched-attachment-target}
+
+Off by default. The attachment target is the last word mined with Jiten Reader. It is hidden when its word isn't in the current sentence.
+
+Turn this on to show it anyway and enable the sentence highlight button. Select text, then click the button to use that text for the attachment. With this off, the sentence appears as plain text without a highlight button.
 
 ### Automatically attach sentence and media when mining with Jiten Reader {#jiten-auto-attach}
 
-When enabled, mining a word in Jiten Reader captures and attaches the matching subtitle sentence and enabled media.
+On by default. Mining a word in Jiten Reader automatically adds the matching subtitle sentence and any pictures or audio you have enabled. Turn this off if you want to review them in the mining dialog first.
+
+### Jiten+ tier and media storage {#jiten-tier-and-storage}
+
+Shows your account's tier and how much media storage you have used. The picture and audio switches appear below this information.
+
+Media uploads require Jiten+ or an eligible trial.
 
 ### Attach screenshot / video {#jiten-attach-visual}
 
@@ -36,13 +54,18 @@ This fork uses **Jiten** as its mining destination.
 
 ### Mining button default action {#mining-button-default-action}
 
-The mining button appears in the subtitle list and video overlay.
+Choose what happens when you click the mining button in the subtitle list or video overlay.
+
+![Mining settings showing the four mining button actions](/img/mining-button-actions.png)
 
 | Action | Behavior |
 | --- | --- |
 | Show mining dialog | Capture the subtitle and review it before sending to Jiten. |
+| Update last card | Attach the current sentence and enabled media to the last word mined with Jiten Reader. |
 | Mine new words to Jiten | Send qualifying new Reader words to the selected Jiten deck. |
 | None | Record the subtitle in mining history without sending it. |
+
+For **Update last card**, mine a word with Jiten Reader first. This action adds context to that word; it doesn't mine new words into your deck. Existing pictures and audio are kept. If the sentence needs attention, the mining dialog opens so you can review it.
 
 ### Post-mining playback state {#post-mining-playback-state}
 

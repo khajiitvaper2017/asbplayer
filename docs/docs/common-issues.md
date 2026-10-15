@@ -23,6 +23,14 @@ Confirm that:
 
 You can disable automatic attachment in the Jiten settings and attach context manually from the mining dialog.
 
+## The attachment target is missing {#jiten-attachment-target-missing}
+
+The target is the last word you mined with Jiten Reader. It is hidden when its word isn't in the current sentence. Mine the word you want in Reader, or enable **Show attachment target even when sentence doesn't match** in Jiten settings. You can then select sentence text and click the highlight button before attaching.
+
+## Pictures or audio are turned off {#jiten-media-disabled}
+
+Turn on **Attach screenshot / video** or **Attach audio** below the tier and storage information in Jiten settings. Media uploads require Jiten+ or an eligible trial.
+
 ## Keyboard shortcuts aren't working {#keyboard-shortcuts-arent-working}
 
 Check the [keyboard shortcut settings](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#keyboard-shortcuts) or the [keyboard shortcuts reference](./reference/settings.md#keyboard-shortcuts). For the extension, also check `chrome://extensions/shortcuts`.
