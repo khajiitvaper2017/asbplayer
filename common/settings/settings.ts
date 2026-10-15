@@ -626,13 +626,36 @@ export interface JitenSettings {
     readonly jitenAttachAudio: boolean;
 }
 
+export const subtitleStudyWordTypes = [
+    'unparsed',
+    'new',
+    'young',
+    'mature',
+    'mastered',
+    'due',
+    'blacklisted',
+    'frequent',
+    'kana',
+] as const;
+export type SubtitleStudyWordType = (typeof subtitleStudyWordTypes)[number];
+
+export interface SubtitleStudySettings {
+    readonly subtitleStudyBlurEnabled: boolean;
+    readonly subtitleStudyHideEnabled: boolean;
+    readonly subtitleStudyBlurWordTypes: SubtitleStudyWordType[];
+    readonly subtitleStudyHideWordTypes: SubtitleStudyWordType[];
+    readonly subtitleStudyBlurRadius: number;
+    readonly subtitleStudyFadeSeconds: number;
+}
+
 export interface AsbplayerSettings
     extends MiscSettings,
         AnkiSettings,
         SubtitleSettings,
         StreamingVideoSettings,
         WebSocketClientSettings,
-        JitenSettings {
+        JitenSettings,
+        SubtitleStudySettings {
     readonly subtitlePreview: string;
 }
 

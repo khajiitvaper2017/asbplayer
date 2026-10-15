@@ -780,5 +780,28 @@
         "mediaLookupFailed": "无法检查 Jiten 中的现有媒体。未上传任何文件。",
         "captureFailed": "媒体捕获失败。请检查预览或跳过此附件。",
         "fileTooLarge": "文件超过 Jiten 的 5 MiB 限制。请缩短片段或降低捕获分辨率。"
+    },
+    "subtitleStudy": {
+        "title": "Jiten Reader 样式",
+        "blurTitle": "模糊单词",
+        "blurEnabled": "模糊选定类型的单词",
+        "blurDescription": "在视频字幕和字幕面板中模糊选定类型的 Jiten Reader 单词。将鼠标悬停在字幕行上即可显示单词。",
+        "hideTitle": "隐藏字幕行",
+        "hideEnabled": "隐藏仅包含选定单词类型的字幕行",
+        "hideDescription": "只要某个 Jiten 单词不属于选定类型，该行就会保持可见。隐藏的字幕行仍保留原有空间，鼠标悬停时会重新显示。",
+        "blurRadius": "模糊强度（像素）",
+        "fadeTime": "淡入淡出时间（秒）",
+        "reset": "重置 Jiten Reader 样式",
+        "wordTypes": {
+            "unparsed": "未解析",
+            "new": "新词",
+            "young": "年轻",
+            "mature": "成熟",
+            "mastered": "已掌握",
+            "due": "待复习",
+            "blacklisted": "黑名单",
+            "frequent": "高频",
+            "kana": "仅假名"
+        }
     }
 }

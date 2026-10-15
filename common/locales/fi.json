@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Jitenissä olevaa mediaa ei voitu tarkistaa. Tiedostoa ei ladattu palveluun.",
         "captureFailed": "Median tallennus epäonnistui. Tarkista esikatselu tai jätä tämä liite pois.",
         "fileTooLarge": "Tiedosto ylittää Jitenin 5 MiB:n rajan. Lyhennä leikettä tai pienennä tallennuksen kuvatarkkuutta."
+    },
+    "subtitleStudy": {
+        "title": "Jiten Readerin tyylit",
+        "blurTitle": "Sumenna sanoja",
+        "blurEnabled": "Sumenna valitut sanatyypit",
+        "blurDescription": "Sumentaa valitut Jiten Readerin sanatyypit videon tekstityksissä ja tekstityspaneelissa. Näytä sanat viemällä hiiri rivin päälle.",
+        "hideTitle": "Piilota rivejä",
+        "hideEnabled": "Piilota rivit, joilla on vain valittuja sanatyyppejä",
+        "hideDescription": "Rivi pysyy näkyvissä, jos yksikin Jiten-sana ei kuulu valintaasi. Piilotetut rivit säilyttävät tilansa ja tulevat näkyviin, kun viet hiiren niiden päälle.",
+        "blurRadius": "Sumennuksen voimakkuus (pikseliä)",
+        "fadeTime": "Häivytyksen kesto (sekuntia)",
+        "reset": "Palauta Jiten Readerin oletustyylit",
+        "wordTypes": {
+            "unparsed": "Jäsentämätön",
+            "new": "Uusi",
+            "young": "Nuori",
+            "mature": "Kypsä",
+            "mastered": "Hallittu",
+            "due": "Kerrattava",
+            "blacklisted": "Estolistalla",
+            "frequent": "Yleinen",
+            "kana": "Vain kana"
+        }
     }
 }

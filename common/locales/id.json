@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Tidak dapat memeriksa media yang sudah ada di Jiten. Tidak ada berkas yang diunggah.",
         "captureFailed": "Pengambilan media gagal. Periksa pratinjau atau lewati lampiran ini.",
         "fileTooLarge": "Berkas melebihi batas 5 MiB Jiten. Persingkat klip atau kurangi dimensi pengambilan."
+    },
+    "subtitleStudy": {
+        "title": "Gaya Jiten Reader",
+        "blurTitle": "Buramkan kata",
+        "blurEnabled": "Buramkan jenis kata yang dipilih",
+        "blurDescription": "Memburamkan jenis kata Jiten Reader yang dipilih pada subtitel video dan panel subtitel. Arahkan kursor ke baris untuk menampilkan kata-katanya.",
+        "hideTitle": "Sembunyikan baris",
+        "hideEnabled": "Sembunyikan baris yang hanya berisi jenis kata yang dipilih",
+        "hideDescription": "Baris tetap terlihat jika ada kata Jiten yang tidak termasuk dalam pilihan Anda. Baris tersembunyi tetap menempati ruangnya dan muncul kembali saat kursor diarahkan ke baris tersebut.",
+        "blurRadius": "Tingkat keburaman (piksel)",
+        "fadeTime": "Durasi pemudaran (detik)",
+        "reset": "Atur ulang gaya Jiten Reader",
+        "wordTypes": {
+            "unparsed": "Belum diurai",
+            "new": "Baru",
+            "young": "Muda",
+            "mature": "Matang",
+            "mastered": "Dikuasai",
+            "due": "Jatuh tempo",
+            "blacklisted": "Dalam daftar hitam",
+            "frequent": "Sering muncul",
+            "kana": "Hanya kana"
+        }
     }
 }

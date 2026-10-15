@@ -46,6 +46,7 @@ import { readJitenTarget } from '@project/common/app/hooks/use-jiten-target';
 import Paper from '@mui/material/Paper';
 import DragOverlay from '@project/common/app/components/DragOverlay';
 import Bar from '@project/common/app/components/Bar';
+import SubtitleStudyStyles from '@project/common/components/SubtitleStudyStyles';
 import type { ExtensionMessage } from '@project/common/app/services/chrome-extension';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import CopyHistory from '@project/common/app/components/CopyHistory';
@@ -1858,6 +1859,7 @@ function App({
         <StyledEngineProvider injectFirst>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
+                <SubtitleStudyStyles settings={settings} />
                 <div
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}

@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Could not check existing Jiten media. No file was uploaded.",
         "captureFailed": "Media capture failed. Check the preview or omit this attachment.",
         "fileTooLarge": "The file exceeds Jiten's 5 MiB limit. Shorten the clip or reduce capture dimensions."
+    },
+    "subtitleStudy": {
+        "title": "Jiten Reader styles",
+        "blurTitle": "Blur words",
+        "blurEnabled": "Blur selected word types",
+        "blurDescription": "Blurs selected Jiten Reader word types in video subtitles and the subtitle panel. Hover over a line to reveal the words.",
+        "hideTitle": "Hide lines",
+        "hideEnabled": "Hide lines containing only selected word types",
+        "hideDescription": "A line stays visible if any Jiten word is outside your selection. Hidden lines keep their space and reappear on hover.",
+        "blurRadius": "Blur strength (pixels)",
+        "fadeTime": "Fade time (seconds)",
+        "reset": "Reset Jiten Reader styles",
+        "wordTypes": {
+            "unparsed": "Unparsed",
+            "new": "New",
+            "young": "Young",
+            "mature": "Mature",
+            "mastered": "Mastered",
+            "due": "Due",
+            "blacklisted": "Blacklisted",
+            "frequent": "Frequent",
+            "kana": "Kana only"
+        }
     }
 }

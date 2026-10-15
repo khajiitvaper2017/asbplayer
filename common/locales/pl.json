@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Nie udało się sprawdzić istniejących multimediów w Jiten. Nie przesłano żadnego pliku.",
         "captureFailed": "Przechwytywanie multimediów nie powiodło się. Sprawdź podgląd lub pomiń ten załącznik.",
         "fileTooLarge": "Plik przekracza limit Jiten wynoszący 5 MiB. Skróć klip lub zmniejsz rozdzielczość przechwytywania."
+    },
+    "subtitleStudy": {
+        "title": "Style Jiten Reader",
+        "blurTitle": "Rozmywanie słów",
+        "blurEnabled": "Rozmywaj wybrane typy słów",
+        "blurDescription": "Rozmywa wybrane typy słów Jiten Reader w napisach filmu i panelu napisów. Najedź kursorem na wiersz, aby odsłonić słowa.",
+        "hideTitle": "Ukrywanie wierszy",
+        "hideEnabled": "Ukrywaj wiersze zawierające tylko wybrane typy słów",
+        "hideDescription": "Wiersz pozostaje widoczny, jeśli choć jedno słowo Jiten nie należy do wybranych typów. Ukryte wiersze zachowują swoje miejsce i pojawiają się po najechaniu kursorem.",
+        "blurRadius": "Siła rozmycia (piksele)",
+        "fadeTime": "Czas zanikania (sekundy)",
+        "reset": "Zresetuj style Jiten Reader",
+        "wordTypes": {
+            "unparsed": "Nieprzeanalizowane",
+            "new": "Nowe",
+            "young": "Młode",
+            "mature": "Dojrzałe",
+            "mastered": "Opanowane",
+            "due": "Do powtórki",
+            "blacklisted": "Na czarnej liście",
+            "frequent": "Częste",
+            "kana": "Tylko kana"
+        }
     }
 }

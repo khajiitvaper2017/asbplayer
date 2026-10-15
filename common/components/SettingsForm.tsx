@@ -13,6 +13,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import About from '@project/common/components/About';
 import MiningSettingsTab from '@project/common/components/MiningSettingsTab';
 import JitenSettingsTab from '@project/common/components/JitenSettingsTab';
+import SubtitleStudySettingsTab from '@project/common/components/SubtitleStudySettingsTab';
 import SubtitleAppearanceSettingsTab from '@project/common/components/SubtitleAppearanceSettingsTab';
 import KeyboardShortcutsSettingsTab, {
     keyboardShortcutSectionId,
@@ -148,6 +149,7 @@ type TabName =
     | 'anki-settings'
     | 'mining-settings'
     | 'subtitle-appearance'
+    | 'subtitle-study'
     | 'playback-settings'
     | 'keyboard-shortcuts'
     | 'streaming-video'
@@ -267,6 +269,7 @@ export default function SettingsForm({
             'mining-settings',
             'anki-settings',
             'subtitle-appearance',
+            'subtitle-study',
             'playback-settings',
             'keyboard-shortcuts',
             'streaming-video',
@@ -275,8 +278,9 @@ export default function SettingsForm({
         ];
 
         if (!extensionSupportsAppIntegration) tabs.splice(tabs.indexOf('streaming-video'), 1);
+        if (!insideApp) tabs.splice(tabs.indexOf('subtitle-study'), 1);
         return Object.fromEntries(tabs.map((tab, i) => [tab, i]));
-    }, [extensionSupportsAppIntegration]);
+    }, [extensionSupportsAppIntegration, insideApp]);
 
     useEffect(() => {
         if (!scrollToId) {
@@ -324,21 +328,53 @@ export default function SettingsForm({
                         marginRight: smallScreen ? 'auto' : 0,
                     }}
                 >
-                    <Tab tabIndex={0} label={t('settings.mining')} id="mining-settings" />
-                    <Tab tabIndex={1} label="Jiten" id="anki-settings" />
-                    <Tab tabIndex={2} label={t('settings.subtitles')} id="subtitle-appearance" />
-                    <Tab tabIndex={3} label={t('settings.playback')} id="playback-settings" />
-                    <Tab tabIndex={4} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
-                    {extensionSupportsAppIntegration && (
-                        <Tab tabIndex={5} label={t('settings.streamingVideo')} id="streaming-video" />
+                    <Tab
+                        tabIndex={tabIndicesById['mining-settings']}
+                        label={t('settings.mining')}
+                        id="mining-settings"
+                    />
+                    <Tab tabIndex={tabIndicesById['anki-settings']} label="Jiten" id="anki-settings" />
+                    <Tab
+                        tabIndex={tabIndicesById['subtitle-appearance']}
+                        label={t('settings.subtitles')}
+                        id="subtitle-appearance"
+                    />
+                    {insideApp && (
+                        <Tab
+                            tabIndex={tabIndicesById['subtitle-study']}
+                            label={t('subtitleStudy.title')}
+                            id="subtitle-study"
+                        />
                     )}
                     <Tab
-                        tabIndex={5 + Number(extensionSupportsAppIntegration)}
-                        label={t('settings.general')}
-                        id="misc-settings"
+                        tabIndex={tabIndicesById['playback-settings']}
+                        label={t('settings.playback')}
+                        id="playback-settings"
                     />
-                    <Tab tabIndex={6 + Number(extensionSupportsAppIntegration)} label={t('about.title')} id="about" />
+                    <Tab
+                        tabIndex={tabIndicesById['keyboard-shortcuts']}
+                        label={t('settings.keyboardShortcuts')}
+                        id="keyboard-shortcuts"
+                    />
+                    {extensionSupportsAppIntegration && (
+                        <Tab
+                            tabIndex={tabIndicesById['streaming-video']}
+                            label={t('settings.streamingVideo')}
+                            id="streaming-video"
+                        />
+                    )}
+                    <Tab tabIndex={tabIndicesById['misc-settings']} label={t('settings.general')} id="misc-settings" />
+                    <Tab tabIndex={tabIndicesById['about']} label={t('about.title')} id="about" />
                 </Tabs>
+                {insideApp && (
+                    <TabPanel
+                        value={tabIndex}
+                        index={tabIndicesById['subtitle-study']}
+                        tabsOrientation={tabsOrientation}
+                    >
+                        <SubtitleStudySettingsTab settings={settings} onSettingsChanged={onSettingsChanged} />
+                    </TabPanel>
+                )}
                 <TabPanel value={tabIndex} index={tabIndicesById['anki-settings']} tabsOrientation={tabsOrientation}>
                     <JitenSettingsTab
                         settings={settings}

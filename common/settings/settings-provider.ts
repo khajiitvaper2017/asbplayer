@@ -52,6 +52,13 @@ export const defaultSettings: AsbplayerSettings = {
     jitenAttachVisual: true,
     jitenAttachAudio: true,
 
+    subtitleStudyBlurEnabled: false,
+    subtitleStudyHideEnabled: false,
+    subtitleStudyBlurWordTypes: ['unparsed', 'mature', 'mastered', 'due', 'blacklisted'],
+    subtitleStudyHideWordTypes: ['unparsed', 'mature', 'mastered', 'blacklisted'],
+    subtitleStudyBlurRadius: 12,
+    subtitleStudyFadeSeconds: 0.05,
+
     ...defaultSubtitleTextSettings,
     subtitlePositionOffset: 75,
     topSubtitlePositionOffset: 75,

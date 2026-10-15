@@ -1,5 +1,6 @@
 import { Validator } from 'jsonschema';
 import type { AsbplayerSettings } from '@project/common/settings/settings';
+import { subtitleStudyWordTypes } from '@project/common/settings/settings';
 import { ensureConsistencyOnRead } from '@project/common/settings/settings-provider';
 import { download, getCurrentTimeString } from '@project/common/util';
 
@@ -76,6 +77,20 @@ const settingsSchema = {
     id: '/Settings',
     type: 'object',
     properties: {
+        subtitleStudyBlurEnabled: { type: 'boolean' },
+        subtitleStudyHideEnabled: { type: 'boolean' },
+        subtitleStudyBlurWordTypes: {
+            type: 'array',
+            items: { type: 'string', enum: [...subtitleStudyWordTypes] },
+            uniqueItems: true,
+        },
+        subtitleStudyHideWordTypes: {
+            type: 'array',
+            items: { type: 'string', enum: [...subtitleStudyWordTypes] },
+            uniqueItems: true,
+        },
+        subtitleStudyBlurRadius: { type: 'number', minimum: 0, maximum: 40 },
+        subtitleStudyFadeSeconds: { type: 'number', minimum: 0, maximum: 1 },
         miningDestination: {
             type: 'string',
             enum: ['anki', 'jiten'],

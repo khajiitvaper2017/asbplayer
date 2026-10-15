@@ -4,6 +4,9 @@ import { jitenSubtitleSource as source } from '@project/common/app/services/jite
 import type { SubtitleView } from '@project/common/app/services/jiten-subtitle-source';
 import { useCallback, useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 
+const preparedStudyElements = new WeakSet<HTMLElement>();
+const kanaOnly = /^[\u3040-\u309f\u30a0-\u30ff\s・ー]+$/;
+
 export const useJitenSubtitleSource = (subtitles: readonly IndexedSubtitleModel[], enabled = true) => {
     useLayoutEffect(() => {
         if (enabled) source.setSubtitles(subtitles);
@@ -25,6 +28,7 @@ export const useJitenSubtitleElement = <T extends HTMLElement = HTMLDivElement>(
     return useCallback(
         (container: T | null) => {
             if (!container) return;
+            container.setAttribute('data-asb-study', '');
             const decorated = element && (element.matches('[ajb]') || element.querySelector('[ajb]'));
             if (view !== 'panel' || !decorated) container.innerHTML = html;
             if (!element) return;
@@ -36,6 +40,14 @@ export const useJitenSubtitleElement = <T extends HTMLElement = HTMLDivElement>(
             let observer: MutationObserver | undefined;
             const attach = () => {
                 observer?.disconnect();
+                if (!preparedStudyElements.has(element)) {
+                    for (const word of element.querySelectorAll('.jiten-word:not(.unparsed)')) {
+                        if (word.textContent?.trim() && kanaOnly.test(word.textContent)) {
+                            word.classList.add('asb-kana-only');
+                        }
+                    }
+                    preparedStudyElements.add(element);
+                }
                 target.replaceChildren(element);
             };
             if (decorated) {

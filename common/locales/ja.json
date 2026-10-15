@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Jitenの既存メディアを確認できませんでした。ファイルはアップロードされていません。",
         "captureFailed": "メディアのキャプチャに失敗しました。プレビューを確認するか、この添付を省略してください。",
         "fileTooLarge": "ファイルがJitenの上限（5 MiB）を超えています。クリップを短くするか、キャプチャの解像度を下げてください。"
+    },
+    "subtitleStudy": {
+        "title": "Jiten Reader のスタイル",
+        "blurTitle": "単語をぼかす",
+        "blurEnabled": "選択した種類の単語をぼかす",
+        "blurDescription": "動画の字幕と字幕パネルで、選択した種類の Jiten Reader の単語をぼかします。行にマウスを重ねると単語が表示されます。",
+        "hideTitle": "行を隠す",
+        "hideEnabled": "選択した種類の単語だけを含む行を隠す",
+        "hideDescription": "選択した種類に該当しない Jiten の単語が一つでもある行は表示されます。隠れた行のスペースはそのまま残り、マウスを重ねると再表示されます。",
+        "blurRadius": "ぼかしの強さ（ピクセル）",
+        "fadeTime": "フェード時間（秒）",
+        "reset": "Jiten Reader のスタイルをリセット",
+        "wordTypes": {
+            "unparsed": "未解析",
+            "new": "新規",
+            "young": "若い",
+            "mature": "成熟",
+            "mastered": "習得済み",
+            "due": "復習期日到来",
+            "blacklisted": "ブラックリスト",
+            "frequent": "高頻度",
+            "kana": "かなのみ"
+        }
     }
 }

@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Não foi possível verificar a mídia existente no Jiten. Nenhum arquivo foi enviado.",
         "captureFailed": "A captura de mídia falhou. Confira a prévia ou omita este anexo.",
         "fileTooLarge": "O arquivo excede o limite de 5 MiB do Jiten. Encurte o clipe ou reduza as dimensões da captura."
+    },
+    "subtitleStudy": {
+        "title": "Estilos do Jiten Reader",
+        "blurTitle": "Desfocar palavras",
+        "blurEnabled": "Desfocar os tipos de palavras selecionados",
+        "blurDescription": "Desfoca os tipos de palavras do Jiten Reader selecionados nas legendas do vídeo e no painel de legendas. Passe o cursor sobre uma linha para revelar as palavras.",
+        "hideTitle": "Ocultar linhas",
+        "hideEnabled": "Ocultar linhas que contenham apenas os tipos de palavras selecionados",
+        "hideDescription": "Uma linha permanece visível se alguma palavra do Jiten não fizer parte da seleção. As linhas ocultas mantêm seu espaço e reaparecem ao passar o cursor.",
+        "blurRadius": "Intensidade do desfoque (pixels)",
+        "fadeTime": "Duração da transição (segundos)",
+        "reset": "Redefinir os estilos do Jiten Reader",
+        "wordTypes": {
+            "unparsed": "Não analisada",
+            "new": "Nova",
+            "young": "Jovem",
+            "mature": "Madura",
+            "mastered": "Dominada",
+            "due": "Pendente de revisão",
+            "blacklisted": "Na lista de bloqueio",
+            "frequent": "Frequente",
+            "kana": "Somente kana"
+        }
     }
 }

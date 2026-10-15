@@ -780,5 +780,28 @@
         "mediaLookupFailed": "Vorhandene Medien in Jiten konnten nicht geprüft werden. Es wurde keine Datei hochgeladen.",
         "captureFailed": "Die Medienaufnahme ist fehlgeschlagen. Prüfe die Vorschau oder lasse diesen Anhang weg.",
         "fileTooLarge": "Die Datei überschreitet das Jiten-Limit von 5 MiB. Kürze den Clip oder verringere die Aufnahmeauflösung."
+    },
+    "subtitleStudy": {
+        "title": "Jiten Reader-Stile",
+        "blurTitle": "Wörter weichzeichnen",
+        "blurEnabled": "Ausgewählte Worttypen weichzeichnen",
+        "blurDescription": "Zeichnet ausgewählte Jiten Reader-Worttypen in den Videountertiteln und der Untertitelliste weich. Zum Anzeigen mit der Maus über die Zeile fahren.",
+        "hideTitle": "Zeilen ausblenden",
+        "hideEnabled": "Zeilen ausblenden, die nur ausgewählte Worttypen enthalten",
+        "hideDescription": "Eine Zeile bleibt sichtbar, wenn ein Jiten-Wort nicht zur Auswahl gehört. Ausgeblendete Zeilen behalten ihren Platz und werden beim Darüberfahren angezeigt.",
+        "blurRadius": "Unschärfestärke (Pixel)",
+        "fadeTime": "Überblenddauer (Sekunden)",
+        "reset": "Jiten Reader-Stile zurücksetzen",
+        "wordTypes": {
+            "unparsed": "Nicht analysiert",
+            "new": "Neu",
+            "young": "Jung",
+            "mature": "Reif",
+            "mastered": "Gemeistert",
+            "due": "Fällig",
+            "blacklisted": "Auf der Sperrliste",
+            "frequent": "Häufig",
+            "kana": "Nur Kana"
+        }
     }
 }
