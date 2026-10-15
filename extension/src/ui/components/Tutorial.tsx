@@ -82,7 +82,7 @@ const ToolbarBubble: React.FC<{ show: boolean; onConfirm: () => void }> = ({ sho
             text={
                 <Trans
                     i18nKey="ftue.toolbar"
-                    components={[<b key={0}>asbplayer</b>, <b key={1}>Popup</b>, <p key={2} />]}
+                    components={[<b key={0}>asbplayer-jiten</b>, <b key={1}>Popup</b>, <p key={2} />]}
                     values={{ pin: isFirefox ? '⚙' : '📌' }}
                 />
             }
@@ -111,7 +111,7 @@ const LoadSubtitlesDialog: React.FC<{ open: boolean; count?: number; onClose: ()
                 {count === undefined && isMobile && (
                     <Trans
                         i18nKey="ftue.loadSubtitlesMobile"
-                        components={[<b key={0}>asbplayer</b>, <b key={1}>extensions</b>]}
+                        components={[<b key={0}>asbplayer-jiten</b>, <b key={1}>extensions</b>]}
                     />
                 )}
             </DialogContent>

@@ -130,12 +130,12 @@
         "seekToPreviousSubtitle": "前の字幕に巻き戻り",
         "seekToSubtitle": "前/次の字幕に移動",
         "takeScreenshot": "手動でスクリーンショットを撮影しマイニング時に自動的に撮影されたものを上書きする",
-        "toggleAsbplayerSubtitleTrack1": "asbplayer の字幕トラック 1 オン/オフ",
-        "toggleAsbplayerSubtitleTrack2": "asbplayer の字幕トラック 2 オン/オフ",
-        "toggleAsbplayerSubtitleTrack3": "asbplayer の字幕トラック 3 オン/オフ",
-        "toggleAsbplayerSubtitleTracks": "asbplayer の字幕トラック オン/オフ",
-        "toggleAsbplayerBlurTrack": "asbplayer の字幕トラック {{trackNumber}} のぼかし オン/オフ",
-        "unblurAsbplayerTrack": "asbplayer の字幕トラック {{trackNumber}} のぼかしを解除",
+        "toggleAsbplayerSubtitleTrack1": "asbplayer-jiten の字幕トラック 1 オン/オフ",
+        "toggleAsbplayerSubtitleTrack2": "asbplayer-jiten の字幕トラック 2 オン/オフ",
+        "toggleAsbplayerSubtitleTrack3": "asbplayer-jiten の字幕トラック 3 オン/オフ",
+        "toggleAsbplayerSubtitleTracks": "asbplayer-jiten の字幕トラック オン/オフ",
+        "toggleAsbplayerBlurTrack": "asbplayer-jiten の字幕トラック {{trackNumber}} のぼかし オン/オフ",
+        "unblurAsbplayerTrack": "asbplayer-jiten の字幕トラック {{trackNumber}} のぼかしを解除",
         "toggleAutoPause": "自動一時停止オン/オフ",
         "toggleCondensedPlayback": "短縮プレイバック",
         "toggleFastForwardPlayback": "早送りプレイバックオン/オフ",
@@ -256,32 +256,32 @@
             "aggressiveGenericPage": "Try aggressive detection methods (may degrade this site)",
             "genericPageInfo": "This page does not have a dedicated subtitle detection parser. Enable generic subtitle detection then refresh the page to possibly detect subtitles.",
             "genericPageWarning": "This site is using generic subtitle detection. Some subtitle tracks may be missing, mislabeled, incorrect, or inconsistently present between page loads. Additionally, a subtitle may need to be first selected on the site and shown on the video to be usable.",
-            "ftue": "自動検出された字幕トラックはここで選択できます。asbplayerはすべてのサイトで字幕トラックを検出できるわけではありません。自分の字幕ファイルはいつでもロードすることができます。"
+            "ftue": "自動検出された字幕トラックはここで選択できます。asbplayer-jitenはすべてのサイトで字幕トラックを検出できるわけではありません。自分の字幕ファイルはいつでもロードすることができます。"
         },
         "videoSelect": {
             "multipleVideoElements": "複数の動画を探知しました",
-            "selectVideo": "asbplayer と同期する動画埋め込み要素を選択してください。",
-            "syncBeforeMine": "動画埋め込み要素のマイニングを開始する前に、動画と asbplayer を同期してください。選択した動画埋め込み要素を asbplayer と同期します。",
+            "selectVideo": "asbplayer-jiten と同期する動画埋め込み要素を選択してください。",
+            "syncBeforeMine": "動画埋め込み要素のマイニングを開始する前に、動画と asbplayer-jiten を同期してください。選択した動画埋め込み要素を asbplayer-jiten と同期します。",
             "videoElement": "動画埋め込み要素を選択"
         }
     },
     "ftue": {
-        "welcome": "asbplayer へようこそ。",
-        "welcomeBody": "asbplayer の使い方は<0>readme</0>をご参考ください。",
+        "welcome": "asbplayer-jiten へようこそ。",
+        "welcomeBody": "asbplayer-jiten の使い方は<0>readme</0>をご参考ください。",
         "welcomeBody2": "下にスクロールすると簡単な紹介があります。詳しくは<0>ユーザーガイド</0>をご覧ください。",
-        "toolbar": "asbplayerの <1>ポップアップ</1>を開くには、🧩のアイコンをクリックし、<0>asbplayer</0>を選択してください。<2/>{{pin}}のボタンを押すと、asbplayerをツールバーに固定でき、簡単にアクセスできるようになります。",
+        "toolbar": "asbplayer-jitenの <1>ポップアップ</1>を開くには、🧩のアイコンをクリックし、<0>asbplayer-jiten</0>を選択してください。<2/>{{pin}}のボタンを押すと、asbplayer-jitenをツールバーに固定でき、簡単にアクセスできるようになります。",
         "sidePanel": "<0>サイドパネル</0>では、<1>字幕へシーク</1>したり、<2>字幕をマイニング</2>したりすることができます。",
         "overlayScroll": "一番右側のコントロールを<0>スクロール</0>すると、<1>シーク</1>、<2>字幕タイミングの調整</2>、<3>再生速度</3>のコントロールを切り替えることができます。",
         "overlay": "<0>コントロールオーバーレイ</0>では、<1>字幕をマイニング</1>したり、<2>字幕の表示を切り替えたり</2>、<3>プレイバックモードを切り替えたり</3>することができます。",
-        "congrats": "asbplayerの基本的な使い方はそんなところです！このページで自分でいろいろ試してみてくださいね。",
-        "loadSubtitles": "asbplayerを使い始めるには、まず字幕をロードすることが第一歩です。<0>サイドパネル</0>を使って、このページの動画に字幕をロードしてみてください。<1/>ヒント：<2>サイドパネル</2>は<3>ポップアップ</3>を通じて開くことができます。",
-        "loadSubtitlesFirefox": "sasbplayerを使い始めるには、まず字幕をロードすることが第一歩です。動画を<0>右クリック</0>し、asbplayerの<1>コンテキストメニュー</1>で字幕をロードしてみてください。",
-        "loadSubtitlesMobile": "asbplayerを使い始めるには、まず字幕をロードすることが第一歩です。<1>拡張機能メニュー</1>で<0>asbplayer</0>をクリックし、字幕トラックの選択ダイアログを開いてみてください。"
+        "congrats": "asbplayer-jitenの基本的な使い方はそんなところです！このページで自分でいろいろ試してみてくださいね。",
+        "loadSubtitles": "asbplayer-jitenを使い始めるには、まず字幕をロードすることが第一歩です。<0>サイドパネル</0>を使って、このページの動画に字幕をロードしてみてください。<1/>ヒント：<2>サイドパネル</2>は<3>ポップアップ</3>を通じて開くことができます。",
+        "loadSubtitlesFirefox": "sasbplayerを使い始めるには、まず字幕をロードすることが第一歩です。動画を<0>右クリック</0>し、asbplayer-jitenの<1>コンテキストメニュー</1>で字幕をロードしてみてください。",
+        "loadSubtitlesMobile": "asbplayer-jitenを使い始めるには、まず字幕をロードすることが第一歩です。<1>拡張機能メニュー</1>で<0>asbplayer-jiten</0>をクリックし、字幕トラックの選択ダイアログを開いてみてください。"
     },
     "update": {
-        "heading": "asbplayer が新しいバージョン{{version}}にアップデートされました。",
+        "heading": "asbplayer-jiten が新しいバージョン{{version}}にアップデートされました。",
         "body": "リリースノートは<0>こちら</0>をご参照ください。",
-        "alert": "asbplayer が新しいバージョン{{version}}にアップデートされました。リリースノートは<0>こちら</0>をご参照ください。"
+        "alert": "asbplayer-jiten が新しいバージョン{{version}}にアップデートされました。リリースノートは<0>こちら</0>をご参照ください。"
     },
     "info": {
         "copiedSubtitle": "コピーしました：{{text}}",
@@ -321,18 +321,18 @@
         "extensionNotInstalled": "Web上の動画と字幕を同期するために<1>Chrome 拡張機能</1>をインストールしてください。",
         "extensionUpdateAvailable": "拡張機能の<1>アップデート</1>を公開しました。",
         "noSubtitles": "字幕はありません",
-        "videoElementsDetected": "asbplayer を使用するには字幕をロードしてください。",
+        "videoElementsDetected": "asbplayer-jiten を使用するには字幕をロードしてください。",
         "noVideoElementsDetected": "動画を探知できませんでした。",
         "restoreLastSession": "前回のセッションを復元"
     },
     "activeTabPermissionRequest": {
         "title": "音声記録を有効にしてください",
         "grantedTitle": "音声記録が有効になりました",
-        "prompt": "音声記録を有効するにはブラウザの右上にある asbplayer のアクションボタンをクリックしてください。",
+        "prompt": "音声記録を有効するにはブラウザの右上にある asbplayer-jiten のアクションボタンをクリックしてください。",
         "grantedPrompt": "音声記録が有効になりました。マイニングを始めてください。"
     },
     "audioCaptureFailed": {
-        "message": "DRMで保護されている音声は asbplayer のFirefox版では録音できません。"
+        "message": "DRMで保護されている音声は asbplayer-jiten のFirefox版では録音できません。"
     },
     "settings": {
         "behavior": "動作",
@@ -424,7 +424,7 @@
         "mp3Preference": "音声を mp3 形式で再録音（低速）",
         "pages": "ページ",
         "preCacheSubtitleDom": "字幕DOMをキャッシュ",
-        "preCacheSubtitleDomHelperText": "この設定をオンにすると、asbplayer は隠れたDOM要素に字幕をレンダリングし、字幕が表示される際には既存の要素を再利用します。そのため、字幕のテキストは外部のコードによって永続的に変更可能となります。",
+        "preCacheSubtitleDomHelperText": "この設定をオンにすると、asbplayer-jiten は隠れたDOM要素に字幕をレンダリングし、字幕が表示される際には既存の要素を再利用します。そのため、字幕のテキストは外部のコードによって永続的に変更可能となります。",
         "recordingBind": "記録中",
         "recordWithAudioPlayback": "ローカルビデオから録音の際、音声を再生",
         "rememberSubtitleOffset": "字幕の表示タイミングを記憶する",
@@ -501,7 +501,7 @@
         "annotation": "アノテーション",
         "ftueAnnotation": "字幕アノテーション機能が利用可能になりました。",
         "annotationHelperText": "アノテーション機能は<0>Yomitan API</0>が必要です。",
-        "annotationNoExtensionWarn": "単語がブラウザによって削除されないためには、asbplayer拡張機能のインストールをお勧めします。設定をなくさないためには拡張機能をインストールする前に設定のエクスポートもお勧めします。",
+        "annotationNoExtensionWarn": "単語がブラウザによって削除されないためには、asbplayer-jiten拡張機能のインストールをお勧めします。設定をなくさないためには拡張機能をインストールする前に設定のエクスポートもお勧めします。",
         "manageWords": "My単語",
         "buildWaniKaniCache": "WaniKani の単語データベースを再構築",
         "buildWaniKaniCacheHelperText": "WaniKani の単語データベースは、トラックが有効になっておりAPIのトークンが設定されているときに、メディアの再生中に自動的に更新されます。",

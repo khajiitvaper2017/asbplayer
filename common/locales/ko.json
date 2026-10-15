@@ -130,12 +130,12 @@
         "seekToPreviousSubtitle": "이전 자막으로 이동",
         "seekToSubtitle": "이전/다음 자막으로 이동",
         "takeScreenshot": "자막 추출시 자동으로 찍힌 스크린샷을 덮어쓰며 수동으로 스크린샷 촬영",
-        "toggleAsbplayerSubtitleTrack1": "asbplayer에서 자막 트랙 1 켜기/끄기",
-        "toggleAsbplayerSubtitleTrack2": "asbplayer에서 자막 트랙 2 켜기/끄기",
-        "toggleAsbplayerSubtitleTrack3": "asbplayer에서 자막 트랙 3 켜기/끄기",
-        "toggleAsbplayerSubtitleTracks": "asbplayer에서 자막 트랙 켜기/끄기",
-        "toggleAsbplayerBlurTrack": "asbplayer에서 자막 트랙 {{trackNumber}}의 블러 효과 켜기",
-        "unblurAsbplayerTrack": "asbplayer에서 자막 트랙 {{trackNumber}}의 블러 효과 끄기",
+        "toggleAsbplayerSubtitleTrack1": "asbplayer-jiten에서 자막 트랙 1 켜기/끄기",
+        "toggleAsbplayerSubtitleTrack2": "asbplayer-jiten에서 자막 트랙 2 켜기/끄기",
+        "toggleAsbplayerSubtitleTrack3": "asbplayer-jiten에서 자막 트랙 3 켜기/끄기",
+        "toggleAsbplayerSubtitleTracks": "asbplayer-jiten에서 자막 트랙 켜기/끄기",
+        "toggleAsbplayerBlurTrack": "asbplayer-jiten에서 자막 트랙 {{trackNumber}}의 블러 효과 켜기",
+        "unblurAsbplayerTrack": "asbplayer-jiten에서 자막 트랙 {{trackNumber}}의 블러 효과 끄기",
         "toggleAutoPause": "자동 일시정지 켜기/끄기",
         "toggleCondensedPlayback": "압축 재생 전환",
         "toggleFastForwardPlayback": "빠른 재생 켜기/끄기",
@@ -256,32 +256,32 @@
             "aggressiveGenericPage": "Try aggressive detection methods (may degrade this site)",
             "genericPageInfo": "This page does not have a dedicated subtitle detection parser. Enable generic subtitle detection then refresh the page to possibly detect subtitles.",
             "genericPageWarning": "This site is using generic subtitle detection. Some subtitle tracks may be missing, mislabeled, incorrect, or inconsistently present between page loads. Additionally, a subtitle may need to be first selected on the site and shown on the video to be usable.",
-            "ftue": "자동으로 감지된 자막 트랙은 여기에서 선택할 수 있습니다.\nasbplayer가 모든 사이트에서 자막을 감지할 수 있는 것은 아닙니다.\n언제든지 직접 자막 파일을 불러올 수 있습니다."
+            "ftue": "자동으로 감지된 자막 트랙은 여기에서 선택할 수 있습니다.\nasbplayer-jiten가 모든 사이트에서 자막을 감지할 수 있는 것은 아닙니다.\n언제든지 직접 자막 파일을 불러올 수 있습니다."
         },
         "videoSelect": {
             "multipleVideoElements": "다수의 영상 요소가 감지되었습니다.",
-            "selectVideo": "asbplayer에 동기화할 영상 요소를 선택하세요.",
-            "syncBeforeMine": "자막 추출을 시작하려면 먼저 영상과 asbplayer를 동기화해야 합니다.\n동기화할 영상을 선택해 주세요.",
+            "selectVideo": "asbplayer-jiten에 동기화할 영상 요소를 선택하세요.",
+            "syncBeforeMine": "자막 추출을 시작하려면 먼저 영상과 asbplayer-jiten를 동기화해야 합니다.\n동기화할 영상을 선택해 주세요.",
             "videoElement": "영상 요소"
         }
     },
     "ftue": {
-        "welcome": "asbplayer 사용 시작을 환영합니다.",
+        "welcome": "asbplayer-jiten 사용 시작을 환영합니다.",
         "welcomeBody": "사용을 시작하려면 <0>README</0>를 확인하세요.",
         "welcomeBody2": "간단한 소개는 아래에서, 자세한 내용은 <0>사용자 가이드<0>를 참고하세요.",
-        "toolbar": "도구 모음에서 🧩 아이콘을 클릭 후, <0>asbplayer</0>를 선택하여 <1>asbplayer 팝업</1>을 열어보세요.\n<2/>쉽게 오픈할 수 있도록 {{pin}} 버튼을 눌러 asbplayer를 도구 모음에 고정하세요.",
+        "toolbar": "도구 모음에서 🧩 아이콘을 클릭 후, <0>asbplayer-jiten</0>를 선택하여 <1>asbplayer-jiten 팝업</1>을 열어보세요.\n<2/>쉽게 오픈할 수 있도록 {{pin}} 버튼을 눌러 asbplayer-jiten를 도구 모음에 고정하세요.",
         "sidePanel": "<0>사이드 패널</0>을 이용해 자막 간 <1>이동</1>, <2>채굴</2> 등 다양한 작업이 가능합니다.",
         "overlayScroll": "<0>스크롤</0>을 이용해 오른쪽 컨트롤에서 <1>자막 이동</1>, <2>타이밍 조정</2>, <3>속도 조절</3> 기능을 전환하세요.",
         "overlay": "<0>영상 오버레이</0>에서 자막을 <1>추출</1>하거나 <2>켜고 끄며</2>, <3>재생 모드를 바꾸는 등</3> 여러 기능을 사용할 수 있습니다.",
         "congrats": "이제 시작할 준비가 되셨습니다! 페이지를 자유롭게 탐색해 보세요.",
-        "loadSubtitles": "asbplayer를 사용하기 위한 첫 번째 단계는 영상에 자막을 불러오는 것입니다.\n<0>사이드 패널</0>을 사용하여 이 페이지의 영상에 자막을 불러오세요.\n<1/>힌트: <2>사이드 패널</2>은 <3>팝업</3>을 통해 열 수 있습니다.",
-        "loadSubtitlesFirefox": "asbplayer를 사용하기 위한 첫 번째 단계는 영상에 자막을 불러오는 것입니다. 영상 위에서 <0>오른쪽 클릭</0>을 하고, asbplayer <1>컨텍스트 메뉴</1>에서 자막을 불러오세요.",
-        "loadSubtitlesMobile": "asbplayer를 사용하기 위한 첫 번째 단계는 영상에 자막을 불러오는 것입니다. <1>확장 프로그램</1> 메뉴에서 <0>asbplayer</0>를 선택하면 자막 트랙 선택기를 열 수 있습니다."
+        "loadSubtitles": "asbplayer-jiten를 사용하기 위한 첫 번째 단계는 영상에 자막을 불러오는 것입니다.\n<0>사이드 패널</0>을 사용하여 이 페이지의 영상에 자막을 불러오세요.\n<1/>힌트: <2>사이드 패널</2>은 <3>팝업</3>을 통해 열 수 있습니다.",
+        "loadSubtitlesFirefox": "asbplayer-jiten를 사용하기 위한 첫 번째 단계는 영상에 자막을 불러오는 것입니다. 영상 위에서 <0>오른쪽 클릭</0>을 하고, asbplayer-jiten <1>컨텍스트 메뉴</1>에서 자막을 불러오세요.",
+        "loadSubtitlesMobile": "asbplayer-jiten를 사용하기 위한 첫 번째 단계는 영상에 자막을 불러오는 것입니다. <1>확장 프로그램</1> 메뉴에서 <0>asbplayer-jiten</0>를 선택하면 자막 트랙 선택기를 열 수 있습니다."
     },
     "update": {
-        "heading": "asbplayer가 {{version}} 버전으로 업데이트 되었습니다.",
+        "heading": "asbplayer-jiten가 {{version}} 버전으로 업데이트 되었습니다.",
         "body": "업데이트 내역은  <0>여기</0>에서 확인하세요.",
-        "alert": "asbplayer가 {{version}} 버전으로 업데이트되었습니다. <0>업데이트lt;/0>를 확인해보세요."
+        "alert": "asbplayer-jiten가 {{version}} 버전으로 업데이트되었습니다. <0>업데이트lt;/0>를 확인해보세요."
     },
     "info": {
         "copiedSubtitle": "{{text}} 복사 완료",
@@ -321,18 +321,18 @@
         "extensionNotInstalled": "스트리밍 영상과 자막을 동기화하려면  <1>Chrome 확장 프로그램</1>을 설치하세요.",
         "extensionUpdateAvailable": "새로운  <1>확장 프로그램 업데이트</1>가 있습니다.",
         "noSubtitles": "자막 없음",
-        "videoElementsDetected": "asbplayer를 시작하려면 영상에 자막을 추가하세요.",
+        "videoElementsDetected": "asbplayer-jiten를 시작하려면 영상에 자막을 추가하세요.",
         "noVideoElementsDetected": "감지된 영상이 없음",
         "restoreLastSession": "마지막 세션 복원"
     },
     "activeTabPermissionRequest": {
         "title": "오디오 녹음 활성화",
         "grantedTitle": "오디오 녹음 기능 사용 중",
-        "prompt": "오디오 녹음을 활성화하려면 브라우저 우측 상단의 asbplayer 버튼을 눌러주세요.",
+        "prompt": "오디오 녹음을 활성화하려면 브라우저 우측 상단의 asbplayer-jiten 버튼을 눌러주세요.",
         "grantedPrompt": "오디오 녹음이 활성화되었습니다. 자막 추출을 시작할 수 있습니다."
     },
     "audioCaptureFailed": {
-        "message": "DRM이 적용된 오디오는  Firefox용 asbplayer에서 지원되지 않습니다."
+        "message": "DRM이 적용된 오디오는  Firefox용 asbplayer-jiten에서 지원되지 않습니다."
     },
     "settings": {
         "behavior": "동작",
@@ -501,7 +501,7 @@
         "annotation": "Annotation",
         "ftueAnnotation": "Subtitle annotation features are now available.",
         "annotationHelperText": "Annotation requires <0>Yomitan API</0> to function.",
-        "annotationNoExtensionWarn": "Installing the asbplayer extension is recommended to prevent your browser from deleting manually stored words. Export your settings before installing the extension to preserve your data.",
+        "annotationNoExtensionWarn": "Installing the asbplayer-jiten extension is recommended to prevent your browser from deleting manually stored words. Export your settings before installing the extension to preserve your data.",
         "manageWords": "My word database",
         "buildWaniKaniCache": "Re-Build WaniKani word database",
         "buildWaniKaniCacheHelperText": "The WaniKani word database is automatically updated during playback when a track is enabled and a token is configured.",

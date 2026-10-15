@@ -4,7 +4,7 @@ export default defineUnlistedScript(() => {
     document.addEventListener('asbplayer-get-synced-data', () => {
         const response: VideoData = {
             error: '',
-            basename: 'asbplayer Tutorial',
+            basename: 'asbplayer-jiten Tutorial',
             subtitles: [
                 {
                     id: '1',

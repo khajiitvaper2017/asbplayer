@@ -42,7 +42,7 @@ export default class VideoSelectController {
                 <head>
                     <meta charset="utf-8" />
                     <meta name="viewport" content="width=device-width, initial-scale=1" />
-                    <title>asbplayer - Video Select</title>
+                    <title>asbplayer-jiten - Video Select</title>
                     <style>
                         @import url(${browser.runtime.getURL('/fonts/fonts.css')});
                         ${frameColorSchemeStyleBlock()}

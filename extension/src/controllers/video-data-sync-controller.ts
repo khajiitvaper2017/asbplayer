@@ -40,7 +40,7 @@ async function html(lang: string) {
             <head>
                 <meta charset="utf-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
-                <title>asbplayer - Video Data Sync</title>
+                <title>asbplayer-jiten - Video Data Sync</title>
                 <style>
                     @import url(${browser.runtime.getURL('/fonts/fonts.css')});
                     ${frameColorSchemeStyleBlock()}

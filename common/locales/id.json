@@ -130,12 +130,12 @@
         "seekToPreviousSubtitle": "Lompat ke takarir sebelumnya",
         "seekToSubtitle": "Lompat ke takarir sebelumnya/berikutnya",
         "takeScreenshot": "Ambil tangkapan layar secara manual, menimpa tangkapan otomatis saat menambang",
-        "toggleAsbplayerSubtitleTrack1": "Aktifkan/nonaktifkan trek takarir 1 di asbplayer",
-        "toggleAsbplayerSubtitleTrack2": "Aktifkan/nonaktifkan trek takarir 2 di asbplayer",
-        "toggleAsbplayerSubtitleTrack3": "Aktifkan/nonaktifkan trek takarir 3 di asbplayer",
-        "toggleAsbplayerSubtitleTracks": "Aktifkan/nonaktifkan trek takarir di asbplayer",
-        "toggleAsbplayerBlurTrack": "Aktifkan/nonaktifkan buram pada trek takarir {{trackNumber}} di asbplayer",
-        "unblurAsbplayerTrack": "Hilangkan buram dari trek takarir {{trackNumber}} di asbplayer",
+        "toggleAsbplayerSubtitleTrack1": "Aktifkan/nonaktifkan trek takarir 1 di asbplayer-jiten",
+        "toggleAsbplayerSubtitleTrack2": "Aktifkan/nonaktifkan trek takarir 2 di asbplayer-jiten",
+        "toggleAsbplayerSubtitleTrack3": "Aktifkan/nonaktifkan trek takarir 3 di asbplayer-jiten",
+        "toggleAsbplayerSubtitleTracks": "Aktifkan/nonaktifkan trek takarir di asbplayer-jiten",
+        "toggleAsbplayerBlurTrack": "Aktifkan/nonaktifkan buram pada trek takarir {{trackNumber}} di asbplayer-jiten",
+        "unblurAsbplayerTrack": "Hilangkan buram dari trek takarir {{trackNumber}} di asbplayer-jiten",
         "toggleAutoPause": "Aktifkan/nonaktifkan jeda otomatis",
         "toggleCondensedPlayback": "Aktifkan/nonaktifkan pemutaran ringkas",
         "toggleFastForwardPlayback": "Aktifkan/nonaktifkan pemutaran maju cepat",
@@ -256,32 +256,32 @@
             "aggressiveGenericPage": "Try aggressive detection methods (may degrade this site)",
             "genericPageInfo": "This page does not have a dedicated subtitle detection parser. Enable generic subtitle detection then refresh the page to possibly detect subtitles.",
             "genericPageWarning": "This site is using generic subtitle detection. Some subtitle tracks may be missing, mislabeled, incorrect, or inconsistently present between page loads. Additionally, a subtitle may need to be first selected on the site and shown on the video to be usable.",
-            "ftue": "Trek takarir yang terdeteksi otomatis dapat dipilih di sini. asbplayer tidak dapat mendeteksi takarir di semua situs. Anda selalu dapat memuat berkas takarir sendiri."
+            "ftue": "Trek takarir yang terdeteksi otomatis dapat dipilih di sini. asbplayer-jiten tidak dapat mendeteksi takarir di semua situs. Anda selalu dapat memuat berkas takarir sendiri."
         },
         "videoSelect": {
             "multipleVideoElements": "Beberapa elemen video terdeteksi",
-            "selectVideo": "Pilih elemen video untuk disinkronkan dengan asbplayer.",
-            "syncBeforeMine": "Video harus disinkronkan dengan asbplayer sebelum dapat ditambang. Pilih elemen video untuk disinkronkan.",
+            "selectVideo": "Pilih elemen video untuk disinkronkan dengan asbplayer-jiten.",
+            "syncBeforeMine": "Video harus disinkronkan dengan asbplayer-jiten sebelum dapat ditambang. Pilih elemen video untuk disinkronkan.",
             "videoElement": "Elemen Video"
         }
     },
     "ftue": {
-        "welcome": "Selamat datang di asbplayer.",
+        "welcome": "Selamat datang di asbplayer-jiten.",
         "welcomeBody": "Baca <0>readme</0> untuk melihat cara memulai.",
         "welcomeBody2": "Gulir ke bawah untuk pengenalan singkat, atau buka <0>panduan pengguna</0>.",
-        "toolbar": "Klik ikon 🧩 di bilah alat, lalu pilih <0>asbplayer</0> untuk membuka <1>Popup</1>.<2/>Gunakan tombol {{pin}} untuk menyematkan asbplayer ke bilah alat agar mudah diakses.",
+        "toolbar": "Klik ikon 🧩 di bilah alat, lalu pilih <0>asbplayer-jiten</0> untuk membuka <1>Popup</1>.<2/>Gunakan tombol {{pin}} untuk menyematkan asbplayer-jiten ke bilah alat agar mudah diakses.",
         "sidePanel": "Gunakan <0>Panel Samping</0> untuk <1>menavigasi</1> antar takarir, <2>menambang</2> takarir, dan lainnya.",
         "overlayScroll": "<0>Gulir</0> kontrol paling kanan untuk berpindah antara <1>navigasi takarir</1>, <2>offset takarir</2>, dan <3>kecepatan pemutaran</3>.",
         "overlay": "Gunakan <0>Lapisan Video</0> untuk <1>menambang</1> dan <2>tampilkan/sembunyikan</2> takarir, <3>berpindah mode pemutaran</3>, dan lainnya.",
         "congrats": "Itu saja untuk dasar-dasarnya! Silakan bereksperimen di halaman ini.",
-        "loadSubtitles": "Langkah pertama dalam menggunakan asbplayer adalah selalu memuat takarir ke dalam video. Gunakan <0>Panel Samping</0> untuk memuat takarir ke dalam video di halaman ini.<1/>Tip: <2>Panel Samping</2> dapat diakses melalui <3>Popup</3>.",
-        "loadSubtitlesFirefox": "Langkah pertama dalam menggunakan asbplayer adalah selalu memuat takarir ke dalam video. <0>Klik kanan</0> pada video dan temukan <1>menu konteks</1> asbplayer untuk memuat takarir.",
-        "loadSubtitlesMobile": "Langkah pertama dalam menggunakan asbplayer adalah selalu memuat takarir ke dalam video. Buka pemilih trek dengan memilih <0>asbplayer</0> di menu <1>ekstensi</1>."
+        "loadSubtitles": "Langkah pertama dalam menggunakan asbplayer-jiten adalah selalu memuat takarir ke dalam video. Gunakan <0>Panel Samping</0> untuk memuat takarir ke dalam video di halaman ini.<1/>Tip: <2>Panel Samping</2> dapat diakses melalui <3>Popup</3>.",
+        "loadSubtitlesFirefox": "Langkah pertama dalam menggunakan asbplayer-jiten adalah selalu memuat takarir ke dalam video. <0>Klik kanan</0> pada video dan temukan <1>menu konteks</1> asbplayer-jiten untuk memuat takarir.",
+        "loadSubtitlesMobile": "Langkah pertama dalam menggunakan asbplayer-jiten adalah selalu memuat takarir ke dalam video. Buka pemilih trek dengan memilih <0>asbplayer-jiten</0> di menu <1>ekstensi</1>."
     },
     "update": {
-        "heading": "asbplayer baru saja diperbarui ke versi {{version}}.",
+        "heading": "asbplayer-jiten baru saja diperbarui ke versi {{version}}.",
         "body": "Lihat catatan rilisnya <0>di sini</0>.",
-        "alert": "asbplayer telah diperbarui ke versi {{version}}. Lihat <0>catatan rilis</0>."
+        "alert": "asbplayer-jiten telah diperbarui ke versi {{version}}. Lihat <0>catatan rilis</0>."
     },
     "info": {
         "copiedSubtitle": "Disalin: {{text}}",
@@ -321,18 +321,18 @@
         "extensionNotInstalled": "Pasang <1>ekstensi Chrome</1> untuk menyinkronkan takarir dengan video streaming.",
         "extensionUpdateAvailable": "Tersedia <1>pembaruan</1> untuk ekstensi.",
         "noSubtitles": "Tidak ada takarir",
-        "videoElementsDetected": "Muat takarir ke dalam video untuk mulai menggunakan asbplayer.",
+        "videoElementsDetected": "Muat takarir ke dalam video untuk mulai menggunakan asbplayer-jiten.",
         "noVideoElementsDetected": "Tidak ada video yang terdeteksi.",
         "restoreLastSession": "Pulihkan sesi terakhir"
     },
     "activeTabPermissionRequest": {
         "title": "Aktifkan perekaman audio",
         "grantedTitle": "Perekaman audio diaktifkan",
-        "prompt": "Klik tombol aksi asbplayer di kanan atas jendela browser untuk mengaktifkan perekaman audio pada tab ini.",
+        "prompt": "Klik tombol aksi asbplayer-jiten di kanan atas jendela browser untuk mengaktifkan perekaman audio pada tab ini.",
         "grantedPrompt": "Perekaman audio telah diaktifkan untuk tab ini. Anda sekarang dapat mulai menambang."
     },
     "audioCaptureFailed": {
-        "message": "Audio yang dilindungi DRM tidak dapat direkam di asbplayer versi Firefox."
+        "message": "Audio yang dilindungi DRM tidak dapat direkam di asbplayer-jiten versi Firefox."
     },
     "settings": {
         "behavior": "Perilaku",
@@ -424,7 +424,7 @@
         "mp3Preference": "Enkode ulang audio sebagai mp3 (lebih lambat)",
         "pages": "Pages",
         "preCacheSubtitleDom": "Pra-cache DOM Takarir",
-        "preCacheSubtitleDomHelperText": "Jika diaktifkan, asbplayer akan merender teks takarir terlebih dahulu di elemen tersembunyi, lalu menggunakannya kembali untuk ditampilkan. Cara ini memungkinkan kode eksternal memodifikasi teks takarir secara permanen sebelum ditampilkan.",
+        "preCacheSubtitleDomHelperText": "Jika diaktifkan, asbplayer-jiten akan merender teks takarir terlebih dahulu di elemen tersembunyi, lalu menggunakannya kembali untuk ditampilkan. Cara ini memungkinkan kode eksternal memodifikasi teks takarir secara permanen sebelum ditampilkan.",
         "recordingBind": "Perekaman",
         "recordWithAudioPlayback": "Putar audio saat merekam dari video lokal",
         "rememberSubtitleOffset": "Ingat offset takarir",
@@ -501,7 +501,7 @@
         "annotation": "Annotation",
         "ftueAnnotation": "Subtitle annotation features are now available.",
         "annotationHelperText": "Annotation requires <0>Yomitan API</0> to function.",
-        "annotationNoExtensionWarn": "Installing the asbplayer extension is recommended to prevent your browser from deleting manually stored words. Export your settings before installing the extension to preserve your data.",
+        "annotationNoExtensionWarn": "Installing the asbplayer-jiten extension is recommended to prevent your browser from deleting manually stored words. Export your settings before installing the extension to preserve your data.",
         "manageWords": "My word database",
         "buildWaniKaniCache": "Re-Build WaniKani word database",
         "buildWaniKaniCacheHelperText": "The WaniKani word database is automatically updated during playback when a track is enabled and a token is configured.",

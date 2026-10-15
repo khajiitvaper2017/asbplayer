@@ -130,12 +130,12 @@
         "seekToPreviousSubtitle": "Перемотать к предыдущему субтитру",
         "seekToSubtitle": "Перемотать к предыдущему/следующему субтитру",
         "takeScreenshot": "Сделать скриншот вручную, заменяя автоматически созданный при майнинге",
-        "toggleAsbplayerSubtitleTrack1": "Показать/скрыть дорожку субтитров 1 в asbplayer",
-        "toggleAsbplayerSubtitleTrack2": "Показать/скрыть дорожку субтитров 2 в asbplayer",
-        "toggleAsbplayerSubtitleTrack3": "Показать/скрыть дорожку субтитров 3 в asbplayer",
-        "toggleAsbplayerSubtitleTracks": "Показать/скрыть дорожку субтитров в asbplayer",
-        "toggleAsbplayerBlurTrack": "Размыть/проявить дорожку субтитров {{trackNumber}} в asbplayer",
-        "unblurAsbplayerTrack": "Проявить дорожку субтитров {{trackNumber}} в asbplayer",
+        "toggleAsbplayerSubtitleTrack1": "Показать/скрыть дорожку субтитров 1 в asbplayer-jiten",
+        "toggleAsbplayerSubtitleTrack2": "Показать/скрыть дорожку субтитров 2 в asbplayer-jiten",
+        "toggleAsbplayerSubtitleTrack3": "Показать/скрыть дорожку субтитров 3 в asbplayer-jiten",
+        "toggleAsbplayerSubtitleTracks": "Показать/скрыть дорожку субтитров в asbplayer-jiten",
+        "toggleAsbplayerBlurTrack": "Размыть/проявить дорожку субтитров {{trackNumber}} в asbplayer-jiten",
+        "unblurAsbplayerTrack": "Проявить дорожку субтитров {{trackNumber}} в asbplayer-jiten",
         "toggleAutoPause": "Включить/выключить автоматическую паузу",
         "toggleCondensedPlayback": "Включить/выключить сжатое воспроизведение",
         "toggleFastForwardPlayback": "Включить/выключить ускоренное воспроизведение",
@@ -260,28 +260,28 @@
         },
         "videoSelect": {
             "multipleVideoElements": "Обнаружено несколько видеоэлементов",
-            "selectVideo": "Выберите видеоэлемент для синхронизации с asbplayer.",
-            "syncBeforeMine": "Видеоэлемент должен быть синхронизирован с asbplayer перед началом майнинга. Выберите видеоэлемент для синхронизации с asbplayer.",
+            "selectVideo": "Выберите видеоэлемент для синхронизации с asbplayer-jiten.",
+            "syncBeforeMine": "Видеоэлемент должен быть синхронизирован с asbplayer-jiten перед началом майнинга. Выберите видеоэлемент для синхронизации с asbplayer-jiten.",
             "videoElement": "Видеоэлемент"
         }
     },
     "ftue": {
-        "welcome": "Добро пожаловать в asbplayer!",
+        "welcome": "Добро пожаловать в asbplayer-jiten!",
         "welcomeBody": "Прочтите руководство пользователя, чтобы начать.",
         "welcomeBody2": "Прокрутите вниз для краткого введения или ознакомьтесь с <0>руководством пользователя</0>.",
-        "toolbar": "Нажмите на 🧩 на панели инструментов и выберите <0>asbplayer</0>, чтобы открыть всплывающее окно <1>всплывающее окно</1> asbplayer. <2/>Используйте кнопку 📌, чтобы закрепить asbplayer на панели инструментов для удобного доступа.",
+        "toolbar": "Нажмите на 🧩 на панели инструментов и выберите <0>asbplayer-jiten</0>, чтобы открыть всплывающее окно <1>всплывающее окно</1> asbplayer-jiten. <2/>Используйте кнопку 📌, чтобы закрепить asbplayer-jiten на панели инструментов для удобного доступа.",
         "sidePanel": "Используйте <0>боковую панель</0>, чтобы <1>перемещаться</1> между субтитрами, <2>майнить</2> субтитры и т. д.",
         "overlayScroll": "<0>Прокручивайте</0> самый правый элемент управления, чтобы переключаться между <1>навигацией субтитров</1>, <2>задержки субтитров</2> и <3>скоростью воспроизведения</3>.",
         "overlay": "Используйте <0>видеооверлей</0>, чтобы <1>майнить</1> и <2>переключать</2> субтитры, <3>переключать режимы воспроизведения</3> и т. д.",
         "congrats": "Это все, что нужно знать для начала! Не стесняйтесь экспериментировать на этой странице.",
-        "loadSubtitles": "Первый шаг к использованию asbplayer — это всегда загрузка субтитров в видео. Используйте <0>боковую панель</0>, чтобы загрузить субтитры в видео на этой странице. <1/>Подсказка: <2>Боковая панель</2> доступна через <3>всплывающее окно</3>.",
-        "loadSubtitlesFirefox": "Первый шаг к использованию asbplayer — это всегда загрузка субтитров в видео. <0>Нажмите правой кнопкой мыши</0> на видео и используйте <1>контекстное меню</1> asbplayer, чтобы загрузить субтитры.",
-        "loadSubtitlesMobile": "Первый шаг к использованию asbplayer — это всегда загрузка субтитров к видео. Откройте селектор дорожек, выбрав <0>asbplayer</0> в меню <1>расширений</1>."
+        "loadSubtitles": "Первый шаг к использованию asbplayer-jiten — это всегда загрузка субтитров в видео. Используйте <0>боковую панель</0>, чтобы загрузить субтитры в видео на этой странице. <1/>Подсказка: <2>Боковая панель</2> доступна через <3>всплывающее окно</3>.",
+        "loadSubtitlesFirefox": "Первый шаг к использованию asbplayer-jiten — это всегда загрузка субтитров в видео. <0>Нажмите правой кнопкой мыши</0> на видео и используйте <1>контекстное меню</1> asbplayer-jiten, чтобы загрузить субтитры.",
+        "loadSubtitlesMobile": "Первый шаг к использованию asbplayer-jiten — это всегда загрузка субтитров к видео. Откройте селектор дорожек, выбрав <0>asbplayer-jiten</0> в меню <1>расширений</1>."
     },
     "update": {
-        "heading": "asbplayer только что обновился до версии {{version}}.",
+        "heading": "asbplayer-jiten только что обновился до версии {{version}}.",
         "body": "Посмотрите примечания к выпуску <0>здесь</0>.",
-        "alert": "asbplayer обновился до версии {{version}}. Посмотрите <0>примечания к выпуску</0>."
+        "alert": "asbplayer-jiten обновился до версии {{version}}. Посмотрите <0>примечания к выпуску</0>."
     },
     "info": {
         "copiedSubtitle": "Скопировано: {{text}}",
@@ -321,18 +321,18 @@
         "extensionNotInstalled": "Установите <1>расширение для Chrome</1>, чтобы синхронизировать субтитры с потоковым видео.",
         "extensionUpdateAvailable": "Доступно <1>обновление</1> для расширения.",
         "noSubtitles": "Субтитры отсутствуют",
-        "videoElementsDetected": "Загрузите субтитры в видео, чтобы начать использовать asbplayer.",
+        "videoElementsDetected": "Загрузите субтитры в видео, чтобы начать использовать asbplayer-jiten.",
         "noVideoElementsDetected": "Видео не обнаружено.",
         "restoreLastSession": "Восстановить последнюю сессию"
     },
     "activeTabPermissionRequest": {
         "title": "Разрешить запись аудио.",
         "grantedTitle": "Запись аудио разрешена.",
-        "prompt": "Нажмите на кнопку действия asbplayer в правом верхнем углу окна браузера, чтобы разрешить запись аудио для этой вкладки.",
+        "prompt": "Нажмите на кнопку действия asbplayer-jiten в правом верхнем углу окна браузера, чтобы разрешить запись аудио для этой вкладки.",
         "grantedPrompt": "Запись аудио разрешена для этой вкладки. Теперь вы можете приступить к майнингу."
     },
     "audioCaptureFailed": {
-        "message": "Защищенное DRM аудио не может быть захвачено на Firefox версии asbplayer."
+        "message": "Защищенное DRM аудио не может быть захвачено на Firefox версии asbplayer-jiten."
     },
     "settings": {
         "behavior": "Поведение",
@@ -424,7 +424,7 @@
         "mp3Preference": "Перекодировать аудио в MP3 (медленнее)",
         "pages": "Pages",
         "preCacheSubtitleDom": "Предварительная загрузка DOM субтитров",
-        "preCacheSubtitleDomHelperText": "При включении asbplayer предварительно рендерит элементы текста субтитров вне экрана, повторно используя эти элементы для отображения субтитров. Это позволяет постоянно менять текст субтитров с помощью внешнего кода перед их отображением.",
+        "preCacheSubtitleDomHelperText": "При включении asbplayer-jiten предварительно рендерит элементы текста субтитров вне экрана, повторно используя эти элементы для отображения субтитров. Это позволяет постоянно менять текст субтитров с помощью внешнего кода перед их отображением.",
         "recordingBind": "Запись",
         "recordWithAudioPlayback": "Запись с аудиовоспроизведением",
         "rememberSubtitleOffset": "Запомнить задержку субтитров",
@@ -501,7 +501,7 @@
         "annotation": "Annotation",
         "ftueAnnotation": "Subtitle annotation features are now available.",
         "annotationHelperText": "Annotation requires <0>Yomitan API</0> to function.",
-        "annotationNoExtensionWarn": "Installing the asbplayer extension is recommended to prevent your browser from deleting manually stored words. Export your settings before installing the extension to preserve your data.",
+        "annotationNoExtensionWarn": "Installing the asbplayer-jiten extension is recommended to prevent your browser from deleting manually stored words. Export your settings before installing the extension to preserve your data.",
         "manageWords": "My word database",
         "buildWaniKaniCache": "Re-Build WaniKani word database",
         "buildWaniKaniCacheHelperText": "The WaniKani word database is automatically updated during playback when a track is enabled and a token is configured.",

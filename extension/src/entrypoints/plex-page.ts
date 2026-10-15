@@ -171,7 +171,7 @@ export default defineUnlistedScript(() => {
                 const miniPlayerWarn =
                     'Automatic detection does not work for Plex if you resume playing your previous session from the mini player. Try stopping the video and hitting play on the media directly.';
                 const internalSubWarn =
-                    'To use an internal subtitle, it must be selected on Plex. You can unselect it once asbplayer has it loaded after Plex transcodes it in the background which may take a few minutes. Set Plex to the lowest video quality before choosing internal here for a quicker load, 4K or HDR videos will take longer. If an error appears, try stopping the video and waiting a few minutes before refreshing the page.';
+                    'To use an internal subtitle, it must be selected on Plex. You can unselect it once asbplayer-jiten has it loaded after Plex transcodes it in the background which may take a few minutes. Set Plex to the lowest video quality before choosing internal here for a quicker load, 4K or HDR videos will take longer. If an error appears, try stopping the video and waiting a few minutes before refreshing the page.';
                 const parser = new DOMParser();
 
                 if (!serverUrl || !plexToken) {

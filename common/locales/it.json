@@ -130,12 +130,12 @@
         "seekToPreviousSubtitle": "Scorri al sottotitolo precedente",
         "seekToSubtitle": "Scorri al sottotitolo precedente/successivo",
         "takeScreenshot": "Effettua cattura schermo manualmente, sovrascrivendo quella fatta automaticamente al momento dell'estrazione",
-        "toggleAsbplayerSubtitleTrack1": "Attiva/disattiva la traccia del sottotitolo 1 in asbplayer",
-        "toggleAsbplayerSubtitleTrack2": "Attiva/disattiva la traccia del sottotitolo 2 in asbplayer",
-        "toggleAsbplayerSubtitleTrack3": "Attiva/disattiva la traccia del sottotitolo 3 in asbplayer",
-        "toggleAsbplayerSubtitleTracks": "Attiva/disattiva la traccia del sottotitolo nell'asbplayer",
-        "toggleAsbplayerBlurTrack": "Attiva/disattiva la sfocatura dei sottotitoli {{trackNumber}} in asbplayer",
-        "unblurAsbplayerTrack": "Togli sfocatura dalla traccia sottotitoli {{trackNumber}} in asbplayer",
+        "toggleAsbplayerSubtitleTrack1": "Attiva/disattiva la traccia del sottotitolo 1 in asbplayer-jiten",
+        "toggleAsbplayerSubtitleTrack2": "Attiva/disattiva la traccia del sottotitolo 2 in asbplayer-jiten",
+        "toggleAsbplayerSubtitleTrack3": "Attiva/disattiva la traccia del sottotitolo 3 in asbplayer-jiten",
+        "toggleAsbplayerSubtitleTracks": "Attiva/disattiva la traccia del sottotitolo nell'asbplayer-jiten",
+        "toggleAsbplayerBlurTrack": "Attiva/disattiva la sfocatura dei sottotitoli {{trackNumber}} in asbplayer-jiten",
+        "unblurAsbplayerTrack": "Togli sfocatura dalla traccia sottotitoli {{trackNumber}} in asbplayer-jiten",
         "toggleAutoPause": "Attiva/Disattiva pausa automatica",
         "toggleCondensedPlayback": "Attiva/Disattiva riproduzione condensata",
         "toggleFastForwardPlayback": "Attiva/Disattiva riproduzione in avanzamento rapido",
@@ -256,32 +256,32 @@
             "aggressiveGenericPage": "Try aggressive detection methods (may degrade this site)",
             "genericPageInfo": "This page does not have a dedicated subtitle detection parser. Enable generic subtitle detection then refresh the page to possibly detect subtitles.",
             "genericPageWarning": "This site is using generic subtitle detection. Some subtitle tracks may be missing, mislabeled, incorrect, or inconsistently present between page loads. Additionally, a subtitle may need to be first selected on the site and shown on the video to be usable.",
-            "ftue": "Qui è possibile selezionare le tracce dei sottotitoli rilevate automaticamente. asbplayer non sa come rilevare i sottotitoli su tutti i siti. Puoi sempre caricare i tuoi file di sottotitoli."
+            "ftue": "Qui è possibile selezionare le tracce dei sottotitoli rilevate automaticamente. asbplayer-jiten non sa come rilevare i sottotitoli su tutti i siti. Puoi sempre caricare i tuoi file di sottotitoli."
         },
         "videoSelect": {
             "multipleVideoElements": "Rilevati più elementi video",
-            "selectVideo": "Seleziona un elemento video per sincronizzarlo con asbplayer.",
-            "syncBeforeMine": "Un elemento video deve essere sincronizzato con asbplayer prima di poterlo estrarre. Seleziona un elemento video per sincronizzarlo con asbplayer.",
+            "selectVideo": "Seleziona un elemento video per sincronizzarlo con asbplayer-jiten.",
+            "syncBeforeMine": "Un elemento video deve essere sincronizzato con asbplayer-jiten prima di poterlo estrarre. Seleziona un elemento video per sincronizzarlo con asbplayer-jiten.",
             "videoElement": "Elemento video"
         }
     },
     "ftue": {
-        "welcome": "Benvenuto in asbplayer.",
+        "welcome": "Benvenuto in asbplayer-jiten.",
         "welcomeBody": "Consulta il <0>readme</0> per scoprire come iniziare.",
         "welcomeBody2": "Scorri verso il basso per una rapida introduzione, oppure consulta la <0>guida utente</0>.",
-        "toolbar": "Clicca sull'icona 🧩 nella barra degli strumenti e seleziona <0>asbplayer</0> per aprire il <1>Popup</1> di asbplayer.<2/>Usa il pulsante {{pin}} per aggiungere asbplayer alla barra degli strumenti per un accesso rapido.",
+        "toolbar": "Clicca sull'icona 🧩 nella barra degli strumenti e seleziona <0>asbplayer-jiten</0> per aprire il <1>Popup</1> di asbplayer-jiten.<2/>Usa il pulsante {{pin}} per aggiungere asbplayer-jiten alla barra degli strumenti per un accesso rapido.",
         "sidePanel": "Usa il <0>Pannello Laterale</0> per <1>navigare</1> tra i sottotitoli, <2>estrarre</2> sottotitoli e altro ancora.",
         "overlayScroll": "<0>Scorri</0> il controllo più a destra per passare tra i controlli di <1>navigazione dei sottotitoli</1>, <2>ritardo dei sottotitoli</2> e <3>velocità di riproduzione</3>.",
         "overlay": "Usa l'<0>overlay video</0> per <1>estrarre</1> e <2>mostrare/nascondere</2> i sottotitoli, <3>cambiare modalità di riproduzione</3> e altro ancora.",
         "congrats": "Questo è tutto per le basi! Sentiti libero di esplorare questa pagina.",
-        "loadSubtitles": "Il primo passo per usare asbplayer è sempre caricare i sottotitoli su un video. Usa il <0>Pannello Laterale</0> per caricare i sottotitoli sul video di questa pagina.<1/>Suggerimento: il <2>Pannello Laterale</2> è accessibile tramite il <3>Popup</3>.",
-        "loadSubtitlesFirefox": "Il primo passo per usare asbplayer è sempre caricare i sottotitoli su un video. <0>Fai clic destro</0> sul video e trova il <1>menu contestuale</1> di asbplayer per caricare i sottotitoli.",
-        "loadSubtitlesMobile": "Il primo passo per usare asbplayer è sempre caricare i sottotitoli su un video. Apri il selettore di tracce selezionando <0>asbplayer</0> nel menu <1>estensioni</1>."
+        "loadSubtitles": "Il primo passo per usare asbplayer-jiten è sempre caricare i sottotitoli su un video. Usa il <0>Pannello Laterale</0> per caricare i sottotitoli sul video di questa pagina.<1/>Suggerimento: il <2>Pannello Laterale</2> è accessibile tramite il <3>Popup</3>.",
+        "loadSubtitlesFirefox": "Il primo passo per usare asbplayer-jiten è sempre caricare i sottotitoli su un video. <0>Fai clic destro</0> sul video e trova il <1>menu contestuale</1> di asbplayer-jiten per caricare i sottotitoli.",
+        "loadSubtitlesMobile": "Il primo passo per usare asbplayer-jiten è sempre caricare i sottotitoli su un video. Apri il selettore di tracce selezionando <0>asbplayer-jiten</0> nel menu <1>estensioni</1>."
     },
     "update": {
-        "heading": "asbplayer è stato aggiornato alla versione {{version}}.",
+        "heading": "asbplayer-jiten è stato aggiornato alla versione {{version}}.",
         "body": "Consulta le note di rilascio <0>qui</0>.",
-        "alert": "asbplayer aggiornato alla versione {{version}}. Consulta le <0>note di rilascio<0>."
+        "alert": "asbplayer-jiten aggiornato alla versione {{version}}. Consulta le <0>note di rilascio<0>."
     },
     "info": {
         "copiedSubtitle": "Copiato: {{text}}",
@@ -321,18 +321,18 @@
         "extensionNotInstalled": "Installa l'<1>estensione Chrome</1> per sincronizzare i sottotitoli con lo streaming video.",
         "extensionUpdateAvailable": "È disponibile un <1>aggiornamento</1> dell'estensione.",
         "noSubtitles": "Nessun sottotitolo",
-        "videoElementsDetected": "Carica i sottotitoli su un video per iniziare a usare asbplayer.",
+        "videoElementsDetected": "Carica i sottotitoli su un video per iniziare a usare asbplayer-jiten.",
         "noVideoElementsDetected": "Nessun video rilevato.",
         "restoreLastSession": "Restore last session"
     },
     "activeTabPermissionRequest": {
         "title": "Abilita registrazione audio",
         "grantedTitle": "Registrazione audio abilitata",
-        "prompt": "Clicca sul pulsante di azione di asbplayer in alto a destra della finestra del browser per abilitare la registrazione audio per questa scheda.",
+        "prompt": "Clicca sul pulsante di azione di asbplayer-jiten in alto a destra della finestra del browser per abilitare la registrazione audio per questa scheda.",
         "grantedPrompt": "La registrazione audio è stata abilitata per questa scheda. Ora puoi iniziare l'estrazione."
     },
     "audioCaptureFailed": {
-        "message": "L'audio protetto da DRM non può essere acquisito nella versione Firefox di asbplayer."
+        "message": "L'audio protetto da DRM non può essere acquisito nella versione Firefox di asbplayer-jiten."
     },
     "settings": {
         "behavior": "Comportamento",
@@ -424,7 +424,7 @@
         "mp3Preference": "Ricodifica audio come mp3 (più lento)",
         "pages": "Pagine",
         "preCacheSubtitleDom": "Pre-cache DOM sottotitoli",
-        "preCacheSubtitleDomHelperText": "Se attivo, asbplayer pre-renderizza gli elementi di testo dei sottotitoli in un elemento fuori schermo e li riutilizza per la visualizzazione. Ciò consente al codice esterno di modificare in modo permanente il testo dei sottotitoli prima della visualizzazione.",
+        "preCacheSubtitleDomHelperText": "Se attivo, asbplayer-jiten pre-renderizza gli elementi di testo dei sottotitoli in un elemento fuori schermo e li riutilizza per la visualizzazione. Ciò consente al codice esterno di modificare in modo permanente il testo dei sottotitoli prima della visualizzazione.",
         "recordingBind": "Registrazione",
         "recordWithAudioPlayback": "Riproduci audio durante la registrazione dal video locale",
         "rememberSubtitleOffset": "Ricorda il ritardo dei sottotitoli",
@@ -501,7 +501,7 @@
         "annotation": "Annotazione",
         "ftueAnnotation": "Le funzioni di annotazione dei sottotitoli sono ora disponibili.",
         "annotationHelperText": "L'annotazione richiede <0>Yomitan API</0> per funzionare.",
-        "annotationNoExtensionWarn": "Si consiglia di installare l'estensione asbplayer per evitare che il browser elimini le parole salvate manualmente. Esporta le impostazioni prima di installare l'estensione per conservare i dati.",
+        "annotationNoExtensionWarn": "Si consiglia di installare l'estensione asbplayer-jiten per evitare che il browser elimini le parole salvate manualmente. Esporta le impostazioni prima di installare l'estensione per conservare i dati.",
         "manageWords": "Il mio database di parole",
         "buildWaniKaniCache": "Re-Build WaniKani word database",
         "buildWaniKaniCacheHelperText": "The WaniKani word database is automatically updated during playback when a track is enabled and a token is configured.",
