@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconButton, InputAdornment, Link, MenuItem, Stack, Switch, Typography } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
@@ -11,15 +11,17 @@ import type { AsbplayerSettings } from '@project/common/settings';
 
 interface Props {
     settings: AsbplayerSettings;
+    onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
     onSettingChanged: <K extends keyof AsbplayerSettings>(key: K, value: AsbplayerSettings[K]) => Promise<void>;
 }
 
-export default function JitenSettingsTab({ settings, onSettingChanged }: Props) {
+export default function JitenSettingsTab({ settings, onSettingChanged, onSettingsChanged }: Props) {
     const { t } = useTranslation();
     const [showKey, setShowKey] = useState(false);
     const [status, setStatus] = useState<JitenStatus>();
     const [error, setError] = useState<string>();
     const [decks, setDecks] = useState<JitenDeck[]>([]);
+    const enteredApiKey = useRef<string>(undefined);
     const client = useMemo(() => new JitenClient(settings.jitenApiKey), [settings.jitenApiKey]);
     useEffect(() => {
         let active = true;
@@ -28,18 +30,48 @@ export default function JitenSettingsTab({ settings, onSettingChanged }: Props) 
         setDecks([]);
         if (settings.jitenApiKey) {
             void client.status().then(
-                (status) => active && setStatus(status),
+                (status) => {
+                    if (!active) return;
+                    setStatus(status);
+                    if (enteredApiKey.current === settings.jitenApiKey && !settings.jitenMediaSettingsInitialized) {
+                        const canUpload = status.quota.maxBytes > 0;
+                        onSettingsChanged({
+                            jitenAttachVisual: canUpload,
+                            jitenAttachAudio: canUpload,
+                            jitenMediaSettingsInitialized: true,
+                        });
+                    }
+                },
                 (error: Error) => active && setError(error.message)
             );
             void client.decks().then(
-                (decks) => active && setDecks(decks),
+                (decks) => {
+                    if (!active) return;
+                    setDecks(decks);
+                    if (enteredApiKey.current === settings.jitenApiKey && !settings.jitenMiningDeckInitialized) {
+                        const miningDeck = decks.find((deck) => deck.name.toLowerCase().includes('mining'));
+                        onSettingsChanged({
+                            jitenMiningDeckInitialized: true,
+                            ...(!settings.jitenMiningDeckId && miningDeck
+                                ? { jitenMiningDeckId: miningDeck.userStudyDeckId }
+                                : {}),
+                        });
+                    }
+                },
                 (error: Error) => active && setError(error.message)
             );
         }
         return () => {
             active = false;
         };
-    }, [client, settings.jitenApiKey]);
+    }, [
+        client,
+        settings.jitenApiKey,
+        settings.jitenMediaSettingsInitialized,
+        settings.jitenMiningDeckInitialized,
+        settings.jitenMiningDeckId,
+        onSettingsChanged,
+    ]);
 
     return (
         <Stack spacing={2}>
@@ -64,7 +96,10 @@ export default function JitenSettingsTab({ settings, onSettingChanged }: Props) 
                         )}
                     </>
                 }
-                onChange={(event) => void onSettingChanged('jitenApiKey', event.target.value)}
+                onChange={(event) => {
+                    enteredApiKey.current = event.target.value;
+                    void onSettingChanged('jitenApiKey', event.target.value);
+                }}
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">

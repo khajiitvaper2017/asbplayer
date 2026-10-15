@@ -376,7 +376,11 @@ export default function SettingsForm({
                     tabsOrientation={tabsOrientation}
                 >
                     {settings.miningDestination === 'jiten' ? (
-                        <JitenSettingsTab settings={settings} onSettingChanged={handleSettingChanged} />
+                        <JitenSettingsTab
+                            settings={settings}
+                            onSettingChanged={handleSettingChanged}
+                            onSettingsChanged={onSettingsChanged}
+                        />
                     ) : (
                         <AnkiSettingsTab
                             settings={settings}

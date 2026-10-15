@@ -96,6 +96,9 @@ const settingsSchema = {
         jitenApiKey: {
             type: 'string',
         },
+        jitenMiningDeckInitialized: {
+            type: 'boolean',
+        },
         jitenMiningDeckId: {
             type: 'integer',
             minimum: 0,
@@ -107,6 +110,9 @@ const settingsSchema = {
             type: 'boolean',
         },
         jitenAutoAttach: {
+            type: 'boolean',
+        },
+        jitenMediaSettingsInitialized: {
             type: 'boolean',
         },
         jitenAttachVisual: {
