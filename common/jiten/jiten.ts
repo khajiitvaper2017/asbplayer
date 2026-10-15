@@ -241,6 +241,13 @@ export class JitenClient {
         const source = params.source ?? '';
         const error = jitenValidationError(target, text, source);
         if (error) throw new Error(error);
+        const mediaLookup =
+            params.image || params.audioClip
+                ? this.media(target).then(
+                      (existing) => ({ existing }),
+                      (error: unknown) => ({ error })
+                  )
+                : undefined;
         try {
             const path = `/user/example-sentences/${target.wordId}/${target.readingIndex}`;
             const examples =
@@ -263,25 +270,56 @@ export class JitenClient {
             result.failed = true;
             if (params.image) result.visual = message('notSent');
             if (params.audioClip) result.audio = message('notSent');
+            await mediaLookup;
             return result;
         }
 
-        for (const kind of ['visual', 'audio'] as const) {
-            const media = kind === 'visual' ? params.image : params.audioClip;
-            if (!media) continue;
+        const kinds = (['visual', 'audio'] as const).filter((kind) =>
+            kind === 'visual' ? params.image : params.audioClip
+        );
+        if (!kinds.length) return result;
+
+        let existing: Awaited<ReturnType<JitenClient['media']>>;
+        try {
+            const lookup = await mediaLookup!;
+            if ('error' in lookup) throw lookup.error;
+            existing = lookup.existing;
+        } catch (error) {
+            for (const kind of kinds) {
+                result[kind] = String(error instanceof Error ? error.message : error);
+            }
+            result.failed = true;
+            return result;
+        }
+
+        const prepared = kinds.map(async (kind) => {
             try {
-                let existing = await this.media(target);
+                const media = (kind === 'visual' ? params.image : params.audioClip)!;
                 const slot = kind === 'visual' ? 'image' : 'audio';
-                if (existing[slot]) {
-                    result[kind] = message('preserved');
-                    continue;
-                }
+                if (existing[slot]) return { blob: undefined };
                 if (media.error !== undefined) throw new Error(message('captureFailed'));
                 const blob = await media.blob();
                 if (blob.size > 5 * 1024 * 1024) throw new Error(message('fileTooLarge'));
+                return { blob };
+            } catch (error) {
+                return { error };
+            }
+        });
+
+        for (const [index, kind] of kinds.entries()) {
+            const media = (kind === 'visual' ? params.image : params.audioClip)!;
+            try {
+                const preparation = await prepared[index];
+                if ('error' in preparation) throw preparation.error;
+                const blob = preparation.blob;
+                if (!blob) {
+                    result[kind] = message('preserved');
+                    continue;
+                }
+                const slot = kind === 'visual' ? 'image' : 'audio';
                 // shortcut: another client can race this check; use upload-if-absent when Jiten supports it.
-                existing = await this.media(target);
-                if (existing[slot]) {
+                const latest = await this.media(target);
+                if (latest[slot]) {
                     result[kind] = message('preserved');
                     continue;
                 }
