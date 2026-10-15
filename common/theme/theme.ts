@@ -44,6 +44,13 @@ export const createTheme = (themeType: PaletteMode) =>
             mode: themeType,
         },
         components: {
+            MuiInputBase: {
+                styleOverrides: {
+                    input: {
+                        colorScheme: themeType,
+                    },
+                },
+            },
             MuiPaper: {
                 styleOverrides: {
                     root:

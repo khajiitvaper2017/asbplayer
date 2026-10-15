@@ -12,7 +12,7 @@
         "message": "Show mining dialog"
     },
     "shortcutUpdateLastCardDescription": {
-        "message": "Attach to Jiten"
+        "message": "Attach media"
     },
     "shortcutTakeScreenshotDescription": {
         "message": "Manually take screenshot, overriding the one that is automatically taken when mining."

@@ -4,6 +4,7 @@ import { makeStyles } from '@mui/styles';
 import type { CreateCSSProperties } from '@mui/styles';
 import { createTheme, ThemeProvider, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import type { Theme } from '@mui/material';
 import type { AsbplayerSettings, PageConfig, PageSettings, Profile } from '@project/common/settings';
 import Tab from '@mui/material/Tab';
@@ -18,7 +19,9 @@ import KeyboardShortcutsSettingsTab, {
 } from '@project/common/components/KeyboardShortcutsSettingsTab';
 import type { KeyboardShortcutSection } from '@project/common/components/KeyboardShortcutsSettingsTab';
 import StreamingVideoSettingsTab from '@project/common/components/StreamingVideoSettingsTab';
-import MiscSettingsTab from '@project/common/components/MiscSettingsTab';
+import GeneralSettingsTab from '@project/common/components/GeneralSettingsTab';
+import PlaybackSettingsTab from '@project/common/components/PlaybackSettingsTab';
+import SubtitleBehaviorSettings from '@project/common/components/SubtitleBehaviorSettings';
 import type { LogProvider } from '@project/common/util/log';
 
 interface StylesProps {
@@ -145,6 +148,7 @@ type TabName =
     | 'anki-settings'
     | 'mining-settings'
     | 'subtitle-appearance'
+    | 'playback-settings'
     | 'keyboard-shortcuts'
     | 'streaming-video'
     | 'misc-settings';
@@ -263,6 +267,7 @@ export default function SettingsForm({
             'mining-settings',
             'anki-settings',
             'subtitle-appearance',
+            'playback-settings',
             'keyboard-shortcuts',
             'streaming-video',
             'misc-settings',
@@ -321,17 +326,18 @@ export default function SettingsForm({
                 >
                     <Tab tabIndex={0} label={t('settings.mining')} id="mining-settings" />
                     <Tab tabIndex={1} label="Jiten" id="anki-settings" />
-                    <Tab tabIndex={2} label={t('settings.subtitleAppearance')} id="subtitle-appearance" />
-                    <Tab tabIndex={3} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
+                    <Tab tabIndex={2} label={t('settings.subtitles')} id="subtitle-appearance" />
+                    <Tab tabIndex={3} label={t('settings.playback')} id="playback-settings" />
+                    <Tab tabIndex={4} label={t('settings.keyboardShortcuts')} id="keyboard-shortcuts" />
                     {extensionSupportsAppIntegration && (
-                        <Tab tabIndex={4} label={t('settings.streamingVideo')} id="streaming-video" />
+                        <Tab tabIndex={5} label={t('settings.streamingVideo')} id="streaming-video" />
                     )}
                     <Tab
-                        tabIndex={4 + Number(extensionSupportsAppIntegration)}
-                        label={t('settings.misc')}
+                        tabIndex={5 + Number(extensionSupportsAppIntegration)}
+                        label={t('settings.general')}
                         id="misc-settings"
                     />
-                    <Tab tabIndex={5 + Number(extensionSupportsAppIntegration)} label={t('about.title')} id="about" />
+                    <Tab tabIndex={6 + Number(extensionSupportsAppIntegration)} label={t('about.title')} id="about" />
                 </Tabs>
                 <TabPanel value={tabIndex} index={tabIndicesById['anki-settings']} tabsOrientation={tabsOrientation}>
                     <JitenSettingsTab
@@ -352,19 +358,48 @@ export default function SettingsForm({
                     index={tabIndicesById['subtitle-appearance']}
                     tabsOrientation={tabsOrientation}
                 >
-                    <SubtitleAppearanceSettingsTab
+                    <Stack spacing={2}>
+                        <SubtitleAppearanceSettingsTab
+                            settings={settings}
+                            onSettingChanged={handleSettingChanged}
+                            onSettingsChanged={onSettingsChanged}
+                            extensionInstalled={extensionInstalled}
+                            extensionSupportsTrackSpecificSettings={extensionSupportsTrackSpecificSettings}
+                            extensionSupportsSubtitlesWidthSetting={extensionSupportsSubtitlesWidthSetting}
+                            extensionSupportsSubtitlesWidthInPixels={extensionSupportsSubtitlesWidthInPixels}
+                            localFontsAvailable={localFontsAvailable}
+                            localFontsPermission={localFontsPermission}
+                            localFontFamilies={localFontFamilies}
+                            onUnlockLocalFonts={onUnlockLocalFonts}
+                            onViewKeyboardShortcuts={() => viewKeyboardShortcutSection('subtitles')}
+                        />
+                        <SubtitleBehaviorSettings
+                            settings={settings}
+                            onSettingChanged={handleSettingChanged}
+                            insideApp={insideApp}
+                            extensionInstalled={extensionInstalled}
+                            extensionSupportsAutoCopyableTrackSetting={extensionSupportsAutoCopyableTrackSetting}
+                            supportsSubtitleListCustomization={supportsSubtitleListCustomization}
+                        />
+                    </Stack>
+                </TabPanel>
+                <TabPanel
+                    value={tabIndex}
+                    index={tabIndicesById['playback-settings']}
+                    tabsOrientation={tabsOrientation}
+                >
+                    <PlaybackSettingsTab
                         settings={settings}
                         onSettingChanged={handleSettingChanged}
                         onSettingsChanged={onSettingsChanged}
                         extensionInstalled={extensionInstalled}
-                        extensionSupportsTrackSpecificSettings={extensionSupportsTrackSpecificSettings}
-                        extensionSupportsSubtitlesWidthSetting={extensionSupportsSubtitlesWidthSetting}
-                        extensionSupportsSubtitlesWidthInPixels={extensionSupportsSubtitlesWidthInPixels}
-                        localFontsAvailable={localFontsAvailable}
-                        localFontsPermission={localFontsPermission}
-                        localFontFamilies={localFontFamilies}
-                        onUnlockLocalFonts={onUnlockLocalFonts}
-                        onViewKeyboardShortcuts={() => viewKeyboardShortcutSection('subtitles')}
+                        extensionSupportsPauseOnHover={extensionSupportsPauseOnHover}
+                        extensionSupportsSeekableTrackSetting={extensionSupportsSeekableTrackSetting}
+                        supportsPlaybackEngine={supportsPlaybackEngine}
+                        supportsAutoPauseResume={supportsAutoPauseResume}
+                        onViewPlaybackModeKeyboardShortcuts={() => viewKeyboardShortcutSection('playback')}
+                        onViewPlaybackRateKeyboardShortcuts={() => viewKeyboardShortcutSection('playbackRate')}
+                        onViewSubtitleKeyboardShortcuts={() => viewKeyboardShortcutSection('subtitles')}
                     />
                 </TabPanel>
                 <TabPanel
@@ -396,23 +431,13 @@ export default function SettingsForm({
                     />
                 </TabPanel>
                 <TabPanel value={tabIndex} index={tabIndicesById['misc-settings']} tabsOrientation={tabsOrientation}>
-                    <MiscSettingsTab
+                    <GeneralSettingsTab
                         settings={settings}
                         onSettingChanged={handleSettingChanged}
                         onSettingsChanged={onSettingsChanged}
                         logProvider={logProvider}
                         supportedLanguages={supportedLanguages}
                         insideApp={insideApp}
-                        extensionInstalled={extensionInstalled}
-                        extensionSupportsPauseOnHover={extensionSupportsPauseOnHover}
-                        extensionSupportsSeekableTrackSetting={extensionSupportsSeekableTrackSetting}
-                        extensionSupportsAutoCopyableTrackSetting={extensionSupportsAutoCopyableTrackSetting}
-                        supportsSubtitleListCustomization={supportsSubtitleListCustomization}
-                        supportsPlaybackEngine={supportsPlaybackEngine}
-                        supportsAutoPauseResume={supportsAutoPauseResume}
-                        onViewPlaybackModeKeyboardShortcuts={() => viewKeyboardShortcutSection('playback')}
-                        onViewPlaybackRateKeyboardShortcuts={() => viewKeyboardShortcutSection('playbackRate')}
-                        onViewSubtitleKeyboardShortcuts={() => viewKeyboardShortcutSection('subtitles')}
                     />
                 </TabPanel>
                 <TabPanel value={tabIndex} index={tabIndicesById['about']} tabsOrientation={tabsOrientation}>

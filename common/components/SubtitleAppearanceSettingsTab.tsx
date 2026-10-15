@@ -30,7 +30,7 @@ import {
 import { isNumeric } from '@project/common/util';
 import Typography from '@mui/material/Typography';
 import Switch from '@mui/material/Switch';
-import RadioGroup from '@mui/material/RadioGroup';
+import RadioGroup from '@project/common/components/SettingsRadioGroup';
 import Tooltip from '@project/common/components/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
 import Slider from '@mui/material/Slider';
@@ -38,6 +38,7 @@ import Button from '@mui/material/Button';
 import SubtitleAppearanceTrackSelector from '@project/common/components/SubtitleAppearanceTrackSelector';
 import SubtitlePreview from '@project/common/components/SubtitlePreview';
 import Stack from '@mui/material/Stack';
+import ResponsiveSettingsStack from '@project/common/components/ResponsiveSettingsStack';
 import SettingsTextField from '@project/common/components/SettingsTextField';
 import NumericSettingInput from '@project/common/components/NumericSettingInput';
 import SwitchLabelWithHoverEffect from '@project/common/components/SwitchLabelWithHoverEffect';
@@ -74,6 +75,7 @@ function AddCustomStyle({ styleKey, onStyleKey, onAddCustomStyle }: AddCustomSty
                     label={t('settings.addCustomCss')}
                     color="primary"
                     {...params}
+                    size="small"
                     InputProps={{
                         ...params.InputProps,
                         endAdornment: (
@@ -107,6 +109,7 @@ function CustomStyleSetting({ customStyle, onCustomStyle, onDelete }: CustomStyl
 
     return (
         <SettingsTextField
+            size="small"
             color="primary"
             label={t('settings.customCssField', { styleKey: customStyle.key })}
             placeholder={t('settings.styleValue')}
@@ -268,32 +271,37 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                 text={subtitlePreview}
                 onTextChanged={(text) => onSettingChanged('subtitlePreview', text)}
             />
-            <SettingsSection>{t('settings.styling')}</SettingsSection>
-            {subtitleColor !== undefined && (
-                <SettingsTextField
-                    type="color"
-                    label={t('settings.subtitleColor')}
-                    fullWidth
-                    value={subtitleColor}
-                    color="primary"
-                    onChange={(event) => handleSubtitleTextSettingChanged('subtitleColor', event.target.value)}
-                />
-            )}
-            {subtitleSize !== undefined && (
-                <NumericSettingInput
-                    label={t('settings.subtitleSize')}
-                    fullWidth
-                    value={subtitleSize}
-                    color="primary"
-                    onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleSize', value)}
-                    slotProps={{
-                        htmlInput: {
-                            min: 1,
-                            step: 1,
-                        },
-                    }}
-                />
-            )}
+            <SettingsSection>{t('settings.subtitleStyling')}</SettingsSection>
+            <ResponsiveSettingsStack>
+                {' '}
+                {subtitleColor !== undefined && (
+                    <SettingsTextField
+                        size="small"
+                        type="color"
+                        label={t('settings.subtitleColor')}
+                        fullWidth
+                        value={subtitleColor}
+                        color="primary"
+                        onChange={(event) => handleSubtitleTextSettingChanged('subtitleColor', event.target.value)}
+                    />
+                )}
+                {subtitleSize !== undefined && (
+                    <NumericSettingInput
+                        size="small"
+                        label={t('settings.subtitleSize')}
+                        fullWidth
+                        value={subtitleSize}
+                        color="primary"
+                        onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleSize', value)}
+                        slotProps={{
+                            htmlInput: {
+                                min: 1,
+                                step: 1,
+                            },
+                        }}
+                    />
+                )}
+            </ResponsiveSettingsStack>{' '}
             {subtitleThickness !== undefined && (
                 <>
                     <Typography variant="subtitle2" color="textSecondary">
@@ -313,89 +321,109 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                     />
                 </>
             )}
-            {subtitleOutlineColor !== undefined && (
-                <SettingsTextField
-                    type="color"
-                    label={t('settings.subtitleOutlineColor')}
-                    fullWidth
-                    value={subtitleOutlineColor}
-                    color="primary"
-                    onChange={(event) => handleSubtitleTextSettingChanged('subtitleOutlineColor', event.target.value)}
-                />
-            )}
-            {subtitleOutlineThickness !== undefined && (
-                <NumericSettingInput
-                    label={t('settings.subtitleOutlineThickness')}
-                    helperText={t('settings.subtitleOutlineThicknessHelperText')}
-                    fullWidth
-                    value={subtitleOutlineThickness}
-                    onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleOutlineThickness', value)}
-                    slotProps={{
-                        htmlInput: {
-                            min: 0,
-                            step: 0.1,
-                        },
-                    }}
-                    color="primary"
-                />
-            )}
-            {subtitleShadowColor !== undefined && (
-                <SettingsTextField
-                    type="color"
-                    label={t('settings.subtitleShadowColor')}
-                    fullWidth
-                    value={subtitleShadowColor}
-                    color="primary"
-                    onChange={(event) => handleSubtitleTextSettingChanged('subtitleShadowColor', event.target.value)}
-                />
-            )}
-            {subtitleShadowThickness !== undefined && (
-                <NumericSettingInput
-                    label={t('settings.subtitleShadowThickness')}
-                    fullWidth
-                    value={subtitleShadowThickness}
-                    onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleShadowThickness', value)}
-                    slotProps={{
-                        htmlInput: {
-                            min: 0,
-                            step: 0.1,
-                        },
-                    }}
-                    color="primary"
-                />
-            )}
-            {subtitleBackgroundColor !== undefined && (
-                <SettingsTextField
-                    type="color"
-                    label={t('settings.subtitleBackgroundColor')}
-                    fullWidth
-                    value={subtitleBackgroundColor}
-                    color="primary"
-                    onChange={(event) =>
-                        handleSubtitleTextSettingChanged('subtitleBackgroundColor', event.target.value)
-                    }
-                />
-            )}
-            {subtitleBackgroundOpacity !== undefined && (
-                <NumericSettingInput
-                    label={t('settings.subtitleBackgroundOpacity')}
-                    fullWidth
-                    slotProps={{
-                        htmlInput: {
-                            min: 0,
-                            max: 1,
-                            step: 0.1,
-                        },
-                    }}
-                    value={subtitleBackgroundOpacity}
-                    color="primary"
-                    onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleBackgroundOpacity', value)}
-                />
-            )}
+            <ResponsiveSettingsStack>
+                {' '}
+                {subtitleOutlineColor !== undefined && (
+                    <SettingsTextField
+                        size="small"
+                        type="color"
+                        label={t('settings.subtitleOutlineColor')}
+                        fullWidth
+                        value={subtitleOutlineColor}
+                        color="primary"
+                        onChange={(event) =>
+                            handleSubtitleTextSettingChanged('subtitleOutlineColor', event.target.value)
+                        }
+                    />
+                )}
+                {subtitleOutlineThickness !== undefined && (
+                    <NumericSettingInput
+                        size="small"
+                        label={t('settings.subtitleOutlineThickness')}
+                        helperText={t('settings.subtitleOutlineThicknessHelperText')}
+                        fullWidth
+                        value={subtitleOutlineThickness}
+                        onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleOutlineThickness', value)}
+                        slotProps={{
+                            htmlInput: {
+                                min: 0,
+                                step: 0.1,
+                            },
+                        }}
+                        color="primary"
+                    />
+                )}
+            </ResponsiveSettingsStack>
+            <ResponsiveSettingsStack>
+                {' '}
+                {subtitleShadowColor !== undefined && (
+                    <SettingsTextField
+                        size="small"
+                        type="color"
+                        label={t('settings.subtitleShadowColor')}
+                        fullWidth
+                        value={subtitleShadowColor}
+                        color="primary"
+                        onChange={(event) =>
+                            handleSubtitleTextSettingChanged('subtitleShadowColor', event.target.value)
+                        }
+                    />
+                )}
+                {subtitleShadowThickness !== undefined && (
+                    <NumericSettingInput
+                        size="small"
+                        label={t('settings.subtitleShadowThickness')}
+                        fullWidth
+                        value={subtitleShadowThickness}
+                        onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleShadowThickness', value)}
+                        slotProps={{
+                            htmlInput: {
+                                min: 0,
+                                step: 0.1,
+                            },
+                        }}
+                        color="primary"
+                    />
+                )}
+            </ResponsiveSettingsStack>
+            <ResponsiveSettingsStack>
+                {' '}
+                {subtitleBackgroundColor !== undefined && (
+                    <SettingsTextField
+                        size="small"
+                        type="color"
+                        label={t('settings.subtitleBackgroundColor')}
+                        fullWidth
+                        value={subtitleBackgroundColor}
+                        color="primary"
+                        onChange={(event) =>
+                            handleSubtitleTextSettingChanged('subtitleBackgroundColor', event.target.value)
+                        }
+                    />
+                )}
+                {subtitleBackgroundOpacity !== undefined && (
+                    <NumericSettingInput
+                        size="small"
+                        label={t('settings.subtitleBackgroundOpacity')}
+                        fullWidth
+                        slotProps={{
+                            htmlInput: {
+                                min: 0,
+                                max: 1,
+                                step: 0.1,
+                            },
+                        }}
+                        value={subtitleBackgroundOpacity}
+                        color="primary"
+                        onValueChange={(value) => handleSubtitleTextSettingChanged('subtitleBackgroundOpacity', value)}
+                    />
+                )}
+            </ResponsiveSettingsStack>{' '}
             {subtitleFontFamily !== undefined && (
                 <FormControl fullWidth>
                     <FormLabel>{t('settings.subtitleFontFamily')}</FormLabel>
                     <SettingsTextField
+                        size="small"
                         type="text"
                         select={localFontFamilies.length > 0}
                         // label={t('settings.subtitleFontFamily')}
@@ -428,7 +456,6 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                     </SettingsTextField>
                 </FormControl>
             )}
-
             {subtitleCustomStyles !== undefined && (
                 <>
                     {subtitleCustomStyles.map((customStyle, index) => {
@@ -465,7 +492,6 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                     />
                 </>
             )}
-
             {subtitleBlur !== undefined && (
                 <Tooltip placement="bottom-end" title={t('settings.subtitleBlurDescription')}>
                     <SwitchLabelWithHoverEffect
@@ -482,9 +508,9 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                     />
                 </Tooltip>
             )}
-
             {selectedSubtitleAppearanceTrack === undefined && (
                 <NumericSettingInput
+                    size="small"
                     label={t('settings.imageBasedSubtitleScaleFactor')}
                     placeholder="Inherited"
                     fullWidth
@@ -500,12 +526,11 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                     onValueChange={(value) => void onSettingChanged('imageBasedSubtitleScaleFactor', value)}
                 />
             )}
-
             <SettingsSection>{t('settings.layout')}</SettingsSection>
             {subtitleAlignment !== undefined && (
                 <FormControl>
                     <FormLabel component="legend">{t('settings.subtitleAlignment')}</FormLabel>
-                    <RadioGroup row>
+                    <RadioGroup>
                         <LabelWithHoverEffect
                             control={
                                 <Radio
@@ -535,48 +560,59 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                     </RadioGroup>
                 </FormControl>
             )}
-
             {selectedSubtitleAppearanceTrack === undefined && (
                 <>
-                    <NumericSettingInput
-                        color="primary"
-                        fullWidth
-                        label={
-                            <>
-                                {t('settings.subtitlePositionOffset')}
-                                <KeyboardShortcutLink onClick={onViewKeyboardShortcuts} preset="numericalInputLabel" />
-                            </>
-                        }
-                        value={subtitlePositionOffset}
-                        slotProps={{
-                            htmlInput: {
-                                min: 0,
-                                step: 1,
-                            },
-                        }}
-                        onValueChange={(value) => void onSettingChanged('subtitlePositionOffset', value)}
-                    />
-                    <NumericSettingInput
-                        color="primary"
-                        fullWidth
-                        label={
-                            <>
-                                {t('settings.topSubtitlePositionOffset')}
-                                <KeyboardShortcutLink onClick={onViewKeyboardShortcuts} preset="numericalInputLabel" />
-                            </>
-                        }
-                        value={topSubtitlePositionOffset}
-                        slotProps={{
-                            htmlInput: {
-                                min: 0,
-                                step: 1,
-                            },
-                        }}
-                        onValueChange={(value) => void onSettingChanged('topSubtitlePositionOffset', value)}
-                    />
+                    <ResponsiveSettingsStack>
+                        {' '}
+                        <NumericSettingInput
+                            size="small"
+                            color="primary"
+                            fullWidth
+                            label={
+                                <>
+                                    {t('settings.subtitlePositionOffset')}
+                                    <KeyboardShortcutLink
+                                        onClick={onViewKeyboardShortcuts}
+                                        preset="numericalInputLabel"
+                                    />
+                                </>
+                            }
+                            value={subtitlePositionOffset}
+                            slotProps={{
+                                htmlInput: {
+                                    min: 0,
+                                    step: 1,
+                                },
+                            }}
+                            onValueChange={(value) => void onSettingChanged('subtitlePositionOffset', value)}
+                        />
+                        <NumericSettingInput
+                            size="small"
+                            color="primary"
+                            fullWidth
+                            label={
+                                <>
+                                    {t('settings.topSubtitlePositionOffset')}
+                                    <KeyboardShortcutLink
+                                        onClick={onViewKeyboardShortcuts}
+                                        preset="numericalInputLabel"
+                                    />
+                                </>
+                            }
+                            value={topSubtitlePositionOffset}
+                            slotProps={{
+                                htmlInput: {
+                                    min: 0,
+                                    step: 1,
+                                },
+                            }}
+                            onValueChange={(value) => void onSettingChanged('topSubtitlePositionOffset', value)}
+                        />
+                    </ResponsiveSettingsStack>{' '}
                     {(!extensionInstalled || extensionSupportsSubtitlesWidthSetting) &&
                         (subtitlesWidth === -1 ? (
                             <SettingsTextField
+                                size="small"
                                 color="primary"
                                 fullWidth
                                 label={t('settings.subtitlesWidth')}
@@ -598,6 +634,7 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
                             />
                         ) : (
                             <NumericSettingInput
+                                size="small"
                                 color="primary"
                                 fullWidth
                                 label={t('settings.subtitlesWidth')}

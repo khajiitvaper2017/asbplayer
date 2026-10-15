@@ -9,6 +9,8 @@ import { JitenClient } from '@project/common/jiten/jiten';
 import type { JitenDeck, JitenStatus } from '@project/common/jiten/jiten';
 import type { AsbplayerSettings } from '@project/common/settings';
 
+let accountCache: { apiKey: string; decks: Promise<JitenDeck[]>; status: Promise<JitenStatus> } | undefined;
+
 interface Props {
     settings: AsbplayerSettings;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
@@ -28,8 +30,14 @@ export default function JitenSettingsTab({ settings, onSettingChanged, onSetting
         setStatus(undefined);
         setError(undefined);
         setDecks([]);
+        if (accountCache?.apiKey !== settings.jitenApiKey) accountCache = undefined;
         if (settings.jitenApiKey) {
-            void client.status().then(
+            accountCache ??= {
+                apiKey: settings.jitenApiKey,
+                decks: client.decks(),
+                status: client.status(),
+            };
+            void accountCache.status.then(
                 (status) => {
                     if (!active) return;
                     setStatus(status);
@@ -44,7 +52,7 @@ export default function JitenSettingsTab({ settings, onSettingChanged, onSetting
                 },
                 (error: Error) => active && setError(error.message)
             );
-            void client.decks().then(
+            void accountCache.decks.then(
                 (decks) => {
                     if (!active) return;
                     setDecks(decks);
@@ -166,7 +174,7 @@ export default function JitenSettingsTab({ settings, onSettingChanged, onSetting
                 }
             />
             {status && (
-                <>
+                <Stack direction="row" spacing={3} useFlexGap flexWrap="wrap">
                     <Typography>
                         {t('jiten.tier', { tier: t(`jiten.tiers.${status.tier}`, { defaultValue: status.tier }) })}
                     </Typography>
@@ -176,7 +184,7 @@ export default function JitenSettingsTab({ settings, onSettingChanged, onSetting
                             maximum: (status.quota.maxBytes / (1024 * 1024)).toFixed(1),
                         })}
                     </Typography>
-                </>
+                </Stack>
             )}
             <SwitchLabelWithHoverEffect
                 label={t('jiten.includeVisual')}

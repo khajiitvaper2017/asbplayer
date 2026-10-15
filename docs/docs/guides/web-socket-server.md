@@ -19,7 +19,7 @@ asbplayer can connect to a local WebSocket server that exposes an HTTP interface
 
 ## Connect asbplayer to the server {#connect-asbplayer-to-the-server}
 
-Enable the WebSocket client from the [Misc settings](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#misc). The default server address and port are usually sufficient.
+Enable the WebSocket client from the [General → WebSocket interface](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#misc-settings). The default server address and port are usually sufficient.
 
 ## Use the server {#use-the-server}
 

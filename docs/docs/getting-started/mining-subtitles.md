@@ -23,7 +23,7 @@ See the [Jiten mining guide](../guides/jiten) for the complete workflow.
 
 1. [Load subtitles](loading-subtitles) onto a video.
 2. Click the **Mine Subtitle** <NoteAddIcon /> button.
-3. Review the sentence and captured media. Use the checkboxes under **Words to mine** to choose words, then click **Mine new words to Jiten**.
+3. Review the sentence and captured media. Use the checkboxes under **Words to mine** to choose words, then click **Mine new words**.
 4. To save only one word per subtitle, enable **Prevent mining multiple words from same subtitle** in Jiten settings. The checkboxes become radio buttons.
 
-For one-click mining, set **Mining → Mining button default action** to **Mine new words to Jiten**. With the one-word setting enabled, several available words will open the dialog so you can choose.
+For one-click mining, set **Mining → Mining button default action** to **Mine new words**. With the one-word setting enabled, several available words will open the dialog so you can choose.

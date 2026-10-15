@@ -17,7 +17,7 @@ With it, you can:
 3. Open Settings and set **Mining destination** to **Jiten**.
 4. Enter your Jiten API key.
 5. Load a video and subtitles.
-6. Use the mining button to review a subtitle, or set it to **Mine new words to Jiten**.
+6. Use the mining button to review a subtitle, or set it to **Mine new words**.
 
 See the [Jiten mining guide](docs/docs/guides/jiten.md) for more details.
 

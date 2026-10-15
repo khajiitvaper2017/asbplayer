@@ -14,7 +14,7 @@ Connects asbplayer to your Jiten account. Copy the key from [Jiten settings](htt
 
 ### Mining deck {#jiten-mining-deck}
 
-Words saved with **Mine new words to Jiten** go into this deck. The link below the selector opens your Jiten account settings to create a deck.
+Words saved with **Mine new words** go into this deck. The link below the selector opens your Jiten account settings to create a deck.
 
 ### Prevent mining multiple words from same subtitle {#jiten-prevent-multiple-words}
 
@@ -56,16 +56,16 @@ This fork uses **Jiten** as its mining destination.
 
 Choose what happens when you click the mining button in the subtitle list or video overlay.
 
-![Mining settings showing the four mining button actions](/img/mining-button-actions.png)
+![Mining settings showing the four mining button actions](/img/mining-button-actions.jpg)
 
 | Action | Behavior |
 | --- | --- |
 | Show mining dialog | Capture the subtitle and review it before sending to Jiten. |
-| Update last card | Attach the current sentence and enabled media to the last word mined with Jiten Reader. |
-| Mine new words to Jiten | Send qualifying new Reader words to the selected Jiten deck. |
+| Attach media | Attach the current sentence and enabled media to the last word mined with Jiten Reader. |
+| Mine new words | Send qualifying new Reader words to the selected Jiten deck. |
 | None | Record the subtitle in mining history without sending it. |
 
-For **Update last card**, mine a word with Jiten Reader first. This action adds context to that word; it doesn't mine new words into your deck. Existing pictures and audio are kept. If the sentence needs attention, the mining dialog opens so you can review it.
+For **Attach media**, mine a word with Jiten Reader first. This action adds context to that word; it doesn't mine new words into your deck. Existing pictures and audio are kept. If the sentence needs attention, the mining dialog opens so you can review it.
 
 ### Post-mining playback state {#post-mining-playback-state}
 
@@ -83,9 +83,19 @@ Configure audio padding, audio format, screenshot format, capture dimensions, bl
 
 Control how many surrounding subtitles and how much surrounding time are included in captured context.
 
-## Subtitle appearance {#subtitle-appearance}
+## Subtitles {#subtitle-appearance}
 
-Configure subtitle tracks, preview thumbnails, text styling, subtitle layout, and display behavior.
+Configure subtitle tracks, text styling, colors, and layout. Related color and size fields share a row when there is room.
+
+The **Subtitle list** section controls timestamps, mining-button visibility, preview thumbnails, and subtitle placement above thumbnails. **Behavior** controls the remembered timing offset, automatic clipboard copying, and tracks eligible for copying. **Text processing** contains the regex filter and replacement, HTML handling, and ruby detection.
+
+## Playback {#playback}
+
+Configure playback speed, speed notifications, and remembered playback rate and modes. **Auto-pause** controls pausing on hover or subtitle boundaries, automatic resume, pause durations, and subtitle visibility during playback modes.
+
+**Repeat** controls the repeat count. **Skipping** controls fast-forward speed, minimum skipping intervals, and condensed playback. Open **Advanced timing** to adjust subtitle or gap trigger offsets. Tracks eligible for seeking are also configured here.
+
+Timing fields share rows on wider screens. Radio options use a single row when they fit and switch directly to a vertical list otherwise.
 
 ## Keyboard shortcuts {#keyboard-shortcuts}
 
@@ -103,9 +113,11 @@ Use these shortcuts to move subtitle timing forward or backward while watching.
 
 Extension-only settings control the controls overlay, subtitle detection, subtitle display, audio recording, screenshots, cropping, and subtitle file handling.
 
-## Miscellaneous {#misc}
+## General {#misc}
 
-Miscellaneous settings include profiles, theme, language, subtitle filtering, playback modes, WebSocket connectivity, and mining history storage.
+Configure theme, language, auto-maximizing local video, and the app tab name. Expand **WebSocket interface** for connection settings and connection checks. **Tools** provides settings import/export and logs.
+
+The mining history storage limit is in **Mining → History**.
 
 ## Profiles {#profiles}
 

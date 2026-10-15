@@ -24,11 +24,11 @@ For streaming videos, also turn on **Take screenshot when mining** and **Record 
 
 Open **Mining → Mining button default action** to choose what the **Mine Subtitle** button does.
 
-![Mining settings with Show mining dialog, Update last card, Mine new words to Jiten, and None](/img/mining-button-actions.png)
+![Mining settings with Show mining dialog, Attach media, Mine new words, and None](/img/mining-button-actions.jpg)
 
 - **Show mining dialog**: review the sentence, words, and media before sending.
-- **Update last card**: attach the current sentence and enabled media to the last word you mined with Jiten Reader. Mine a word in Reader first. Existing pictures and audio won't be replaced.
-- **Mine new words to Jiten**: save new words from the subtitle to your mining deck. With the one-word setting on, several available words open the dialog so you can choose.
+- **Attach media**: attach the current sentence and enabled media to the last word you mined with Jiten Reader. Mine a word in Reader first. Existing pictures and audio won't be replaced.
+- **Mine new words**: save new words from the subtitle to your mining deck. With the one-word setting on, several available words open the dialog so you can choose.
 - **None**: keep the subtitle in mining history without sending anything to Jiten.
 
 ## Save one word {#attach-context}
@@ -46,9 +46,9 @@ To check or edit the sentence first:
 3. Set **Mining → Mining button default action** to **Show mining dialog**, then click **Mine Subtitle**.
 4. Check the word, sentence, picture, and audio. Edit if needed.
 5. Check **Attachment target**. This is the last word you mined with Jiten Reader, separate from the **Words to mine** list.
-6. Click **Attach to Jiten**.
+6. Click **Attach media**.
 
-The attachment target is hidden when its word isn't in the sentence. To attach a different part of the sentence to that word, turn on **Show attachment target even when sentence doesn't match** in Jiten settings. Select text in the sentence, then click the highlight button. The selected text is marked with `**` and used when you click **Attach to Jiten**.
+The attachment target is hidden when its word isn't in the sentence. To attach a different part of the sentence to that word, turn on **Show attachment target even when sentence doesn't match** in Jiten settings. Select text in the sentence, then click the highlight button. The selected text is marked with `**` and used when you click **Attach media**.
 
 This setting is off by default. With it off, the sentence is shown as plain text without a highlight button.
 
@@ -58,7 +58,7 @@ This setting is off by default. With it off, the sentence is shown as plain text
 2. Let Jiten Reader process the subtitle so you can look up its words.
 3. Set the mining button's action to **Show mining dialog**, then click **Mine Subtitle**.
 4. In **Words to mine**, use the checkboxes to choose words. All listed words are selected at first; uncheck any you don't want.
-5. Click **Mine new words to Jiten**. Only the selected words are saved.
+5. Click **Mine new words**. Only the selected words are saved.
 
 This saves words that Jiten marks as new and that aren't already in your selected deck.
 
@@ -68,7 +68,7 @@ Turn on **Prevent mining multiple words from same subtitle** in Jiten settings. 
 
 This setting is off by default.
 
-For one-click mining, set **Mining → Mining button default action** to **Mine new words to Jiten**. If the one-word setting is on and several words are available, the dialog opens so you can choose.
+For one-click mining, set **Mining → Mining button default action** to **Mine new words**. If the one-word setting is on and several words are available, the dialog opens so you can choose.
 
 ## If something goes wrong {#limits-and-retries}
 

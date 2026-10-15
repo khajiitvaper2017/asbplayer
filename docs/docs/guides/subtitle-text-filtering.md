@@ -10,7 +10,7 @@ If you'd like to filter out specific instances subtitle text, one way to do so i
 
 ## Configure the regex filter {#configure-the-regex-filter}
 
-Under the [misc](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#misc-settings) section in asbplayer settings, locate the "Subtitle regex filter" textbox. Enter an appropriate regex to filter desired content.
+Under the [Subtitles → Text processing](https://asbplayer-jiten.pages.dev/asbplayer/?view=settings#subtitle-appearance) section in asbplayer settings, locate the "Subtitle regex filter" textbox. Enter an appropriate regex to filter desired content.
 You can replace filtered content similarly by entering a string into the "Subtitle regex filter text replacement" textbox. Leaving this blank will simply remove the content.
 
 ### Remove speaker names {#remove-speaker-names}

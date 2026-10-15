@@ -10,8 +10,9 @@ import Radio from '@mui/material/Radio';
 import { isWebmMediaFragmentSupported, PostMineAction, PostMinePlayback } from '@project/common';
 import type { AsbplayerSettings } from '@project/common/settings';
 import Switch from '@mui/material/Switch';
-import RadioGroup from '@mui/material/RadioGroup';
+import SettingsRadioGroup from '@project/common/components/SettingsRadioGroup';
 import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import FormControl from '@mui/material/FormControl';
 import SettingsSection from '@project/common/components/SettingsSection';
 import NumericSettingInput from '@project/common/components/NumericSettingInput';
@@ -25,6 +26,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
     const { t } = useTranslation();
     const webmCaptureSupported = showWebmMediaFragmentSettings && isWebmMediaFragmentSupported();
     const {
+        miningHistoryStorageLimit,
         audioPaddingStart,
         audioPaddingEnd,
         maxImageWidth,
@@ -45,10 +47,10 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
         alwaysUseSubtitleForSentence,
     } = settings;
     return (
-        <Stack spacing={1}>
+        <Stack spacing={1} sx={{ containerType: 'inline-size' }}>
             <FormControl>
                 <FormLabel component="legend">{t('settings.clickToMineDefaultAction')}</FormLabel>
-                <RadioGroup row={false}>
+                <SettingsRadioGroup>
                     <LabelWithHoverEffect
                         control={
                             <Radio
@@ -106,12 +108,12 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                         }
                         label={t('postMineAction.none')}
                     />
-                </RadioGroup>
+                </SettingsRadioGroup>
             </FormControl>
 
             <FormControl>
                 <FormLabel component="legend">{t('settings.postMinePlayback')}</FormLabel>
-                <RadioGroup row={false}>
+                <SettingsRadioGroup>
                     <LabelWithHoverEffect
                         control={
                             <Radio
@@ -151,7 +153,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                         }
                         label={t('postMinePlayback.pause')}
                     />
-                </RadioGroup>
+                </SettingsRadioGroup>
             </FormControl>
             <SwitchLabelWithHoverEffect
                 control={
@@ -195,82 +197,112 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                 labelPlacement="start"
             />
 
-            <NumericSettingInput
-                label={t('settings.audioPaddingStart')}
-                fullWidth
-                value={audioPaddingStart}
-                color="primary"
-                onValueChange={(value) => void onSettingChanged('audioPaddingStart', value)}
-                slotProps={{
-                    htmlInput: {
-                        min: 0,
-                        step: 1,
-                    },
-                    input: {
-                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
-                    },
+            <Box
+                sx={{
+                    display: 'grid',
+                    gap: 1.5,
+                    gridTemplateColumns: 'minmax(0, 1fr)',
+                    '@container (min-width: 420px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
                 }}
-            />
-            <NumericSettingInput
-                label={t('settings.audioPaddingEnd')}
-                fullWidth
-                value={audioPaddingEnd}
-                color="primary"
-                onValueChange={(value) => void onSettingChanged('audioPaddingEnd', value)}
-                slotProps={{
-                    htmlInput: {
-                        step: 1,
-                        min: 0,
-                    },
-                    input: {
-                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
-                    },
-                }}
-            />
-            <SettingsSection>{t('settings.screenshots')}</SettingsSection>
-            {showWebmMediaFragmentSettings && webmCaptureSupported && (
-                <TextField
-                    select
+            >
+                <NumericSettingInput
+                    size="small"
+                    label={t('settings.audioPaddingStart')}
                     fullWidth
-                    label={t('settings.mediaFragmentCaptureFormat')}
-                    value={mediaFragmentFormat}
-                    onChange={(event) =>
-                        onSettingChanged(
-                            'mediaFragmentFormat',
-                            event.target.value as AsbplayerSettings['mediaFragmentFormat']
-                        )
-                    }
-                >
-                    <MenuItem value="jpeg">{t('settings.mediaFragmentFormatScreenshot')}</MenuItem>
-                    <MenuItem value="webm">{t('settings.mediaFragmentFormatVideoClip')}</MenuItem>
-                </TextField>
-            )}
-            <NumericSettingInput
-                label={t('settings.maxImageWidth')}
-                fullWidth
-                value={maxImageWidth}
-                color="primary"
-                onValueChange={(value) => void onSettingChanged('maxImageWidth', value)}
-                slotProps={{
-                    htmlInput: {
-                        min: 0,
-                        step: 1,
+                    value={audioPaddingStart}
+                    color="primary"
+                    onValueChange={(value) => void onSettingChanged('audioPaddingStart', value)}
+                    slotProps={{
+                        htmlInput: {
+                            min: 0,
+                            step: 1,
+                        },
+                        input: {
+                            endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                        },
+                    }}
+                />
+                <NumericSettingInput
+                    size="small"
+                    label={t('settings.audioPaddingEnd')}
+                    fullWidth
+                    value={audioPaddingEnd}
+                    color="primary"
+                    onValueChange={(value) => void onSettingChanged('audioPaddingEnd', value)}
+                    slotProps={{
+                        htmlInput: {
+                            step: 1,
+                            min: 0,
+                        },
+                        input: {
+                            endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                        },
+                    }}
+                />
+            </Box>
+            <SettingsSection>{t('settings.screenshots')}</SettingsSection>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gap: 1.5,
+                    gridTemplateColumns: 'minmax(0, 1fr)',
+                    '@container (min-width: 420px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+                    '@container (min-width: 640px)': {
+                        gridTemplateColumns: webmCaptureSupported
+                            ? 'minmax(0, 2fr) repeat(2, minmax(0, 1fr))'
+                            : 'repeat(2, minmax(0, 1fr))',
                     },
                 }}
-            />
-            <NumericSettingInput
-                label={t('settings.maxImageHeight')}
-                fullWidth
-                value={maxImageHeight}
-                color="primary"
-                onValueChange={(value) => void onSettingChanged('maxImageHeight', value)}
-                slotProps={{
-                    htmlInput: {
-                        min: 0,
-                        step: 1,
-                    },
-                }}
-            />
+            >
+                {showWebmMediaFragmentSettings && webmCaptureSupported && (
+                    <Box sx={{ gridColumn: '1 / -1', '@container (min-width: 640px)': { gridColumn: 'auto' } }}>
+                        <TextField
+                            size="small"
+                            select
+                            fullWidth
+                            label={t('settings.mediaFragmentCaptureFormat')}
+                            value={mediaFragmentFormat}
+                            onChange={(event) =>
+                                onSettingChanged(
+                                    'mediaFragmentFormat',
+                                    event.target.value as AsbplayerSettings['mediaFragmentFormat']
+                                )
+                            }
+                        >
+                            <MenuItem value="jpeg">{t('settings.mediaFragmentFormatScreenshot')}</MenuItem>
+                            <MenuItem value="webm">{t('settings.mediaFragmentFormatVideoClip')}</MenuItem>
+                        </TextField>
+                    </Box>
+                )}
+                <NumericSettingInput
+                    size="small"
+                    label={t('settings.maxImageWidth')}
+                    fullWidth
+                    value={maxImageWidth}
+                    color="primary"
+                    onValueChange={(value) => void onSettingChanged('maxImageWidth', value)}
+                    slotProps={{
+                        htmlInput: {
+                            min: 0,
+                            step: 1,
+                        },
+                    }}
+                />
+                <NumericSettingInput
+                    size="small"
+                    label={t('settings.maxImageHeight')}
+                    fullWidth
+                    value={maxImageHeight}
+                    color="primary"
+                    onValueChange={(value) => void onSettingChanged('maxImageHeight', value)}
+                    slotProps={{
+                        htmlInput: {
+                            min: 0,
+                            step: 1,
+                        },
+                    }}
+                />
+            </Box>
             <SwitchLabelWithHoverEffect
                 control={
                     <Switch
@@ -282,8 +314,16 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                 labelPlacement="start"
             />
             {showWebmMediaFragmentSettings && mediaFragmentFormat === 'webm' && webmCaptureSupported && (
-                <>
+                <Box
+                    sx={{
+                        display: 'grid',
+                        gap: 1.5,
+                        gridTemplateColumns: 'minmax(0, 1fr)',
+                        '@container (min-width: 640px)': { gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' },
+                    }}
+                >
                     <NumericSettingInput
+                        size="small"
                         label={t('settings.mediaFragmentTrimStart')}
                         fullWidth
                         value={mediaFragmentTrimStart}
@@ -299,6 +339,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                         }}
                     />
                     <NumericSettingInput
+                        size="small"
                         label={t('settings.mediaFragmentTrimEnd')}
                         fullWidth
                         value={mediaFragmentTrimEnd}
@@ -314,6 +355,7 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                         }}
                     />
                     <NumericSettingInput
+                        size="small"
                         label={t('settings.mediaFragmentMaxClipLength')}
                         fullWidth
                         value={mediaFragmentMaxClipLength}
@@ -329,53 +371,82 @@ const MiningSettingsTab: React.FC<Props> = ({ settings, onSettingChanged, showWe
                             },
                         }}
                     />
-                </>
+                </Box>
             )}
             {(!showWebmMediaFragmentSettings || mediaFragmentFormat === 'jpeg') && (
+                <Box sx={{ width: '100%', '@container (min-width: 420px)': { width: 'calc((100% - 12px) / 2)' } }}>
+                    <NumericSettingInput
+                        size="small"
+                        label={t('extension.settings.screenshotCaptureDelay')}
+                        fullWidth
+                        value={streamingScreenshotDelay}
+                        color="primary"
+                        integerOnly
+                        onValueChange={(value) => void onSettingChanged('streamingScreenshotDelay', value)}
+                        slotProps={{
+                            htmlInput: {
+                                step: 100,
+                            },
+                            input: {
+                                endAdornment: <InputAdornment position="end">ms</InputAdornment>,
+                            },
+                        }}
+                    />
+                </Box>
+            )}
+            <SettingsSection>{t('settings.exportDialog')}</SettingsSection>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gap: 1.5,
+                    gridTemplateColumns: 'minmax(0, 1fr)',
+                    '@container (min-width: 420px)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
+                }}
+            >
                 <NumericSettingInput
-                    label={t('extension.settings.screenshotCaptureDelay')}
+                    size="small"
+                    label={t('settings.surroundingSubtitlesCountRadius')}
                     fullWidth
-                    value={streamingScreenshotDelay}
+                    value={surroundingSubtitlesCountRadius}
                     color="primary"
-                    integerOnly
-                    onValueChange={(value) => void onSettingChanged('streamingScreenshotDelay', value)}
+                    onValueChange={(value) => void onSettingChanged('surroundingSubtitlesCountRadius', value)}
                     slotProps={{
                         htmlInput: {
-                            step: 100,
+                            min: 1,
+                            step: 1,
+                        },
+                    }}
+                />
+                <NumericSettingInput
+                    size="small"
+                    label={t('settings.surroundingSubtitlesTimeRadius')}
+                    fullWidth
+                    value={surroundingSubtitlesTimeRadius}
+                    color="primary"
+                    onValueChange={(value) => void onSettingChanged('surroundingSubtitlesTimeRadius', value)}
+                    slotProps={{
+                        htmlInput: {
+                            min: 0,
+                            step: 1,
                         },
                         input: {
                             endAdornment: <InputAdornment position="end">ms</InputAdornment>,
                         },
                     }}
                 />
-            )}
-            <SettingsSection>{t('settings.exportDialog')}</SettingsSection>
+            </Box>
+            <SettingsSection>{t('settings.history')}</SettingsSection>
             <NumericSettingInput
-                label={t('settings.surroundingSubtitlesCountRadius')}
+                size="small"
+                label={t('settings.miningHistoryStorageLimit')}
                 fullWidth
-                value={surroundingSubtitlesCountRadius}
+                value={miningHistoryStorageLimit}
                 color="primary"
-                onValueChange={(value) => void onSettingChanged('surroundingSubtitlesCountRadius', value)}
-                slotProps={{
-                    htmlInput: {
-                        min: 1,
-                        step: 1,
-                    },
-                }}
-            />
-            <NumericSettingInput
-                label={t('settings.surroundingSubtitlesTimeRadius')}
-                fullWidth
-                value={surroundingSubtitlesTimeRadius}
-                color="primary"
-                onValueChange={(value) => void onSettingChanged('surroundingSubtitlesTimeRadius', value)}
+                onValueChange={(value) => void onSettingChanged('miningHistoryStorageLimit', value)}
                 slotProps={{
                     htmlInput: {
                         min: 0,
                         step: 1,
-                    },
-                    input: {
-                        endAdornment: <InputAdornment position="end">ms</InputAdornment>,
                     },
                 }}
             />
