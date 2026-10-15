@@ -1914,7 +1914,7 @@ function App({
                     onDragEnter={handleDragEnter}
                     onDragLeave={handleDragLeave}
                 >
-                    {!sources.videoFile && !inVideoPlayer && (
+                    {!sources.videoFile && (
                         <Alert open={alertOpen} useAppLogo={false} onClose={handleAlertClosed} severity={alertSeverity}>
                             {alert}
                         </Alert>
