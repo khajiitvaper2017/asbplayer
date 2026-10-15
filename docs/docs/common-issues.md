@@ -16,7 +16,6 @@ Browsers differ in the video and audio formats they can decode. See the [compati
 
 Confirm that:
 
-- **Mining → Mining destination** is set to **Jiten**.
 - The Jiten API key is valid.
 - The target subtitle is loaded and matches the sentence being mined.
 - The selected Jiten account can upload the requested media.

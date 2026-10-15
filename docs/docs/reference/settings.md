@@ -85,17 +85,41 @@ Control how many surrounding subtitles and how much surrounding time are include
 
 ## Subtitles {#subtitle-appearance}
 
-Configure subtitle tracks, text styling, colors, and layout. Related color and size fields share a row when there is room.
+Configure subtitle tracks, text styling, colors, and layout.
 
 The **Subtitle list** section controls timestamps, mining-button visibility, preview thumbnails, and subtitle placement above thumbnails. **Behavior** controls the remembered timing offset, automatic clipboard copying, and tracks eligible for copying. **Text processing** contains the regex filter and replacement, HTML handling, and ruby detection.
+
+## Jiten Reader styles {#jiten-reader-styles}
+
+Open this tab in the web app to blur words or hide subtitle lines in both the video and subtitle panel. Jiten Reader must have parsed the subtitles first. These options work with text subtitles, not image-based subtitles.
+
+### Blur words {#jiten-reader-blur}
+
+Turn on **Blur selected word types**, then select the types you want to blur. Hover over a subtitle line to reveal its words.
+
+**Blur strength (pixels)** accepts 0–40. Higher values make words harder to read; the default is 12.
+
+### Hide lines {#jiten-reader-hide-lines}
+
+Turn on **Hide lines containing only selected word types**, then select which types count toward hiding a line. A line hides only when every Reader word matches your selection.
+
+Hover over a hidden line to reveal it. Hidden lines keep their space; their timestamps and mining buttons remain available.
+
+**Fade time (seconds)** accepts 0–1 and controls how quickly lines hide and reappear. Set it to 0 for an instant change.
+
+### Choosing word types {#jiten-reader-word-types}
+
+A word can have several Reader labels, and matching any selected label is enough. For example, a Mature word also marked Frequent still matches when Mature is selected and Frequent is unchecked.
+
+**Unparsed** means text Reader could not identify. **Kana only** means parsed words written entirely in hiragana or katakana. **Frequent** applies only to words Reader marks as frequent.
+
+To blur an entire subtitle track instead, use **Subtitles → Subtitle blur**.
 
 ## Playback {#playback}
 
 Configure playback speed, speed notifications, and remembered playback rate and modes. **Auto-pause** controls pausing on hover or subtitle boundaries, automatic resume, pause durations, and subtitle visibility during playback modes.
 
 **Repeat** controls the repeat count. **Skipping** controls fast-forward speed, minimum skipping intervals, and condensed playback. Open **Advanced timing** to adjust subtitle or gap trigger offsets. Tracks eligible for seeking are also configured here.
-
-Timing fields share rows on wider screens. Radio options use a single row when they fit and switch directly to a vertical list otherwise.
 
 ## Keyboard shortcuts {#keyboard-shortcuts}
 

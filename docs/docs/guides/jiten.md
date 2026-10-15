@@ -9,10 +9,9 @@ Save words to Jiten with sentences, pictures, and audio from your videos. You do
 ## Setup {#setup}
 
 1. Install Jiten Reader and [load subtitles](../getting-started/loading-subtitles) in asbplayer.
-2. In asbplayer settings, set **Mining → Mining destination** to **Jiten**.
-3. Open the **Jiten** tab. Copy your API key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key) and paste it into **Jiten API key**.
-4. Choose a **Mining deck** for new words. Use the link below the selector to create a deck in Jiten.
-5. Use **Attach screenshot / video** and **Attach audio** to choose which media to send. Media uploads require Jiten+ or an eligible trial.
+2. Open the **Jiten** tab in asbplayer settings. Copy your API key from [Jiten settings](https://jiten.moe/settings#:~:text=API%20Key) and paste it into **Jiten API key**.
+3. Choose a **Mining deck** for new words. Use the link below the selector to create a deck in Jiten.
+4. Use **Attach screenshot / video** and **Attach audio** to choose which media to send. Media uploads require Jiten+ or an eligible trial.
 
 ![Jiten settings with API key, mining deck, word selection options, and media switches](/img/jiten-settings.png)
 
@@ -69,6 +68,12 @@ Turn on **Prevent mining multiple words from same subtitle** in Jiten settings. 
 This setting is off by default.
 
 For one-click mining, set **Mining → Mining button default action** to **Mine new words**. If the one-word setting is on and several words are available, the dialog opens so you can choose.
+
+## Blur words or hide subtitle lines {#reader-styles}
+
+In the web app, open **Settings → Jiten Reader styles**. Enable word blurring or line hiding, then choose the Reader word types to match. Hover over a line to reveal it in the video or subtitle panel.
+
+See [Jiten Reader styles](../reference/settings#jiten-reader-styles) for word-type matching rules.
 
 ## If something goes wrong {#limits-and-retries}
 
