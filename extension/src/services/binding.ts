@@ -16,9 +16,7 @@ import type {
     AckMessage,
     AnkiUiSavedState,
     AudioBase64Message,
-    CardExportedMessage,
     CardSavedMessage,
-    CardUpdatedMessage,
     CopySubtitleMessage,
     CurrentTimeFromVideoMessage,
     CurrentTimeToVideoMessage,
@@ -1070,25 +1068,9 @@ export default class Binding {
                             void this.mobileVideoOverlayController.updateModel();
                         }
                         break;
-                    case 'card-updated':
-                    case 'card-exported':
                     case 'card-saved': {
-                        const cardMessage = request.message as
-                            | CardUpdatedMessage
-                            | CardExportedMessage
-                            | CardSavedMessage;
-                        let locKey: string;
-                        switch (cardMessage.command) {
-                            case 'card-updated':
-                                locKey = 'info.updatedCard';
-                                break;
-                            case 'card-exported':
-                                locKey = 'info.exportedCard';
-                                break;
-                            case 'card-saved':
-                                locKey = 'info.copiedSubtitle2';
-                                break;
-                        }
+                        const cardMessage = request.message as CardSavedMessage;
+                        const locKey = 'info.copiedSubtitle2';
                         this.subtitleController.notification({
                             ...('notification' in cardMessage && cardMessage.notification
                                 ? { text: cardMessage.notification }
@@ -1097,11 +1079,8 @@ export default class Binding {
                         this.ankiUiSavedState = {
                             ...cardMessage,
                             text: cardMessage.text ?? '',
-                            definition: cardMessage.definition ?? '',
-                            word: cardMessage.word ?? cardMessage.cardName,
                             source: sourceString(this.subtitleFileName(), cardMessage.subtitle.start),
                             url: cardMessage.url ?? '',
-                            customFieldValues: cardMessage.customFieldValues ?? {},
                             timestampInterval: [cardMessage.subtitle.start, cardMessage.subtitle.end],
                             initialTimestampInterval: [cardMessage.subtitle.start, cardMessage.subtitle.end],
                             lastAppliedTimestampIntervalToText: [cardMessage.subtitle.start, cardMessage.subtitle.end],

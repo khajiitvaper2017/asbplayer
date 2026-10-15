@@ -11,8 +11,6 @@ import type {
     ActiveProfileMessage,
     SettingsUpdatedMessage,
     EncodeMp3InServiceWorkerMessage,
-    CardUpdatedDialogMessage,
-    CardExportedDialogMessage,
 } from '@project/common';
 import type { SettingsProvider } from '@project/common/settings';
 import { readJitenCapture } from '@project/extension/src/services/jiten-reader';
@@ -183,22 +181,6 @@ export class TabAnkiUiController {
                                     await browser.runtime.sendMessage(settingsUpdatedCommand);
                                 })
                                 .catch((error) => asbError('anki/ui', 'Failed to set the active profile:', error));
-                            return;
-                        }
-                        case 'card-updated-dialog': {
-                            const cardUpdatedDialogCommand: TabToExtensionCommand<CardUpdatedDialogMessage> = {
-                                sender: 'asbplayer-video-tab',
-                                message: message as CardUpdatedDialogMessage,
-                            };
-                            void browser.runtime.sendMessage(cardUpdatedDialogCommand);
-                            return;
-                        }
-                        case 'card-exported-dialog': {
-                            const cardExportedDialogCommand: TabToExtensionCommand<CardExportedDialogMessage> = {
-                                sender: 'asbplayer-video-tab',
-                                message: message as CardExportedDialogMessage,
-                            };
-                            void browser.runtime.sendMessage(cardExportedDialogCommand);
                             return;
                         }
                     }

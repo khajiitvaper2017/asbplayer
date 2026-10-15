@@ -754,21 +754,6 @@ function PlayerComponent(
     }, [channel, onSubtitles]);
 
     useEffect(() => {
-        if (!tab) return; // Only matters for extension
-
-        const removeCardUpdatedDialog = channel?.onCardUpdatedDialog(() =>
-            extension.cardUpdatedDialog(tab.id, tab.src)
-        );
-        const removeCardExportedDialog = channel?.onCardExportedDialog(() =>
-            extension.cardExportedDialog(tab.id, tab.src)
-        );
-        return () => {
-            if (removeCardUpdatedDialog) removeCardUpdatedDialog();
-            if (removeCardExportedDialog) removeCardExportedDialog();
-        };
-    }, [channel, extension, tab, onSubtitles]);
-
-    useEffect(() => {
         setSubtitlesSentThroughChannel(false);
     }, [channel]);
 

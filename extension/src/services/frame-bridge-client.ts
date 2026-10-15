@@ -1,15 +1,8 @@
 import { asbError } from '@project/common/util/log';
-import type {
-    HttpPostMessage,
-    JitenRequestMessage,
-    Message,
-    TabToExtensionCommand,
-    VideoToExtensionCommand,
-} from '@project/common';
+import type { JitenRequestMessage, Message, TabToExtensionCommand, VideoToExtensionCommand } from '@project/common';
 
 export interface FetchOptions {
     videoSrc?: string;
-    allowedFetchUrl?: string;
 }
 
 export default class FrameBridgeClient {
@@ -103,8 +96,8 @@ export default class FrameBridgeClient {
                         resolve();
                         break;
                     case 'onServerMessage':
-                        if (message.message.command === 'http-post' || message.message.command === 'jiten-request') {
-                            this._resolveHttpPost(message.message as HttpPostMessage | JitenRequestMessage);
+                        if (message.message.command === 'jiten-request') {
+                            this._resolveHttpPost(message.message as JitenRequestMessage);
                         } else {
                             if (this.serverMessageListener) {
                                 void this.serverMessageListener(message.message).catch((error) =>
@@ -130,22 +123,11 @@ export default class FrameBridgeClient {
         });
     }
 
-    _resolveHttpPost(message: HttpPostMessage | JitenRequestMessage) {
-        if (this.fetchOptions === undefined) {
-            return;
-        }
-
-        if (
-            message.command === 'http-post' &&
-            (this.fetchOptions.allowedFetchUrl === undefined || message.url !== this.fetchOptions.allowedFetchUrl)
-        ) {
-            return;
-        }
-
+    _resolveHttpPost(message: JitenRequestMessage) {
         let httpPostCommand: VideoToExtensionCommand<Message> | TabToExtensionCommand<Message>;
         const httpPostMessage = message;
 
-        if (this.fetchOptions.videoSrc === undefined) {
+        if (this.fetchOptions?.videoSrc === undefined) {
             httpPostCommand = {
                 sender: 'asbplayer-video-tab',
                 message: httpPostMessage,

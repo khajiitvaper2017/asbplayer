@@ -289,7 +289,6 @@
         "enabledAutoPause": "自動一時停止：オン",
         "enabledCondensedPlayback": "短縮プレイバック：オン",
         "enabledFastForwardPlayback": "早送りプレイバック：オン",
-        "exportedCard": "カードのエクスポート：{{result}}",
         "cardNotExported": "カードエクスポートが失敗しました：{{reason}}",
         "bulkExporting": "一括エクスポート実行中：{{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "保存しました：{{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "カードの更新：{{result}}",
         "enabledRepeatPlayback": "リピートプレイバック：オン",
         "disabledRepeatPlayback": "リピートプレイバック：オフ",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

@@ -289,7 +289,6 @@
         "enabledAutoPause": "自动暂停：已启用",
         "enabledCondensedPlayback": "紧凑播放：已启用",
         "enabledFastForwardPlayback": "快进播放：已启用",
-        "exportedCard": "已导出卡片：{{result}}",
         "cardNotExported": "导出失败：{{reason}}",
         "bulkExporting": "正在批量导出字幕：{{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "已保存进度：{{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "已更新卡片：{{result}}",
         "enabledRepeatPlayback": "循环模式：已启用",
         "disabledRepeatPlayback": "循环模式：已禁用",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

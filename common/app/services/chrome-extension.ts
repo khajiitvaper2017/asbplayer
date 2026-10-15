@@ -35,8 +35,6 @@ import type {
     ClearCopyHistoryMessage,
     SetGlobalStateMessage,
     GetGlobalStateMessage,
-    CardUpdatedDialogMessage,
-    CardExportedDialogMessage,
     SaveTokenLocalFromAppMessage,
     SidePanelLocation,
     AckTabsMessage,
@@ -386,30 +384,6 @@ export default class ChromeExtension {
             message: {
                 command: 'publish-card',
                 ...card,
-            },
-        };
-        window.postMessage(command);
-    }
-
-    cardUpdatedDialog(tabId: number, src: string) {
-        const command: AsbPlayerToVideoCommandV2<CardUpdatedDialogMessage> = {
-            sender: 'asbplayerv2',
-            tabId,
-            src,
-            message: {
-                command: 'card-updated-dialog',
-            },
-        };
-        window.postMessage(command);
-    }
-
-    cardExportedDialog(tabId: number, src: string) {
-        const command: AsbPlayerToVideoCommandV2<CardExportedDialogMessage> = {
-            sender: 'asbplayerv2',
-            tabId,
-            src,
-            message: {
-                command: 'card-exported-dialog',
             },
         };
         window.postMessage(command);

@@ -157,8 +157,6 @@ export interface AudioModel {
     readonly error?: AudioErrorCode;
 }
 
-export type AnkiExportMode = 'default';
-
 export interface AnkiDialogSettings extends AnkiSettings, Omit<JitenSettings, 'jitenApiKey'> {
     themeType: string;
 }
@@ -193,9 +191,6 @@ export interface AnkiUiResumeState extends AnkiUiState {
     readonly initialTimestampInterval: number[];
     readonly timestampInterval: number[];
     readonly timestampBoundaryInterval?: number[];
-    readonly definition: string;
-    readonly word: string;
-    readonly customFieldValues: { [key: string]: string };
     readonly lastAppliedTimestampIntervalToText: number[];
     readonly lastAppliedTimestampIntervalToAudio?: number[];
 }
@@ -204,14 +199,11 @@ export interface AnkiUiSavedState extends CardTextFieldValues {
     subtitle: SubtitleModel;
     surroundingSubtitles: SubtitleModel[];
     text: string;
-    definition: string;
     image?: ImageModel;
     audio?: AudioModel;
     file?: FileModel;
-    word: string;
     source: string;
     url: string;
-    customFieldValues: { [key: string]: string };
     timestampInterval: number[];
     initialTimestampInterval: number[];
     timestampBoundaryInterval?: number[];

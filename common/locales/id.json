@@ -289,7 +289,6 @@
         "enabledAutoPause": "Jeda otomatis: Aktif",
         "enabledCondensedPlayback": "Pemutaran ringkas: Aktif",
         "enabledFastForwardPlayback": "Pemutaran maju cepat: Aktif",
-        "exportedCard": "Kartu diekspor: {{result}}",
         "cardNotExported": "Kartu gagal diekspor: {{reason}}",
         "bulkExporting": "Bulk exporting subtitles: {{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "Disimpan: {{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "Kartu diperbarui: {{result}}",
         "enabledRepeatPlayback": "Pemutaran ulang: Aktif",
         "disabledRepeatPlayback": "Pemutaran ulang: Nonaktif",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

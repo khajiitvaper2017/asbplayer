@@ -729,10 +729,6 @@ function App({
 
                     const params: ExportParams = {
                         text,
-                        track1: extractText(card.subtitle, card.surroundingSubtitles, 0),
-                        track2: extractText(card.subtitle, card.surroundingSubtitles, 1),
-                        track3: extractText(card.subtitle, card.surroundingSubtitles, 2),
-                        definition: newCard.definition ?? '',
                         audioClip: audioClip,
                         image: MediaFragment.fromCard(
                             newCard,
@@ -744,11 +740,7 @@ function App({
                             settingsRef.current.mediaFragmentMaxClipLength,
                             settingsRef.current.trimBlackBars
                         ),
-                        word: newCard.word ?? '',
                         source,
-                        url: '',
-                        customFieldValues: newCard.customFieldValues ?? {},
-                        mode: 'default',
                     };
                     {
                         setDialogJitenBatch(batch);

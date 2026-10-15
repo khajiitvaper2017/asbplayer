@@ -109,13 +109,6 @@ export interface JitenRequestMessage extends MessageWithId {
     readonly file?: { name: string; type: string; base64: string };
 }
 
-export interface HttpPostMessage extends MessageWithId {
-    readonly command: 'http-post';
-    readonly messageId: string;
-    readonly url: string;
-    readonly body: any;
-}
-
 export interface EncodeMp3Message extends MessageWithId {
     readonly command: 'encode-mp3';
     readonly messageId: string;
@@ -234,26 +227,6 @@ export interface TakeScreenshotFromExtensionMessage extends Message, ImageCaptur
 
 export interface TakeScreenshotToVideoPlayerMessage extends Message {
     readonly command: 'takeScreenshot';
-}
-
-export interface CardUpdatedMessage extends Message, CardModel {
-    readonly command: 'card-updated';
-    readonly cardName: string;
-}
-
-export interface CardUpdatedDialogMessage extends Message {
-    readonly command: 'card-updated-dialog';
-}
-
-export interface CardExportedMessage extends Message, CardModel {
-    readonly command: 'card-exported';
-    readonly cardName: string;
-    readonly skippedDuplicate?: boolean;
-    readonly exportError?: string;
-}
-
-export interface CardExportedDialogMessage extends Message {
-    readonly command: 'card-exported-dialog';
 }
 
 export interface CardSavedMessage extends Message, CardModel {

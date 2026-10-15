@@ -289,7 +289,6 @@
         "enabledAutoPause": "Pausa automática: On",
         "enabledCondensedPlayback": "Reprodução condensada: On",
         "enabledFastForwardPlayback": "Reprodução de avanço rápido: On",
-        "exportedCard": "Card exportado: {{result}}",
         "cardNotExported": "Card not exported: {{reason}}",
         "bulkExporting": "Exportando legendas em lote: {{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "Salvo: {{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "Atualizar card: {{result}}",
         "enabledRepeatPlayback": "Reprodução repetida: Ligado",
         "disabledRepeatPlayback": "Reprodução repetida: Desligado",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

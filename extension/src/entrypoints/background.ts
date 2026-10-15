@@ -11,7 +11,6 @@ import StartRecordingMediaHandler from '@/handlers/video/start-recording-media-h
 import StopRecordingMediaHandler from '@/handlers/video/stop-recording-media-handler';
 import ToggleSubtitlesHandler from '@/handlers/video/toggle-subtitles-handler';
 import SyncHandler from '@/handlers/video/sync-handler';
-import HttpPostHandler from '@/handlers/video/http-post-handler';
 import JitenRequestHandler from '@/handlers/video/jiten-request-handler';
 import VideoToAsbplayerCommandForwardingHandler from '@/handlers/video/video-to-asbplayer-command-forwarding-handler';
 import AsbplayerToVideoCommandForwardingHandler from '@/handlers/asbplayer/asbplayer-to-video-command-forwarding-handler';
@@ -49,8 +48,6 @@ import ToggleSidePanelHandler from '@/handlers/video/toggle-side-panel-handler';
 import CopySubtitleHandler from '@/handlers/asbplayerv2/copy-subtitle-handler';
 import { RequestingActiveTabPermissionHandler } from '@/handlers/video/requesting-active-tab-permission';
 import { CardPublisher } from '@/services/card-publisher';
-import CardUpdatedDialogHandler from '@/handlers/asbplayerv2/card-updated-dialog-handler';
-import CardExportedDialogHandler from '@/handlers/asbplayerv2/card-exported-dialog-handler';
 import AckMessageHandler from '@/handlers/video/ack-message-handler';
 import PublishCardHandler from '@/handlers/asbplayerv2/publish-card-handler';
 import { bindWebSocketClient, unbindWebSocketClient } from '@/services/web-socket-client-binding';
@@ -188,7 +185,6 @@ export default defineBackground(() => {
         new TakeScreenshotHandler(imageCapturer, cardPublisher),
         new ToggleSubtitlesHandler(settings, tabRegistry),
         new SyncHandler(tabRegistry),
-        new HttpPostHandler(),
         new JitenRequestHandler(settings),
         new ToggleSidePanelHandler(tabRegistry),
         new OpenAsbplayerSettingsHandler(),
@@ -206,8 +202,6 @@ export default defineBackground(() => {
         new DeleteCopyHistoryHandler(settings),
         new ClearCopyHistoryHandler(settings),
         new PublishCardHandler(cardPublisher),
-        new CardUpdatedDialogHandler(),
-        new CardExportedDialogHandler(),
         new AckMessageHandler(tabRegistry),
         new AudioBase64Handler(audioRecorder),
         new UpdateMobileOverlayModelHandler(),

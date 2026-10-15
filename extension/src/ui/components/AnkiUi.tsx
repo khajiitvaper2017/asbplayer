@@ -73,9 +73,6 @@ export default function AnkiUi({ bridge }: Props) {
     const [file, setFile] = useState<FileModel>();
     const [source, setSource] = useState<string>('');
     const [url, setUrl] = useState<string>('');
-    const [definition, setDefinition] = useState('');
-    const [word, setWord] = useState('');
-    const [customFieldValues, setCustomFieldValues] = useState<{ [key: string]: string }>({});
     const [initialTimestampInterval, setInitialTimestampInterval] = useState<number[]>();
     const [timestampInterval, setTimestampInterval] = useState<number[]>();
     const [timestampBoundaryInterval, setTimestampBoundaryInterval] = useState<number[]>();
@@ -103,14 +100,11 @@ export default function AnkiUi({ bridge }: Props) {
             miningDestination: destination,
             text: dialogState.text,
             surroundingSubtitles: dialogState.surroundingSubtitles,
-            definition: dialogState.definition,
             image: serializedImage,
             audio: serializedAudio,
             file,
-            word: dialogState.word,
             source: dialogState.source,
-            url: dialogState.url,
-            customFieldValues: dialogState.customFieldValues,
+            url,
             initialTimestampInterval: dialogState.initialTimestampInterval!,
             timestampInterval: dialogState.timestampInterval!,
             timestampBoundaryInterval: dialogState.timestampBoundaryInterval,
@@ -128,6 +122,7 @@ export default function AnkiUi({ bridge }: Props) {
         jitenTarget,
         jitenWords,
         destination,
+        url,
     ]);
 
     useEffect(() => {
@@ -158,9 +153,6 @@ export default function AnkiUi({ bridge }: Props) {
             }
 
             setText(s.text);
-            setDefinition(s.definition ?? '');
-            setWord(s.word ?? '');
-            setCustomFieldValues(s.customFieldValues ?? {});
             setCanRerecord(s.canRerecord);
             setSubtitle(s.subtitle);
             setSurroundingSubtitles(s.surroundingSubtitles);
@@ -365,23 +357,8 @@ export default function AnkiUi({ bridge }: Props) {
             subtitleFileName: source,
             mediaTimestamp: serializedAudio?.start ?? subtitle.start,
             text,
-            word,
-            definition,
-            customFieldValues,
         };
-    }, [
-        file,
-        source,
-        subtitle,
-        surroundingSubtitles,
-        url,
-        serializedImage,
-        serializedAudio,
-        text,
-        word,
-        definition,
-        customFieldValues,
-    ]);
+    }, [file, source, subtitle, surroundingSubtitles, url, serializedImage, serializedAudio, text]);
 
     const mp3Encoder = useCallback(
         async (blob: Blob, extension: string) => {

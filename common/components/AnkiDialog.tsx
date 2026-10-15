@@ -10,7 +10,7 @@ import type { RefObject } from 'react';
 import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import makeStyles from '@mui/styles/makeStyles';
-import type { SubtitleModel, CardModel, AnkiExportMode } from '@project/common';
+import type { SubtitleModel, CardModel } from '@project/common';
 import { MediaFragment } from '@project/common';
 import type { AnkiSettings, Profile } from '@project/common/settings';
 import { AudioClip } from '@project/common/audio-clip';
@@ -161,16 +161,7 @@ export interface AnkiDialogState {
     text: string;
     subtitle: SubtitleModel;
     surroundingSubtitles: SubtitleModel[];
-    definition: string;
-    word: string;
     source: string;
-    url: string;
-    track1: string;
-    track2: string;
-    track3: string;
-    customFieldValues: {
-        [key: string]: string;
-    };
     lastAppliedTimestampIntervalToText?: number[];
     lastAppliedTimestampIntervalToAudio?: number[];
     initialTimestampInterval?: number[];
@@ -261,17 +252,8 @@ const AnkiDialog = ({
     onSetActiveProfile,
 }: AnkiDialogProps) => {
     const classes = useStyles();
-    const [definition, setDefinition] = useState<string>('');
     const [text, setText] = useState<string>('');
-    const [word, setWord] = useState<string>('');
     const [source, setSource] = useState<string>('');
-    const [url, setUrl] = useState<string>(card.url ?? '');
-    const [track1, setTrack1] = useState<string>('');
-    const [track2, setTrack2] = useState<string>('');
-    const [track3, setTrack3] = useState<string>('');
-    const [customFieldValues, setCustomFieldValues] = useState<{
-        [key: string]: string;
-    }>({});
     const [timestampInterval, setTimestampInterval] = useState<number[]>();
     const [selectedSubtitles, setSelectedSubtitles] = useState<SubtitleModel[]>([]);
     const [initialTimestampInterval, setInitialTimestampInterval] = useState<number[]>();
@@ -337,21 +319,8 @@ const AnkiDialog = ({
     };
 
     const buildExportParams = useCallback(
-        (mode: AnkiExportMode): ExportParams => ({
-            text: jitenText,
-            track1,
-            track2,
-            track3,
-            definition,
-            audioClip,
-            image,
-            word,
-            source,
-            url,
-            customFieldValues,
-            mode,
-        }),
-        [track1, track2, track3, definition, audioClip, image, word, source, url, customFieldValues, jitenText]
+        (): ExportParams => ({ text: jitenText, audioClip, image, source }),
+        [jitenText, audioClip, image, source]
     );
 
     if (stateRef) {
@@ -359,14 +328,7 @@ const AnkiDialog = ({
             text,
             subtitle: card.subtitle,
             surroundingSubtitles: card.surroundingSubtitles,
-            definition,
-            word,
             source,
-            url,
-            track1,
-            track2,
-            track3,
-            customFieldValues,
             initialTimestampInterval,
             timestampBoundaryInterval,
             lastAppliedTimestampIntervalToText,
@@ -376,44 +338,20 @@ const AnkiDialog = ({
     }
 
     const textForTimestampInterval = useCallback(
-        (timestampInterval: number[], track?: number) => {
+        (timestampInterval: number[]) => {
             return joinSubtitles(
-                card.surroundingSubtitles
-                    .filter((s) => subtitleIntersectsTimeInterval(s, timestampInterval))
-                    .filter((s) => track === undefined || s.track === track)
+                card.surroundingSubtitles.filter((s) => subtitleIntersectsTimeInterval(s, timestampInterval))
             );
         },
         [card.surroundingSubtitles]
     );
 
-    const {
-        text: cardText,
-        definition: initialDefinition,
-        word: initialWord,
-        customFieldValues: initialCustomFieldValues,
-    } = card;
+    const { text: cardText } = card;
     const initialText = (cardText ?? extractText(card.subtitle, card.surroundingSubtitles)) || jiten?.target?.sentence;
     useEffect(() => {
         setText(initialText ?? extractText(card.subtitle, card.surroundingSubtitles) ?? '');
-        setDefinition(initialDefinition ?? '');
-        setWord(initialWord ?? '');
         setSource(initialSource ?? `${card.subtitleFileName} (${humanReadableTime(card.subtitle.start)})`);
-        setUrl(card.url ?? '');
-        setTrack1(extractText(card.subtitle, card.surroundingSubtitles, 0));
-        setTrack2(extractText(card.subtitle, card.surroundingSubtitles, 1));
-        setTrack3(extractText(card.subtitle, card.surroundingSubtitles, 2));
-        setCustomFieldValues(initialCustomFieldValues ?? {});
-    }, [
-        card.subtitle,
-        card.surroundingSubtitles,
-        card.url,
-        card.subtitleFileName,
-        initialText,
-        initialSource,
-        initialDefinition,
-        initialWord,
-        initialCustomFieldValues,
-    ]);
+    }, [card.subtitle, card.surroundingSubtitles, card.subtitleFileName, initialText, initialSource]);
     useEffect(() => {
         const timestampInterval =
             initialSelectedTimestampInterval || [card.subtitle.start, card.subtitle.end] || undefined;
@@ -425,10 +363,6 @@ const AnkiDialog = ({
                 ? []
                 : card.surroundingSubtitles.filter((s) => subtitleIntersectsTimeInterval(s, timestampInterval));
         setText(initialText ?? joinSubtitles(selectedSubtitles));
-        const trackText = (track: number) => joinSubtitles(selectedSubtitles.filter((s) => s.track === track));
-        setTrack1(trackText(0));
-        setTrack2(trackText(1));
-        setTrack3(trackText(2));
         setTimestampInterval(timestampInterval);
         setSelectedSubtitles(selectedSubtitles);
         setInitialTimestampInterval(forceInitialTimestampInterval || timestampInterval);
@@ -550,35 +484,17 @@ const AnkiDialog = ({
         [card.file, settings.maxImageWidth, settings.maxImageHeight, settings.mediaFragmentFormat]
     );
 
-    const applyTimestampIntervalToTrack = useCallback(
-        (
-            newTimestampInterval: number[],
-            currentText: string,
-            changeText: (newText: string) => void,
-            track?: number,
-            force?: boolean
-        ) => {
+    const applyTimestampIntervalToAllTracks = useCallback(
+        (newTimestampInterval: number[], force?: boolean) => {
             const expectedUnchangedText =
                 lastAppliedTimestampIntervalToText === undefined
                     ? undefined
-                    : textForTimestampInterval(lastAppliedTimestampIntervalToText, track);
-
-            if (force || expectedUnchangedText === undefined || currentText.trim() === expectedUnchangedText.trim()) {
-                const newText = textForTimestampInterval(newTimestampInterval, track);
-                changeText(newText);
+                    : textForTimestampInterval(lastAppliedTimestampIntervalToText);
+            if (force || expectedUnchangedText === undefined || text.trim() === expectedUnchangedText.trim()) {
+                setText(textForTimestampInterval(newTimestampInterval));
             }
         },
-        [textForTimestampInterval, lastAppliedTimestampIntervalToText]
-    );
-
-    const applyTimestampIntervalToAllTracks = useCallback(
-        (newTimestampInterval: number[], force?: boolean) => {
-            applyTimestampIntervalToTrack(newTimestampInterval, text, setText, undefined, force);
-            applyTimestampIntervalToTrack(newTimestampInterval, track1, setTrack1, 0, force);
-            applyTimestampIntervalToTrack(newTimestampInterval, track2, setTrack2, 1, force);
-            applyTimestampIntervalToTrack(newTimestampInterval, track3, setTrack3, 2, force);
-        },
-        [applyTimestampIntervalToTrack, text, track1, track2, track3]
+        [textForTimestampInterval, lastAppliedTimestampIntervalToText, text]
     );
 
     const handleApplyTimestampIntervalToText = useCallback(() => {
@@ -704,7 +620,7 @@ const AnkiDialog = ({
     }, []);
 
     const exportButtonRef = useRef<HTMLButtonElement | null>(null);
-    const [focusedAction, setFocusedAction] = useState<AnkiExportMode>();
+    const [focusedAction, setFocusedAction] = useState(false);
 
     const focusedButton = () => {
         const activeElement = document.activeElement;
@@ -723,16 +639,10 @@ const AnkiDialog = ({
     };
 
     const focusOnPreferredAction = useCallback(() => {
-        const preferredExportMode = 'default';
-
-        if (preferredExportMode === undefined) {
-            return;
-        }
-
-        setFocusedAction(preferredExportMode);
+        setFocusedAction(true);
     }, []);
 
-    const handleActionBlur = useCallback(() => setFocusedAction(undefined), []);
+    const handleActionBlur = useCallback(() => setFocusedAction(false), []);
 
     useEffect(() => {
         if (open && !disabled) {
@@ -740,7 +650,7 @@ const AnkiDialog = ({
         }
     }, [open, disabled, focusOnPreferredAction]);
 
-    const handleExport = useCallback(() => onProceed(buildExportParams('default')), [onProceed, buildExportParams]);
+    const handleExport = useCallback(() => onProceed(buildExportParams()), [onProceed, buildExportParams]);
 
     useEffect(() => {
         const listener = (e: KeyboardEvent) => {
@@ -1046,9 +956,7 @@ const AnkiDialog = ({
                                 disabled={disabled || selectedMineWords.length === 0}
                                 focusVisible={false}
                                 onBlurVisible={handleActionBlur}
-                                onClick={() =>
-                                    void jiten.onMineNewWords?.(buildExportParams('default'), selectedMineWords)
-                                }
+                                onClick={() => void jiten.onMineNewWords?.(buildExportParams(), selectedMineWords)}
                             >
                                 {t('jiten.mineNewWords')}
                             </AnkiDialogButton>
@@ -1056,7 +964,7 @@ const AnkiDialog = ({
                         <AnkiDialogButton
                             ref={exportButtonRef}
                             disabled={disabled || !showAttachmentTarget || Boolean(jitenError)}
-                            focusVisible={focusedAction === 'default'}
+                            focusVisible={focusedAction}
                             onBlurVisible={handleActionBlur}
                             onClick={handleExport}
                         >

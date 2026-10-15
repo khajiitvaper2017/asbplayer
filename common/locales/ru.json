@@ -289,7 +289,6 @@
         "enabledAutoPause": "Автоматическая пауза: Вкл",
         "enabledCondensedPlayback": "Сжатое воспроизведение: Вкл",
         "enabledFastForwardPlayback": "Ускоренное воспроизведение: Вкл",
-        "exportedCard": "Карточка экспортирована: {{result}}",
         "cardNotExported": "Card not exported: {{reason}}",
         "bulkExporting": "Bulk exporting subtitles: {{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "Сохранено: {{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "Карточка обновлена: {{result}}",
         "enabledRepeatPlayback": "Повтор воспроизведения: Вкл",
         "disabledRepeatPlayback": "Повтор воспроизведения: Выкл",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

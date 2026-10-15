@@ -289,7 +289,6 @@
         "enabledAutoPause": "자동 일시정지: 켜짐",
         "enabledCondensedPlayback": "자막 없는 부분 건너뛰기: 켜짐",
         "enabledFastForwardPlayback": "자막 없는 부분 빨리 감기: 켜짐",
-        "exportedCard": "카드 내보내기 완료: {{result}}",
         "cardNotExported": "Card not exported: {{reason}}",
         "bulkExporting": "Bulk exporting subtitles: {{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "저장 완료: {{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "카드 업데이트 완료: {{result}}",
         "enabledRepeatPlayback": "반복 재생: 켜짐",
         "disabledRepeatPlayback": "반복 재생: 꺼짐",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

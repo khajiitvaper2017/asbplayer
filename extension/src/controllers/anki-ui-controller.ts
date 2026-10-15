@@ -11,8 +11,6 @@ import type {
     AnkiUiInitialState,
     AnkiUiResumeState,
     AnkiUiSavedState,
-    CardExportedDialogMessage,
-    CardUpdatedDialogMessage,
     CopyToClipboardMessage,
     EncodeMp3InServiceWorkerMessage,
     EncodeMp3Message,
@@ -109,9 +107,6 @@ export default class AnkiUiController {
             image,
             audio,
             text,
-            definition,
-            word,
-            customFieldValues,
             jitenTarget,
             jitenWords,
             miningDestination,
@@ -146,9 +141,6 @@ export default class AnkiUiController {
             audio: audio,
             dialogRequestedTimestamp: context.currentTimeMs,
             text,
-            word,
-            definition,
-            customFieldValues,
             ...capture,
             jitenTarget: hasSnapshot ? jitenTarget : (jitenTarget ?? capture?.jitenTarget),
             jitenWords: hasSnapshot ? jitenWords : jitenWords?.length ? jitenWords : capture?.jitenWords,
@@ -303,24 +295,6 @@ export default class AnkiUiController {
                                     await browser.runtime.sendMessage(settingsUpdatedCommand);
                                 })
                                 .catch((error) => asbError('anki/ui', 'Failed to set the active profile:', error));
-                            return;
-                        }
-                        case 'card-updated-dialog': {
-                            const cardUpdatedDialogCommand: VideoToExtensionCommand<CardUpdatedDialogMessage> = {
-                                sender: 'asbplayer-video',
-                                message: message as CardUpdatedDialogMessage,
-                                src: context.registeredVideoSrc,
-                            };
-                            void browser.runtime.sendMessage(cardUpdatedDialogCommand);
-                            return;
-                        }
-                        case 'card-exported-dialog': {
-                            const cardExportedDialogCommand: VideoToExtensionCommand<CardExportedDialogMessage> = {
-                                sender: 'asbplayer-video',
-                                message: message as CardExportedDialogMessage,
-                                src: context.registeredVideoSrc,
-                            };
-                            void browser.runtime.sendMessage(cardExportedDialogCommand);
                             return;
                         }
                     }

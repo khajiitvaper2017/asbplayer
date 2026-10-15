@@ -44,10 +44,7 @@ export default class UiFrame {
     }
 
     set fetchOptions(fetchOptions: FetchOptions) {
-        this._dirty =
-            this._dirty ||
-            this._fetchOptions?.allowedFetchUrl !== fetchOptions.allowedFetchUrl ||
-            this._fetchOptions?.videoSrc !== fetchOptions.videoSrc;
+        this._dirty = this._dirty || this._fetchOptions?.videoSrc !== fetchOptions.videoSrc;
         this._fetchOptions = fetchOptions;
     }
 

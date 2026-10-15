@@ -289,7 +289,6 @@
         "enabledAutoPause": "Pausa automatica: Attivata",
         "enabledCondensedPlayback": "Riproduzione condensata: Attivata",
         "enabledFastForwardPlayback": "Avanzamento rapido: Attivato",
-        "exportedCard": "Carta esportata: {{result}}",
         "cardNotExported": "Carta non esportata: {{reason}}",
         "bulkExporting": "Esportazione in massa dei sottotitoli: {{current}}/{{total}}",
         "bulkExport": {
@@ -301,7 +300,6 @@
         "savedTimestamp": "Salvato: {{timestamp}}",
         "resumePlaybackPrompt": "Resume at {{time}}?",
         "resumePlaybackButton": "Resume",
-        "updatedCard": "Carta aggiornata: {{result}}",
         "enabledRepeatPlayback": "Riproduzione ripetuta: Attivata",
         "disabledRepeatPlayback": "Riproduzione ripetuta: Disattivata",
         "autoPauseResumeMode": "Auto-pause resume mode: {{value}}",

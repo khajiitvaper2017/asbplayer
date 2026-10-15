@@ -95,8 +95,6 @@ export default class VideoChannel {
     private loadFilesCallbacks: (() => void)[];
     private loadSubtitlesCallbacks: (() => void)[];
     private playModesCallbacks: ((modes: Set<PlayMode>) => void)[];
-    private cardUpdatedDialogCallbacks: (() => void)[];
-    private cardExportedDialogCallbacks: (() => void)[];
 
     readyState: number;
     oncanplay: ((ev: Event) => void) | null = null;
@@ -138,8 +136,6 @@ export default class VideoChannel {
         this.loadFilesCallbacks = [];
         this.loadSubtitlesCallbacks = [];
         this.playModesCallbacks = [];
-        this.cardUpdatedDialogCallbacks = [];
-        this.cardExportedDialogCallbacks = [];
 
         this.protocol.onMessage = (event) => {
             switch (event.data.command) {
@@ -337,18 +333,6 @@ export default class VideoChannel {
                     }
                     break;
                 }
-                case 'card-updated-dialog': {
-                    for (const callback of this.cardUpdatedDialogCallbacks) {
-                        callback();
-                    }
-                    break;
-                }
-                case 'card-exported-dialog': {
-                    for (const callback of this.cardExportedDialogCallbacks) {
-                        callback();
-                    }
-                    break;
-                }
                 case 'tokenSelectionFocus': {
                     this.onTokenSelectionFocus?.();
                     break;
@@ -506,16 +490,6 @@ export default class VideoChannel {
     onPlayModes(callback: (modes: Set<PlayMode>) => void) {
         this.playModesCallbacks.push(callback);
         return () => this._remove(callback, this.playModesCallbacks);
-    }
-
-    onCardUpdatedDialog(callback: () => void) {
-        this.cardUpdatedDialogCallbacks.push(callback);
-        return () => this._remove(callback, this.cardUpdatedDialogCallbacks);
-    }
-
-    onCardExportedDialog(callback: () => void) {
-        this.cardExportedDialogCallbacks.push(callback);
-        return () => this._remove(callback, this.cardExportedDialogCallbacks);
     }
 
     ready(duration: number, videoFileName?: string) {
@@ -816,8 +790,6 @@ export default class VideoChannel {
         this.subtitlesUpdatedCallbacks = [];
         this.loadFilesCallbacks = [];
         this.playModesCallbacks = [];
-        this.cardUpdatedDialogCallbacks = [];
-        this.cardExportedDialogCallbacks = [];
         this.onTokenSelectionFocus = null;
     }
 

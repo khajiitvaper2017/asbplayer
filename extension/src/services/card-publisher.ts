@@ -126,14 +126,6 @@ export class CardPublisher {
                               card.audio.error
                           )
                         : undefined,
-                track1: undefined,
-                track2: undefined,
-                track3: undefined,
-                word: card.word,
-                definition: card.definition,
-                url: card.url,
-                customFieldValues: card.customFieldValues ?? {},
-                mode: 'default' as const,
             };
             const submission = await client.submit(pending?.targets ?? [target], params, pending?.deckId);
             const last = submission.outcomes.at(-1)!;
