@@ -20,7 +20,7 @@ type harness struct {
 	server    *httptest.Server
 }
 
-func newHarness(t *testing.T, requestTimeout time.Duration, postMineAction int) *harness {
+func newHarness(t *testing.T, requestTimeout time.Duration) *harness {
 	t.Helper()
 	e := echo.New()
 	e.HideBanner = true
@@ -31,7 +31,6 @@ func newHarness(t *testing.T, requestTimeout time.Duration, postMineAction int) 
 		WebsocketClients: make(map[*wsClient]bool),
 		Broker:           newRequestBroker(),
 		RequestTimeout:   requestTimeout,
-		PostMineAction:   postMineAction,
 	}
 	forwarder.registerRoutes(e)
 	server := httptest.NewServer(e)
@@ -186,7 +185,7 @@ func await(t *testing.T, result chan asyncResponse) asyncResponse {
 }
 
 func TestConcurrentRequestsAnsweredOutOfOrderEachGetTheirOwnResponse(t *testing.T) {
-	h := newHarness(t, 2*time.Second, 0)
+	h := newHarness(t, 2*time.Second)
 	client := h.connect(t)
 	h.waitForClients(t, 1)
 
@@ -219,7 +218,7 @@ func TestConcurrentRequestsAnsweredOutOfOrderEachGetTheirOwnResponse(t *testing.
 }
 
 func TestUnmatchedResponseDoesNotStallTheSocketReader(t *testing.T) {
-	h := newHarness(t, 2*time.Second, 0)
+	h := newHarness(t, 2*time.Second)
 	client := h.connect(t)
 	h.waitForClients(t, 1)
 
@@ -238,7 +237,7 @@ func TestUnmatchedResponseDoesNotStallTheSocketReader(t *testing.T) {
 }
 
 func TestDuplicateAndLateResponsesAreIgnored(t *testing.T) {
-	h := newHarness(t, 2*time.Second, 0)
+	h := newHarness(t, 2*time.Second)
 	client := h.connect(t)
 	h.waitForClients(t, 1)
 
@@ -266,7 +265,7 @@ func TestDuplicateAndLateResponsesAreIgnored(t *testing.T) {
 }
 
 func TestFirstBroadcastResponseWins(t *testing.T) {
-	h := newHarness(t, 2*time.Second, 0)
+	h := newHarness(t, 2*time.Second)
 	responding := h.connect(t)
 	late := h.connect(t)
 	h.waitForClients(t, 2)
@@ -303,7 +302,7 @@ func TestFirstBroadcastResponseWins(t *testing.T) {
 }
 
 func TestTimeoutCleansUpPendingState(t *testing.T) {
-	h := newHarness(t, 150*time.Millisecond, 0)
+	h := newHarness(t, 150*time.Millisecond)
 	client := h.connect(t)
 	h.waitForClients(t, 1)
 
@@ -327,7 +326,7 @@ func TestTimeoutCleansUpPendingState(t *testing.T) {
 }
 
 func TestRequestFailsWithNoConnectedClients(t *testing.T) {
-	h := newHarness(t, 30*time.Second, 0)
+	h := newHarness(t, 30*time.Second)
 	response := await(t, h.requestAsync(t, http.MethodGet, "/asbplayer/bound-media", ""))
 
 	if response.status != http.StatusInternalServerError {
@@ -336,7 +335,7 @@ func TestRequestFailsWithNoConnectedClients(t *testing.T) {
 }
 
 func TestConcurrentWritesToOneClientAreSerialized(t *testing.T) {
-	h := newHarness(t, 5*time.Second, 0)
+	h := newHarness(t, 5*time.Second)
 	client := h.connect(t)
 	h.waitForClients(t, 1)
 
@@ -368,7 +367,7 @@ func TestConcurrentWritesToOneClientAreSerialized(t *testing.T) {
 }
 
 func TestCommandShapesAndResponses(t *testing.T) {
-	h := newHarness(t, 2*time.Second, 0)
+	h := newHarness(t, 2*time.Second)
 	client := h.connect(t)
 	h.waitForClients(t, 1)
 
@@ -438,26 +437,6 @@ func TestCommandShapesAndResponses(t *testing.T) {
 
 	if len(command.Body) != 0 {
 		t.Fatalf("expected an empty body, got %v", command.Body)
-	}
-}
-
-func TestMineSubtitleReportsPublished(t *testing.T) {
-	h := newHarness(t, 2*time.Second, 1)
-	client := h.connect(t)
-	h.waitForClients(t, 1)
-
-	result := h.requestAsync(t, http.MethodPost, "/", `{"action":"addNote","params":{"note":{"fields":{"Word":"ねこ"}}}}`)
-	command := client.nextCommand(t)
-	fields := command.Body["fields"].(map[string]interface{})
-
-	if command.Command != "mine-subtitle" || fields["Word"] != "ねこ" || command.Body["postMineAction"] != float64(1) {
-		t.Fatalf("unexpected mine-subtitle command: %v", command.Body)
-	}
-
-	client.respond(t, command.MessageId, `{"published":true}`)
-
-	if response := await(t, result); response.status != http.StatusOK || response.body != "-1" {
-		t.Fatalf("expected a 200 with -1, got %d %s", response.status, response.body)
 	}
 }
 

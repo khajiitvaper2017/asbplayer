@@ -34,14 +34,6 @@ type (
 		Broker           *requestBroker
 		Mutex            *sync.Mutex
 		RequestTimeout   time.Duration
-		AnkiConnectUrl   string
-		PostMineAction   int
-		InterceptField   string
-		InterceptValue   string
-	}
-	ankiConnectRequest struct {
-		Action string                 `json:"action"`
-		Params map[string]interface{} `json:"params"`
 	}
 	subtitleFile struct {
 		Name   string `json:"name"`
@@ -63,9 +55,6 @@ type (
 		Command   string          `json:"command"`
 		MessageId string          `json:"messageId"`
 		Body      json.RawMessage `json:"body"`
-	}
-	mineSubtitleResponseBody struct {
-		Published bool `json:"published"`
 	}
 )
 
@@ -178,149 +167,6 @@ func (forwarder forwarder) publishMessageAndAwaitResponse(command clientCommand)
 	}
 }
 
-func (forwarder forwarder) forwardToAnkiConnect(buf *bytes.Buffer, c echo.Context, method string) ([]byte, error) {
-	ankiConnectRequest, err := http.NewRequest(method, forwarder.AnkiConnectUrl, buf)
-
-	for key, values := range c.Request().Header {
-		ankiConnectRequest.Header[key] = values
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	ankiConnectResponse, err := http.DefaultClient.Do(ankiConnectRequest)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ankiConnectResponseBuf := new(bytes.Buffer)
-	ankiConnectResponseBuf.ReadFrom(ankiConnectResponse.Body)
-
-	for header, values := range ankiConnectResponse.Header {
-		for _, value := range values {
-			c.Response().Header().Add(header, value)
-		}
-	}
-
-	c.Blob(ankiConnectResponse.StatusCode, ankiConnectResponse.Header["Content-Type"][0], ankiConnectResponseBuf.Bytes())
-	return ankiConnectResponseBuf.Bytes(), nil
-}
-
-func extractNoteIdFromAnkiConnectResponse(response []byte) (int64, bool) {
-	parsed := struct {
-		Result *int64 `json:"result"`
-	}{}
-
-	if err := json.Unmarshal(response, &parsed); err != nil || parsed.Result == nil {
-		return 0, false
-	}
-
-	return *parsed.Result, true
-}
-
-func (forwarder forwarder) handleGetRequest(c echo.Context) error {
-	ankiConnectResponse, err := http.Get(fmt.Sprintf("%s/%s", forwarder.AnkiConnectUrl, c.Path()))
-
-	if err != nil {
-		c.Logger().Error(err)
-		c.JSON(http.StatusInternalServerError, nil)
-	} else {
-		ankiConnectResponseBuf := new(bytes.Buffer)
-		ankiConnectResponseBuf.ReadFrom(ankiConnectResponse.Body)
-		c.Blob(ankiConnectResponse.StatusCode, ankiConnectResponse.Header["Content-Type"][0], ankiConnectResponseBuf.Bytes())
-	}
-
-	return nil
-}
-
-func (forwarder forwarder) handlePostRequest(c echo.Context) error {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(c.Request().Body)
-	request := ankiConnectRequest{}
-	err := json.Unmarshal(buf.Bytes(), &request)
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
-	}
-
-	c.Set("ankiConnectAction", request.Action)
-
-	if request.Action != "addNote" || len(forwarder.clients()) == 0 || !shouldInterceptAddNote(request, forwarder.InterceptField, forwarder.InterceptValue) {
-		_, err := forwarder.forwardToAnkiConnect(buf, c, "POST")
-		return err
-	}
-
-	command := clientCommand{Command: "mine-subtitle", MessageId: uuid.NewString(), Body: map[string]interface{}{
-		"fields":         request.Params["note"].(map[string]interface{})["fields"],
-		"postMineAction": forwarder.PostMineAction,
-	}}
-
-	if forwarder.PostMineAction == 2 {
-		ankiConnectResponse, responseErr := forwarder.forwardToAnkiConnect(buf, c, "POST")
-
-		if responseErr == nil {
-			if noteId, ok := extractNoteIdFromAnkiConnectResponse(ankiConnectResponse); ok {
-				command.Body["noteId"] = noteId
-			}
-		}
-
-		err := forwarder.publishMessage(command)
-
-		if err != nil {
-			fmt.Printf("Failed to publish command to asbplayer: %v", err)
-		}
-
-		return responseErr
-	}
-
-	response, ok := forwarder.publishMessageAndAwaitResponse(command)
-	if !ok {
-		return echo.NewHTTPError(http.StatusInternalServerError, nil)
-	}
-
-	mineSubtitleResponseBody := mineSubtitleResponseBody{}
-	err = json.Unmarshal(response.Body, &mineSubtitleResponseBody)
-
-	if err != nil || !mineSubtitleResponseBody.Published {
-		_, err := forwarder.forwardToAnkiConnect(buf, c, "POST")
-		return err
-	}
-
-	c.JSON(http.StatusOK, -1)
-
-	return nil
-}
-
-func shouldInterceptAddNote(request ankiConnectRequest, fieldName string, fieldValue string) bool {
-	if fieldName == "" || fieldValue == "" {
-		return true
-	}
-
-	params, ok := request.Params["note"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	fields, ok := params["fields"].(map[string]interface{})
-	if !ok {
-		return false
-	}
-
-	miscInfo, ok := fields[fieldName].(string)
-	if !ok {
-		return false
-	}
-
-	return miscInfo == fieldValue
-}
-
-func (forwarder forwarder) handleOptionsRequest(c echo.Context) error {
-	_, err := forwarder.forwardToAnkiConnect(new(bytes.Buffer), c, "OPTIONS")
-	return err
-}
-
 func (forwarder forwarder) handleAsbplayerLoadSubtitlesRequest(c echo.Context) error {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(c.Request().Body)
@@ -409,13 +255,10 @@ func (forwarder forwarder) handleAsbplayerSubtitlesRequest(c echo.Context) error
 func (forwarder forwarder) registerRoutes(e *echo.Echo) {
 	e.GET("/ws", forwarder.handleWebsocketClient)
 	e.POST("/disconnect-ws-clients", forwarder.disconnectWebsocketClients)
-	e.GET("/", forwarder.handleGetRequest)
-	e.POST("/", forwarder.handlePostRequest)
 	e.POST("/asbplayer/load-subtitles", forwarder.handleAsbplayerLoadSubtitlesRequest)
 	e.POST("/asbplayer/seek", forwarder.handleAsbplayerSeekRequest)
 	e.GET("/asbplayer/bound-media", forwarder.handleAsbplayerBoundMediaRequest)
 	e.GET("/asbplayer/subtitles", forwarder.handleAsbplayerSubtitlesRequest)
-	e.OPTIONS("/", forwarder.handleOptionsRequest)
 }
 
 func (forwarder forwarder) disconnectWebsocketClients(c echo.Context) error {
@@ -431,12 +274,7 @@ func (forwarder forwarder) disconnectWebsocketClients(c echo.Context) error {
 
 func main() {
 	port := getenv("PORT", "8766")
-	ankiConnectUrl := getenv("ANKI_CONNECT_URL", "http://127.0.0.1:8765")
-	postMineAction, _ := strconv.Atoi(getenv("POST_MINE_ACTION", "2"))
-	interceptField := getenv("INTERCEPT_FIELD", "")
-	interceptValue := getenv("INTERCEPT_VALUE", "")
-	fmt.Printf("Started with config:\n\n\tPORT=%v\n\tANKI_CONNECT_URL=%v\n\tPOST_MINE_ACTION=%v\n\tINTERCEPT_FIELD=%v\n\tINTERCEPT_VALUE=%v\n",
-		port, ankiConnectUrl, postMineAction, interceptField, interceptValue)
+	fmt.Printf("Started on port %s\n", port)
 
 	e := echo.New()
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
@@ -449,12 +287,7 @@ func main() {
 		LogLatency:       true,
 		LogRemoteIP:      true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(c.Request().Body)
-			request := ankiConnectRequest{}
-			json.Unmarshal(buf.Bytes(), &request)
-			fmt.Printf("REQUEST: ankiConnectAction=%v status=%v method=%v uri=%v content_length=%v response_size=%v latency=%v remote_ip=%v user_agent=\"%v\"\n",
-				c.Get("ankiConnectAction"), v.Status, v.Method, v.URI, v.ContentLength, v.ResponseSize, v.Latency, v.RemoteIP, v.UserAgent)
+			fmt.Printf("REQUEST: status=%v method=%v uri=%v latency=%v\n", v.Status, v.Method, v.URI, v.Latency)
 			return nil
 		},
 	}))
@@ -462,11 +295,8 @@ func main() {
 		Mutex:            &sync.Mutex{},
 		WebsocketClients: make(map[*wsClient]bool),
 		Broker:           newRequestBroker(),
-		RequestTimeout:   5 * time.Second,
-		AnkiConnectUrl:   ankiConnectUrl,
-		PostMineAction:   postMineAction,
-		InterceptField:   interceptField,
-		InterceptValue:   interceptValue}
+		RequestTimeout:   5 * time.Second}
+
 	forwarder.registerRoutes(e)
 	e.Logger.Fatal(e.Start(":" + port))
 }
