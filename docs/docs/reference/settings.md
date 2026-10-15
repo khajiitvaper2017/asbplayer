@@ -139,7 +139,7 @@ Extension-only settings control the controls overlay, subtitle detection, subtit
 
 ## General {#misc}
 
-Configure theme, language, auto-maximizing local video, and the app tab name. Expand **WebSocket interface** for connection settings and connection checks. **Tools** provides settings import/export and logs.
+Configure theme, language, auto-maximizing local video, and the app tab name. Enable **WebSocket client** to enter the server address and check the connection. **Tools** provides settings import/export and logs.
 
 The mining history storage limit is in **Mining → History**.
 

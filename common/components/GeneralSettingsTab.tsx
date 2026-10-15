@@ -10,7 +10,6 @@ import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import Radio from '@mui/material/Radio';
 import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
 import ResponsiveSettingsStack from '@project/common/components/ResponsiveSettingsStack';
 import { useTheme } from '@mui/material/styles';
 import Switch from '@mui/material/Switch';
@@ -182,44 +181,40 @@ const GeneralSettingsTab: React.FC<Props> = ({
                         onChange={(event) => onSettingChanged('tabName', event.target.value)}
                     />
                 )}
-                <Box component="details">
-                    <Box component="summary" sx={{ cursor: 'pointer', py: 1 }}>
-                        {t('settings.webSocketInterface')}
-                    </Box>
-                    <SwitchLabelWithHoverEffect
-                        control={
-                            <Switch
-                                checked={webSocketClientEnabled}
-                                onChange={(e) => onSettingChanged('webSocketClientEnabled', e.target.checked)}
-                            />
-                        }
-                        label={t('settings.webSocketClientEnabled')}
-                        labelPlacement="start"
-                    />
-                    {webSocketClientEnabled && (
-                        <SettingsTextField
-                            size="small"
-                            color="primary"
-                            fullWidth
-                            label={t('settings.webSocketServerUrl')}
-                            value={webSocketServerUrl}
-                            onChange={(e) => onSettingChanged('webSocketServerUrl', e.target.value)}
-                            error={webSocketClientEnabled && webSocketConnectionSucceeded === false}
-                            helperText={webSocketServerUrlHelperText}
-                            slotProps={{
-                                input: {
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton onClick={pingWebSocketServer}>
-                                                <RefreshIcon />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                },
-                            }}
+                <SettingsSection>{t('settings.webSocketInterface')}</SettingsSection>
+                <SwitchLabelWithHoverEffect
+                    control={
+                        <Switch
+                            checked={webSocketClientEnabled}
+                            onChange={(e) => onSettingChanged('webSocketClientEnabled', e.target.checked)}
                         />
-                    )}
-                </Box>{' '}
+                    }
+                    label={t('settings.webSocketClientEnabled')}
+                    labelPlacement="start"
+                />
+                {webSocketClientEnabled && (
+                    <SettingsTextField
+                        size="small"
+                        color="primary"
+                        fullWidth
+                        label={t('settings.webSocketServerUrl')}
+                        value={webSocketServerUrl}
+                        onChange={(e) => onSettingChanged('webSocketServerUrl', e.target.value)}
+                        error={webSocketClientEnabled && webSocketConnectionSucceeded === false}
+                        helperText={webSocketServerUrlHelperText}
+                        slotProps={{
+                            input: {
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={pingWebSocketServer}>
+                                            <RefreshIcon />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
+                    />
+                )}
                 <SettingsSection>{t('settings.tools')}</SettingsSection>
                 <ButtonGroup size="small" variant="contained" orientation={isSmallScreen ? 'vertical' : 'horizontal'}>
                     <NoWrapButton fullWidth startIcon={<UploadIcon />} onClick={handleImportSettings}>
