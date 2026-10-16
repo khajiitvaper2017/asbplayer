@@ -38,7 +38,7 @@ class JitenSubtitleSource {
         for (const subtitle of subtitles) {
             if (!subtitle.text) continue;
             for (const view of ['video', 'panel'] as const) {
-                const home = document.createElement('span');
+                const home = document.createElement('div');
                 const element = document.createElement('span');
                 element.setAttribute(ASB_SUBTITLE_INDEX_ATTRIBUTE, String(subtitle.index));
                 element.setAttribute('data-track', String(subtitle.track));
@@ -48,8 +48,7 @@ class JitenSubtitleSource {
                 fragment.append(home, document.createTextNode('\n'));
             }
         }
-        // One paragraph keeps both views in one Reader request while preserving their word metadata.
-        // shortcut: both copies must fit Reader's API size cap; larger files need Reader-side result sharing.
+        // Reader needs cue boundaries even when subtitles only use ASCII punctuation.
         paragraph.append(fragment);
         document.body.append(this.container);
         this.container.append(paragraph);
