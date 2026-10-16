@@ -33,12 +33,11 @@ class JitenSubtitleSource {
         this.container.className = 'asbplayer-offscreen';
         this.container.style.contentVisibility = 'hidden';
         this.container.style.contain = 'strict';
-        document.body.append(this.container);
-        // Give both views identical parser input instead of repeating each line within one paragraph.
-        for (const view of ['video', 'panel'] as const) {
-            const paragraph = document.createElement('div');
-            for (const subtitle of subtitles) {
-                if (!subtitle.text) continue;
+        const paragraph = document.createElement('div');
+        const fragment = document.createDocumentFragment();
+        for (const subtitle of subtitles) {
+            if (!subtitle.text) continue;
+            for (const view of ['video', 'panel'] as const) {
                 const home = document.createElement('span');
                 const element = document.createElement('span');
                 element.setAttribute(ASB_SUBTITLE_INDEX_ATTRIBUTE, String(subtitle.index));
@@ -46,11 +45,14 @@ class JitenSubtitleSource {
                 element.innerHTML = subtitle.text;
                 this.elements.set(`${subtitle.index}/${view}`, element);
                 home.append(element);
-                paragraph.append(home, document.createTextNode('\n'));
+                fragment.append(home, document.createTextNode('\n'));
             }
-            this.container.append(paragraph);
         }
-        // shortcut: each transcript must fit Reader's API size cap; larger files need chunking.
+        // One paragraph keeps both views in one Reader request while preserving their word metadata.
+        // shortcut: both copies must fit Reader's API size cap; larger files need Reader-side result sharing.
+        paragraph.append(fragment);
+        document.body.append(this.container);
+        this.container.append(paragraph);
         for (const listener of this.listeners) listener();
     }
 
