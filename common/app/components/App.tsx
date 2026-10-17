@@ -14,6 +14,7 @@ import type {
     LegacyPlayerSyncMessage,
     PlayerSyncMessage,
     CopyHistoryItem,
+    VideoDataSubtitleTrack,
     CardModel,
     ShowAnkiUiMessage,
     JumpToSubtitleMessage,
@@ -25,10 +26,12 @@ import type {
 } from '@project/common';
 import { MediaFragment, PostMineAction, MediaFragmentErrorCode, VideoDataUiOpenReason } from '@project/common';
 import { createTheme } from '@project/common/theme';
+import { embeddedSubtitleLanguageDisplayName } from '@project/common/settings';
 import type { AsbplayerSettings, Profile, SettingsProvider } from '@project/common/settings';
 import { AudioClip, Mp3Encoder } from '@project/common/audio-clip';
 import type { ExportParams } from '@project/common/anki';
 import { SubtitleReader } from '@project/common/subtitle-reader';
+import { extractMatroskaSubtitleFiles } from '@project/common/subtitle-reader/matroska-subtitles';
 import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
 import Alert from '@project/common/app/components/Alert';
@@ -87,13 +90,15 @@ import { useServiceWorker } from '@project/common/app/hooks/use-service-worker';
 import NeedRefreshDialog from '@project/common/app/components/NeedRefreshDialog';
 import type { LogProvider } from '@project/common/util/log';
 import { isFirefox } from '@project/common/browser-detection';
-import VideoDataSyncDialog, { useVideoDataSyncDialogState } from '@project/common/components/VideoDataSyncDialog';
+import VideoDataSyncDialog, {
+    emptySubtitleTrack,
+    useVideoDataSyncDialogState,
+} from '@project/common/components/VideoDataSyncDialog';
 import type { FileWithId } from '@project/common/file-selector';
 import { DefaultFileSelector } from '@project/common/file-selector';
 
 const latestExtensionVersion = '1.16.0';
 const extensionUrl = 'https://github.com/khajiitvaper2017/asbplayer/releases';
-
 const useContentStyles = makeStyles<Theme, ContentProps>((theme) => ({
     content: {
         flexGrow: 1,
@@ -137,6 +142,8 @@ const getExtension = (fileName: string) => {
     const index = fileName.lastIndexOf('.');
     return index === -1 ? '' : fileName.substring(index).toLowerCase();
 };
+
+const isMatroskaFile = (fileName: string) => ['.mkv', '.webm'].includes(getExtension(fileName));
 
 async function extractDropFileHandles(items: DataTransferItemList): Promise<FileSystemFileHandle[] | undefined> {
     if (!window.isSecureContext) return; // Chromium error due to getAsFileSystemHandle: RESULT_CODE_KILLED_BAD_MESSAGE
@@ -353,6 +360,11 @@ function App({
     const [jumpToSubtitle, setJumpToSubtitle] = useState<SubtitleModel>();
     const [rewindSubtitle, setRewindSubtitle] = useState<SubtitleModel>();
     const [sources, setSources] = useState<MediaSources>({ subtitleFiles: [] });
+    const sourcesRef = useRef(sources);
+    sourcesRef.current = sources;
+    const handleFilesRef = useRef<
+        ((args: { files: FileWithId[]; flattenSubtitleFiles?: boolean }) => boolean) | undefined
+    >(undefined);
     const [loadingSources, setLoadingSources] = useState<FileWithId[]>([]);
     const [dragging, setDragging] = useState<boolean>(false);
     const dragEnterRef = useRef<Element | null>(null);
@@ -1070,11 +1082,77 @@ function App({
         [handleError]
     );
 
+    const {
+        subtitleTrackSelectorOpen,
+        openSubtitleTrackSelector,
+        closeSubtitleTrackSelector,
+        subtitleTrackSelectorSelectedTrackIds,
+        setSubtitleTrackSelectorSelectedTrackIds,
+        subtitleTrackSelectorTracks,
+        setSubtitleTrackSelectorTracks,
+        subtitleTrackSelectorDisabled,
+        setSubtitleTrackSelectorDisabled,
+    } = useVideoDataSyncDialogState();
+    const embeddedSubtitleVideoRef = useRef<File>(undefined);
+
+    const populateEmbeddedSubtitleTracks = useCallback(
+        (videoFile: File, autoLoadRememberedLanguage: boolean) => {
+            void extractMatroskaSubtitleFiles(videoFile)
+                .then((embeddedSubtitleFiles) => {
+                    const tracks: VideoDataSubtitleTrack[] = embeddedSubtitleFiles.map(
+                        ({ file, language, name, type }) => {
+                            const id = uuidv4();
+                            return {
+                                id,
+                                file,
+                                label: `Embedded · ${embeddedSubtitleLanguageDisplayName(language)} · ${type.toUpperCase()}${name ? ` · ${name}` : ''}`,
+                                language,
+                                extension: type,
+                            };
+                        }
+                    );
+                    if (sourcesRef.current.videoFile?.file !== videoFile) return;
+                    embeddedSubtitleVideoRef.current = videoFile;
+                    setSubtitleTrackSelectorTracks([...tracks, emptySubtitleTrack(t)]);
+                    setSubtitleTrackSelectorSelectedTrackIds([]);
+                    if (autoLoadRememberedLanguage && settings.rememberEmbeddedSubtitleLanguage) {
+                        const rememberedLanguage = embeddedSubtitleLanguageDisplayName(
+                            settings.embeddedSubtitleLanguage
+                        );
+                        const matchingTracks = tracks.filter(
+                            (track) =>
+                                track.language !== undefined &&
+                                embeddedSubtitleLanguageDisplayName(track.language) === rememberedLanguage
+                        );
+                        const rememberedTrack =
+                            matchingTracks.find((track) => track.extension === 'srt') ?? matchingTracks[0];
+                        if (rememberedTrack?.file !== undefined) {
+                            handleFilesRef.current?.({
+                                files: [{ file: rememberedTrack.file, id: rememberedTrack.id }],
+                            });
+                            return;
+                        }
+                    }
+                    openSubtitleTrackSelector();
+                })
+                .catch((e) => asbWarn('app/subtitles', 'Failed to extract embedded Matroska subtitles:', e));
+        },
+        [
+            openSubtitleTrackSelector,
+            setSubtitleTrackSelectorSelectedTrackIds,
+            setSubtitleTrackSelectorTracks,
+            settings.embeddedSubtitleLanguage,
+            settings.rememberEmbeddedSubtitleLanguage,
+            t,
+        ]
+    );
+
     const handleFiles = useCallback(
         ({ files, flattenSubtitleFiles }: { files: FileWithId[]; flattenSubtitleFiles?: boolean }): boolean => {
             try {
                 const mediaSources = extractSources(files);
                 let videoFile = mediaSources.videoFile;
+                const selectedVideoFile = mediaSources.videoFile;
                 const subtitleFiles = mediaSources.subtitleFiles;
 
                 if (videoFile || subtitleFiles.length > 0) {
@@ -1129,6 +1207,15 @@ function App({
                     return sources;
                 });
 
+                if (
+                    selectedVideoFile &&
+                    isMatroskaFile(selectedVideoFile.file.name) &&
+                    subtitleFiles.length === 0 &&
+                    sourcesRef.current.subtitleFiles.length === 0
+                ) {
+                    populateEmbeddedSubtitleTracks(selectedVideoFile.file, true);
+                }
+
                 if (subtitleFiles.length > 0) {
                     const subtitleFileName = subtitleFiles[0].file.name;
                     setFileName(subtitleFileName.substring(0, subtitleFileName.lastIndexOf('.')));
@@ -1140,8 +1227,9 @@ function App({
                 return false;
             }
         },
-        [handleError, retainSourcesInFileSession]
+        [handleError, populateEmbeddedSubtitleTracks, retainSourcesInFileSession]
     );
+    handleFilesRef.current = handleFiles;
 
     const persistFileSessionHandles = useCallback(
         (handles: FileSystemFileHandleWithId[] | undefined) => {
@@ -1723,18 +1811,6 @@ function App({
         onOfflineReady: handleOfflineReady,
     });
 
-    const {
-        subtitleTrackSelectorOpen,
-        openSubtitleTrackSelector,
-        closeSubtitleTrackSelector,
-        subtitleTrackSelectorSelectedTrackIds,
-        setSubtitleTrackSelectorSelectedTrackIds,
-        subtitleTrackSelectorTracks,
-        setSubtitleTrackSelectorTracks,
-        subtitleTrackSelectorDisabled,
-        setSubtitleTrackSelectorDisabled,
-    } = useVideoDataSyncDialogState();
-
     const handleConfirmSubtitleTrackSelection = useCallback(
         (tracks: ConfirmedVideoDataSubtitleTrack[]) => {
             void (async () => {
@@ -1743,6 +1819,7 @@ function App({
                     const files: FileWithId[] = [];
                     const cachedSubtitleFiles: FileWithId[] = [];
                     for (const t of tracks) {
+                        if (t.id === '-') continue;
                         if (t.file !== undefined) {
                             files.push({ file: t.file, id: t.id });
                         } else if (!Array.isArray(t.url)) {
@@ -1803,6 +1880,25 @@ function App({
         ]
     );
 
+    const handleOpenSubtitleTrackSelector = useCallback(() => {
+        const videoFile = sourcesRef.current.videoFile?.file;
+        if (videoFile && isMatroskaFile(videoFile.name) && embeddedSubtitleVideoRef.current !== videoFile) {
+            populateEmbeddedSubtitleTracks(videoFile, false);
+        } else {
+            setSubtitleTrackSelectorSelectedTrackIds(
+                sourcesRef.current.subtitleFiles
+                    .map((file) => file.id)
+                    .filter((id) => subtitleTrackSelectorTracks.some((track) => track.id === id))
+            );
+            openSubtitleTrackSelector();
+        }
+    }, [
+        openSubtitleTrackSelector,
+        populateEmbeddedSubtitleTracks,
+        setSubtitleTrackSelectorSelectedTrackIds,
+        subtitleTrackSelectorTracks,
+    ]);
+
     const handleCloseSubtitleTrackSelector = useCallback(() => {
         closeSubtitleTrackSelector();
         void clearBufferedHandlesInFileSession();
@@ -1811,12 +1907,12 @@ function App({
     useEffect(() => {
         return keyBinder.bindSelectSubtitleTrack(
             () => {
-                openSubtitleTrackSelector();
+                handleOpenSubtitleTrackSelector();
             },
             () => ankiDialogOpen,
             false
         );
-    }, [keyBinder, ankiDialogOpen, openSubtitleTrackSelector]);
+    }, [keyBinder, ankiDialogOpen, handleOpenSubtitleTrackSelector]);
 
     const loading = loadingSources.length !== 0;
     const nothingLoaded =
@@ -2036,7 +2132,7 @@ function App({
                                             onFileSelector={handleFileSelector}
                                             onVideoElementSelected={handleVideoElementSelected}
                                             onRestoreLastSession={handleRestoreLastSession}
-                                            onOpenSubtitleTrackSelector={openSubtitleTrackSelector}
+                                            onOpenSubtitleTrackSelector={handleOpenSubtitleTrackSelector}
                                         />
                                     )}
                                     <DragOverlay
@@ -2073,7 +2169,7 @@ function App({
                                         >
                                     }
                                     onLoadFiles={handleFileSelector}
-                                    onLoadSubtitles={openSubtitleTrackSelector}
+                                    onLoadSubtitles={handleOpenSubtitleTrackSelector}
                                     tab={tab}
                                     availableTabs={availableTabs ?? []}
                                     sources={sources}
