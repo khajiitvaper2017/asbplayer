@@ -431,6 +431,8 @@
         "recordingBind": "녹음",
         "recordWithAudioPlayback": "로컬 영상 녹음 중 오디오 함께 재생",
         "rememberSubtitleOffset": "자막 타이밍 설정 기억하기",
+        "rememberEmbeddedSubtitleLanguage": "선택한 내장 자막 언어를 기억하고 자동으로 불러오기",
+        "embeddedSubtitleLanguage": "내장 자막 언어",
         "streamingVideo": "스트리밍 영상",
         "styling": "Styling",
         "styleKey": "스타일 설정 키",

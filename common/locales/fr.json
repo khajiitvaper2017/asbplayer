@@ -431,6 +431,8 @@
         "recordingBind": "Enregistrement",
         "recordWithAudioPlayback": "Lire l’audio pendant l’enregistrement à partir de la vidéo locale",
         "rememberSubtitleOffset": "Mémoriser le décalage des sous-titres",
+        "rememberEmbeddedSubtitleLanguage": "Mémoriser la langue de sous-titres intégrés sélectionnée et la charger automatiquement",
+        "embeddedSubtitleLanguage": "Langue des sous-titres intégrés",
         "streamingVideo": "Streaming vidéo",
         "styling": "Styling",
         "styleKey": "Clé de style",

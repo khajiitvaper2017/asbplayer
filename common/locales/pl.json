@@ -431,6 +431,8 @@
         "recordingBind": "Nagrywanie",
         "recordWithAudioPlayback": "Gravar com reprodução de áudio",
         "rememberSubtitleOffset": "Zapamiętaj przesunięcie napisów",
+        "rememberEmbeddedSubtitleLanguage": "Zapamiętaj wybrany język wbudowanych napisów i wczytuj go automatycznie",
+        "embeddedSubtitleLanguage": "Język osadzonych napisów",
         "streamingVideo": "Strumieniowanie wideo",
         "styling": "Styling",
         "styleKey": "Klucz stylu",

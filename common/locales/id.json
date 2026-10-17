@@ -431,6 +431,8 @@
         "recordingBind": "Perekaman",
         "recordWithAudioPlayback": "Putar audio saat merekam dari video lokal",
         "rememberSubtitleOffset": "Ingat offset takarir",
+        "rememberEmbeddedSubtitleLanguage": "Ingat bahasa subtitle tertanam yang dipilih dan muat otomatis",
+        "embeddedSubtitleLanguage": "Bahasa subtitle tertanam",
         "streamingVideo": "Video Streaming",
         "styling": "Styling",
         "styleKey": "Kunci Gaya",

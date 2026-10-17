@@ -431,6 +431,8 @@
         "recordingBind": "Gravando",
         "recordWithAudioPlayback": "Reproduzir áudio durante a gravação de vídeo local",
         "rememberSubtitleOffset": "Lembrar do atraso da legenda",
+        "rememberEmbeddedSubtitleLanguage": "Lembrar o idioma da legenda incorporada selecionado e carregá-lo automaticamente",
+        "embeddedSubtitleLanguage": "Idioma das legendas incorporadas",
         "streamingVideo": "Streaming de vídeo",
         "styling": "Estilo",
         "styleKey": "Tecla de estilo",

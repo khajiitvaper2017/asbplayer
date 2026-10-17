@@ -20,6 +20,7 @@ import SettingsTextField from '@project/common/components/SettingsTextField';
 import SwitchLabelWithHoverEffect from '@project/common/components/SwitchLabelWithHoverEffect';
 import type { AsbplayerSettings } from '@project/common/settings';
 import {
+    embeddedSubtitleLanguages,
     isTrackAutoCopyable,
     SubtitleListTimestampDisplay,
     updateAutoCopyableTracksValue,
@@ -58,6 +59,8 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
         subtitleListTimestampDisplay,
         subtitleListTimestampDecimalPlaces,
         rememberSubtitleOffset,
+        rememberEmbeddedSubtitleLanguage,
+        embeddedSubtitleLanguage,
         autoCopyCurrentSubtitle,
         autoCopyableTracks,
         subtitleRegexFilter,
@@ -172,6 +175,37 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                 label={t('settings.rememberSubtitleOffset')}
                 labelPlacement="start"
             />
+            {insideApp && (
+                <>
+                    <SwitchLabelWithHoverEffect
+                        control={
+                            <Switch
+                                checked={rememberEmbeddedSubtitleLanguage}
+                                onChange={(event) =>
+                                    onSettingChanged('rememberEmbeddedSubtitleLanguage', event.target.checked)
+                                }
+                            />
+                        }
+                        label={t('settings.rememberEmbeddedSubtitleLanguage')}
+                        labelPlacement="start"
+                    />
+                    {rememberEmbeddedSubtitleLanguage && (
+                        <SettingsTextField
+                            size="small"
+                            select
+                            label={t('settings.embeddedSubtitleLanguage')}
+                            value={embeddedSubtitleLanguage}
+                            onChange={(event) => onSettingChanged('embeddedSubtitleLanguage', event.target.value)}
+                        >
+                            {embeddedSubtitleLanguages.map(({ code, name }) => (
+                                <MenuItem key={code} value={code}>
+                                    {name}
+                                </MenuItem>
+                            ))}
+                        </SettingsTextField>
+                    )}
+                </>
+            )}
             <SwitchLabelWithHoverEffect
                 control={
                     <Switch

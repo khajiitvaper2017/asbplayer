@@ -431,6 +431,8 @@
         "recordingBind": "Запись",
         "recordWithAudioPlayback": "Запись с аудиовоспроизведением",
         "rememberSubtitleOffset": "Запомнить задержку субтитров",
+        "rememberEmbeddedSubtitleLanguage": "Запоминать выбранный язык встроенных субтитров и загружать его автоматически",
+        "embeddedSubtitleLanguage": "Язык встроенных субтитров",
         "streamingVideo": "Потоковое видео",
         "styling": "Styling",
         "styleKey": "Стиль - ключ",

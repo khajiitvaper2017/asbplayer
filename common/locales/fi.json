@@ -431,6 +431,8 @@
         "recordingBind": "Tallennetaan",
         "recordWithAudioPlayback": "Toista ääntä tallennettaessa paikallista videota",
         "rememberSubtitleOffset": "Muista tekstityksen siirtymä",
+        "rememberEmbeddedSubtitleLanguage": "Muista valittu upotettujen tekstitysten kieli ja lataa se automaattisesti",
+        "embeddedSubtitleLanguage": "Upotettujen tekstitysten kieli",
         "streamingVideo": "Videon striimaus",
         "styling": "Styling",
         "styleKey": "Tyylisivu",

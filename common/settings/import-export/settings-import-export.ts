@@ -416,6 +416,12 @@ const settingsSchema = {
         rememberSubtitleOffset: {
             type: 'boolean',
         },
+        rememberEmbeddedSubtitleLanguage: {
+            type: 'boolean',
+        },
+        embeddedSubtitleLanguage: {
+            type: 'string',
+        },
         lastSubtitleOffset: {
             type: 'number',
         },

@@ -657,6 +657,8 @@ export interface AsbplayerSettings
         JitenSettings,
         SubtitleStudySettings {
     readonly subtitlePreview: string;
+    readonly rememberEmbeddedSubtitleLanguage: boolean;
+    readonly embeddedSubtitleLanguage: string;
 }
 
 const keyBindNameMap: any = {

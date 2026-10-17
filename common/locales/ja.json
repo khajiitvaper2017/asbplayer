@@ -431,6 +431,8 @@
         "recordingBind": "記録中",
         "recordWithAudioPlayback": "ローカルビデオから録音の際、音声を再生",
         "rememberSubtitleOffset": "字幕の表示タイミングを記憶する",
+        "rememberEmbeddedSubtitleLanguage": "選択した埋め込み字幕の言語を記憶して自動的に読み込む",
+        "embeddedSubtitleLanguage": "埋め込み字幕の言語",
         "streamingVideo": "ストリーミングビデオ",
         "styling": "スタイルとホバー",
         "styleKey": "スタイルのキー",

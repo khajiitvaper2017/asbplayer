@@ -431,6 +431,8 @@
         "recordingBind": "Recording",
         "recordWithAudioPlayback": "Play audio while recording from local video",
         "rememberSubtitleOffset": "Remember subtitle offset",
+        "rememberEmbeddedSubtitleLanguage": "Remember selected embedded subtitle language and auto-load it",
+        "embeddedSubtitleLanguage": "Embedded subtitle language",
         "streamingVideo": "Streaming Video",
         "styling": "Styling and Hover",
         "styleKey": "Style Key",

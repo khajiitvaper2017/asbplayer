@@ -431,6 +431,8 @@
         "recordingBind": "录音快捷键",
         "recordWithAudioPlayback": "录制并监听音频",
         "rememberSubtitleOffset": "记住字幕偏移量",
+        "rememberEmbeddedSubtitleLanguage": "记住所选内嵌字幕语言并自动加载",
+        "embeddedSubtitleLanguage": "嵌入字幕语言",
         "streamingVideo": "在线视频",
         "styling": "样式外观",
         "styleKey": "属性名",

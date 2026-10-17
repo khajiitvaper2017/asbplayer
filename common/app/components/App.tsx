@@ -825,6 +825,10 @@ function App({
         setDisableKeyEvents(true);
         setSettingsDialogOpen(true);
     }, []);
+    const handleOpenSubtitleSettings = useCallback(() => {
+        setSettingsDialogScrollToId('subtitle-appearance');
+        handleOpenSettings();
+    }, [handleOpenSettings]);
     const handleAlertClosed = useCallback(() => setAlertOpen(false), []);
     const handleCloseSettings = useCallback(() => {
         setSettingsDialogOpen(false);
@@ -1980,7 +1984,7 @@ function App({
                                     fileSelector={fileSelector}
                                     onCancel={handleCloseSubtitleTrackSelector}
                                     onOpenFiles={handleOpenSubtitleTrackSelection}
-                                    onOpenSettings={handleOpenSettings}
+                                    onOpenSettings={handleOpenSubtitleSettings}
                                     onConfirm={handleConfirmSubtitleTrackSelection}
                                     onDismissFtue={() => {}}
                                     onOnlineSourceConfigChanged={(state) =>

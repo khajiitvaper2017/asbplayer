@@ -187,6 +187,8 @@ export const defaultSettings: AsbplayerSettings = {
     subtitleListTimestampDecimalPlaces: 3,
     copyToClipboardOnMine: false,
     rememberSubtitleOffset: true,
+    rememberEmbeddedSubtitleLanguage: true,
+    embeddedSubtitleLanguage: 'jpn',
     lastSubtitleOffset: 0,
     autoCopyCurrentSubtitle: false,
     alwaysPlayOnSubtitleRepeat: true,
