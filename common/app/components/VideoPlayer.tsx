@@ -45,7 +45,7 @@ import {
     mapSubtitlesForDisplay,
     timeDurationDisplay,
 } from '@project/common/util';
-import { asbTrace } from '@project/common/util/log';
+import { asbInfo, asbTrace, asbWarn } from '@project/common/util/log';
 import { ASB_SUBTITLE_INDEX_ATTRIBUTE } from '@project/common/annotations';
 import Clock from '@project/common/playback/timing/clock';
 import {
@@ -371,6 +371,7 @@ function VideoPlayer({
     const videoRef = useRef<ExperimentalHTMLVideoElement>(undefined);
     const [video, setVideo] = useState<ExperimentalHTMLVideoElement>();
     const playbackEngineRef = useRef<PlaybackEngine<IndexedSubtitleModel>>(undefined);
+    const decodeRecoveryAttemptedRef = useRef(false);
     const profileRef = useRef(profile);
     const hiddenVideoRef = useRef<HTMLVideoElement | null>(null); // seek preview thumbnail
     const [hiddenVideoReady, setHiddenVideoReady] = useState(false);
@@ -678,6 +679,8 @@ function VideoPlayer({
             hasVideoFileName: videoFileNameRef.current !== undefined,
             appIntegration: extension.supportsAppIntegration,
         });
+        let wasPlaying = !video.paused;
+        let recoveringDecodeError = false;
         const playbackEngine = new PlaybackEngine({
             settingsProvider,
             appIntegration: extension.supportsAppIntegration,
@@ -705,22 +708,55 @@ function VideoPlayer({
                 },
                 {
                     onPlay: () => {
+                        wasPlaying = true;
                         clock.start();
                         updatePlayerState();
                     },
                     onPause: () => {
+                        if (!video.error) wasPlaying = false;
                         clock.stop();
                         updatePlayerState();
                     },
                     onSeeked: (timestampMs) => {
                         clock.setTime(timestampMs, { paused: video.paused }); // rVFC may not run during pause
                         updatePlayerState();
+                        if (recoveringDecodeError) {
+                            recoveringDecodeError = false;
+                            asbInfo('playback/video-player', 'Recovered video after a decode error', { timestampMs });
+                        }
                     },
                     onPlaybackRateChanged: handlePlaybackRateChanged,
                     onDurationChanged: handleDurationChanged,
                     onError: () => {
                         const error = errorMessageFromVideo(video);
                         asbTrace('playback/video-player', 'Observed video error', { error });
+                        if (video.error?.code === MediaError.MEDIA_ERR_DECODE && !decodeRecoveryAttemptedRef.current) {
+                            decodeRecoveryAttemptedRef.current = true;
+                            recoveringDecodeError = true;
+                            const timestamp = video.currentTime;
+                            const playbackRate = video.playbackRate;
+                            const resumePlayback = wasPlaying;
+                            asbWarn('playback/video-player', 'Reloading video to recover from a decode error', {
+                                error,
+                                timestampMs: timestamp * 1000,
+                                playbackRate,
+                                resumePlayback,
+                            });
+                            const audioTrack = [...(video.audioTracks ?? [])].find((track) => track.enabled)?.id;
+                            if (audioTrack !== undefined) {
+                                video.addEventListener('loadedmetadata', () => selectAudioTrack(audioTrack), {
+                                    once: true,
+                                });
+                            }
+                            // Reloading clears a failed decoder without changing the requested position.
+                            video.load();
+                            video.currentTime = timestamp;
+                            video.playbackRate = playbackRate;
+                            if (resumePlayback) {
+                                void video.play().catch((error) => onErrorRef.current?.(String(error)));
+                            }
+                            return;
+                        }
                         onErrorRef.current?.(error);
                     },
                 }
@@ -735,6 +771,7 @@ function VideoPlayer({
                     clock.start();
                 },
                 seek: async (timestampMs) => {
+                    decodeRecoveryAttemptedRef.current = false;
                     video.currentTime = timestampMs / 1000;
                     clock.setTime(timestampMs, { paused: video.paused });
                 },
@@ -891,6 +928,7 @@ function VideoPlayer({
             let actualCurrentTime = currentTime;
 
             if (videoRef.current) {
+                decodeRecoveryAttemptedRef.current = false;
                 actualCurrentTime = seekWithNudge(videoRef.current, currentTime);
             }
 
