@@ -77,6 +77,11 @@ export interface KeyBinder {
         disabledGetter: () => boolean,
         capture?: boolean
     ): () => void;
+    bindToggleSubtitleStudy(
+        onToggleSubtitleStudy: (event: KeyboardEvent, mode: 'blur' | 'hide') => void,
+        disabledGetter: () => boolean,
+        capture?: boolean
+    ): () => void;
     bindToggleSubtitleTrackInVideo(
         onToggleSubtitleTrack: (event: KeyboardEvent, extra: any) => void,
         disabledGetter: () => boolean,
@@ -713,6 +718,24 @@ export class DefaultKeyBinder implements KeyBinder {
             return true;
         };
         return this._bind(shortcut, capture, handler);
+    }
+
+    bindToggleSubtitleStudy(
+        onToggleSubtitleStudy: (event: KeyboardEvent, mode: 'blur' | 'hide') => void,
+        disabledGetter: () => boolean,
+        capture = false
+    ) {
+        const unbindHandlers = (['blur', 'hide'] as const).map((mode) => {
+            const shortcut =
+                this.keyBindSet[mode === 'blur' ? 'toggleSubtitleStudyBlur' : 'toggleSubtitleStudyHide'].keys;
+            if (!shortcut) return () => {};
+            return this._bind(shortcut, capture, (event) => {
+                if (disabledGetter()) return false;
+                onToggleSubtitleStudy(event, mode);
+                return true;
+            });
+        });
+        return () => unbindHandlers.forEach((unbind) => unbind());
     }
 
     bindToggleSubtitleTrackInVideo(

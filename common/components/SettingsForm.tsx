@@ -372,7 +372,11 @@ export default function SettingsForm({
                         index={tabIndicesById['subtitle-study']}
                         tabsOrientation={tabsOrientation}
                     >
-                        <SubtitleStudySettingsTab settings={settings} onSettingsChanged={onSettingsChanged} />
+                        <SubtitleStudySettingsTab
+                            settings={settings}
+                            onSettingsChanged={onSettingsChanged}
+                            onViewKeyboardShortcuts={() => viewKeyboardShortcutSection('subtitles')}
+                        />
                     </TabPanel>
                 )}
                 <TabPanel value={tabIndex} index={tabIndicesById['anki-settings']} tabsOrientation={tabsOrientation}>

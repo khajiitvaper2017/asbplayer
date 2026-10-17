@@ -439,6 +439,8 @@ export interface KeyBindSet {
     readonly toggleCondensedPlayback: KeyBind;
     readonly toggleFastForwardPlayback: KeyBind;
     readonly toggleSubtitles: KeyBind;
+    readonly toggleSubtitleStudyBlur: KeyBind;
+    readonly toggleSubtitleStudyHide: KeyBind;
     readonly toggleVideoSubtitleTrack1: KeyBind;
     readonly toggleVideoSubtitleTrack2: KeyBind;
     readonly toggleVideoSubtitleTrack3: KeyBind;

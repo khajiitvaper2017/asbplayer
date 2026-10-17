@@ -1371,6 +1371,24 @@ function PlayerComponent(
         );
     }, [disableKeyEvents, keyBinder, playModeEnabled, t]);
 
+    const handleSubtitleStudyToggle = useCallback(
+        (mode: 'blur' | 'hide') => {
+            const key = mode === 'blur' ? 'subtitleStudyBlurEnabled' : 'subtitleStudyHideEnabled';
+            onSettingsChanged?.({ [key]: !settings[key] });
+        },
+        [onSettingsChanged, settings]
+    );
+
+    useEffect(() => {
+        return keyBinder.bindToggleSubtitleStudy(
+            (event, mode) => {
+                event.preventDefault();
+                handleSubtitleStudyToggle(mode);
+            },
+            () => disableKeyEvents || !onSettingsChanged
+        );
+    }, [keyBinder, handleSubtitleStudyToggle, disableKeyEvents, onSettingsChanged]);
+
     useEffect(() => {
         return keyBinder.bindToggleSubtitleVisibility(
             (event) => {
@@ -1537,6 +1555,9 @@ function PlayerComponent(
                             disableKeyEvents={disableKeyEvents}
                             playbackPreferences={playbackPreferences}
                             showOnMouseMovement={true}
+                            subtitleStudyBlurEnabled={settings.subtitleStudyBlurEnabled}
+                            subtitleStudyHideEnabled={settings.subtitleStudyHideEnabled}
+                            onSubtitleStudyToggle={onSettingsChanged && handleSubtitleStudyToggle}
                             previewEnabled={false}
                         />
                     )}

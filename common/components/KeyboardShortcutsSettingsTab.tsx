@@ -44,6 +44,8 @@ const keyboardShortcutSectionOrder: KeyboardShortcutSection[] = [
 const keyBindSectionByName: { [key in KeyBindName]: KeyboardShortcutSection } = {
     selectSubtitleTrack: 'subtitles',
     toggleSubtitles: 'subtitles',
+    toggleSubtitleStudyBlur: 'subtitles',
+    toggleSubtitleStudyHide: 'subtitles',
     toggleVideoSubtitleTrack1: 'subtitles',
     toggleVideoSubtitleTrack2: 'subtitles',
     toggleVideoSubtitleTrack3: 'subtitles',
@@ -414,6 +416,8 @@ const KeyboardShortcutsSettingsTab: React.FC<Props> = ({
                 hide: extensionInstalled && !extensionSupportsAutoPauseResume,
             },
             toggleSubtitles: { label: t('binds.toggleSubtitles'), boundViaBrowser: false },
+            toggleSubtitleStudyBlur: { label: t('subtitleStudy.blurEnabled'), boundViaBrowser: false },
+            toggleSubtitleStudyHide: { label: t('subtitleStudy.hideEnabled'), boundViaBrowser: false },
             toggleVideoSubtitleTrack1: { label: t('binds.toggleVideoSubtitleTrack1'), boundViaBrowser: false },
             toggleVideoSubtitleTrack2: { label: t('binds.toggleVideoSubtitleTrack2'), boundViaBrowser: false },
             toggleVideoSubtitleTrack3: { label: t('binds.toggleVideoSubtitleTrack3'), boundViaBrowser: false },

@@ -271,6 +271,14 @@ export default class AppKeyBinder implements KeyBinder {
         return this.defaultKeyBinder.bindToggleSubtitles(onToggleSubtitles, disabledGetter, useCapture);
     }
 
+    bindToggleSubtitleStudy(
+        onToggleSubtitleStudy: (event: KeyboardEvent, mode: 'blur' | 'hide') => void,
+        disabledGetter: () => boolean,
+        useCapture?: boolean
+    ): () => void {
+        return this.defaultKeyBinder.bindToggleSubtitleStudy(onToggleSubtitleStudy, disabledGetter, useCapture);
+    }
+
     bindToggleSubtitleTrackInVideo(
         onToggleSubtitleTrack: (event: KeyboardEvent, extra: any) => void,
         disabledGetter: () => boolean,

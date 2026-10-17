@@ -12,13 +12,15 @@ import { defaultSettings, subtitleStudyWordTypes } from '@project/common/setting
 import SettingsSection from '@project/common/components/SettingsSection';
 import SwitchLabelWithHoverEffect from '@project/common/components/SwitchLabelWithHoverEffect';
 import NumericSettingInput from '@project/common/components/NumericSettingInput';
+import KeyboardShortcutLink from '@project/common/components/KeyboardShortcutLink';
 
 interface Props {
     settings: AsbplayerSettings;
+    onViewKeyboardShortcuts: () => void;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
 }
 
-export default function SubtitleStudySettingsTab({ settings, onSettingsChanged }: Props) {
+export default function SubtitleStudySettingsTab({ settings, onSettingsChanged, onViewKeyboardShortcuts }: Props) {
     const { t } = useTranslation();
     return (
         <Stack spacing={2} sx={{ containerType: 'inline-size' }}>
@@ -29,7 +31,12 @@ export default function SubtitleStudySettingsTab({ settings, onSettingsChanged }
                     <Stack key={mode} spacing={1}>
                         <SettingsSection>{t(`subtitleStudy.${mode}Title`)}</SettingsSection>
                         <SwitchLabelWithHoverEffect
-                            label={t(`subtitleStudy.${mode}Enabled`)}
+                            label={
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    {t(`subtitleStudy.${mode}Enabled`)}
+                                    <KeyboardShortcutLink onClick={onViewKeyboardShortcuts} preset="formLabel" />
+                                </Box>
+                            }
                             labelPlacement="start"
                             control={
                                 <Switch

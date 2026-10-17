@@ -7,6 +7,8 @@ import type { Theme } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BlurOnIcon from '@mui/icons-material/BlurOn';
 import BlurOffIcon from '@mui/icons-material/BlurOff';
+import DeblurIcon from '@mui/icons-material/Deblur';
+import SubtitlesOffIcon from '@mui/icons-material/SubtitlesOff';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -626,6 +628,9 @@ interface ControlsProps {
     subtitlesEnabled?: boolean;
     subtitlesToggle?: boolean;
     onSubtitlesToggle?: () => void;
+    subtitleStudyBlurEnabled?: boolean;
+    subtitleStudyHideEnabled?: boolean;
+    onSubtitleStudyToggle?: (mode: 'blur' | 'hide') => void;
     audioTracks?: AudioTrackModel[];
     selectedAudioTrack?: string;
     tabs?: VideoTabModel[];
@@ -687,6 +692,9 @@ export default function Controls({
     subtitlesEnabled,
     subtitlesToggle,
     onSubtitlesToggle,
+    subtitleStudyBlurEnabled,
+    subtitleStudyHideEnabled,
+    onSubtitleStudyToggle,
     audioTracks,
     selectedAudioTrack,
     tabs,
@@ -1169,6 +1177,42 @@ export default function Controls({
                                                 <SubtitlesIcon
                                                     className={
                                                         subtitlesEnabled ? classes.button : classes.inactiveButton
+                                                    }
+                                                />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
+                                    {onSubtitleStudyToggle && (
+                                        <Tooltip title={t('subtitleStudy.blurEnabled')}>
+                                            <IconButton
+                                                color="inherit"
+                                                aria-label={t('subtitleStudy.blurEnabled')}
+                                                aria-pressed={subtitleStudyBlurEnabled}
+                                                onClick={() => onSubtitleStudyToggle('blur')}
+                                            >
+                                                <DeblurIcon
+                                                    className={
+                                                        subtitleStudyBlurEnabled
+                                                            ? classes.button
+                                                            : classes.inactiveButton
+                                                    }
+                                                />
+                                            </IconButton>
+                                        </Tooltip>
+                                    )}
+                                    {onSubtitleStudyToggle && (
+                                        <Tooltip title={t('subtitleStudy.hideEnabled')}>
+                                            <IconButton
+                                                color="inherit"
+                                                aria-label={t('subtitleStudy.hideEnabled')}
+                                                aria-pressed={subtitleStudyHideEnabled}
+                                                onClick={() => onSubtitleStudyToggle('hide')}
+                                            >
+                                                <SubtitlesOffIcon
+                                                    className={
+                                                        subtitleStudyHideEnabled
+                                                            ? classes.button
+                                                            : classes.inactiveButton
                                                     }
                                                 />
                                             </IconButton>

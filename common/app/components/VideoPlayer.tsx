@@ -1922,6 +1922,24 @@ function VideoPlayer({
         );
     }, [keyBinder, subtitles.length, t, keyEventsDisabled]);
 
+    const handleSubtitleStudyToggle = useCallback(
+        (mode: 'blur' | 'hide') => {
+            const key = mode === 'blur' ? 'subtitleStudyBlurEnabled' : 'subtitleStudyHideEnabled';
+            onSettingsChanged({ [key]: !settings[key] });
+        },
+        [onSettingsChanged, settings]
+    );
+
+    useEffect(() => {
+        return keyBinder.bindToggleSubtitleStudy(
+            (event, mode) => {
+                event.preventDefault();
+                handleSubtitleStudyToggle(mode);
+            },
+            () => keyEventsDisabled()
+        );
+    }, [keyBinder, handleSubtitleStudyToggle, keyEventsDisabled]);
+
     useEffect(() => {
         return keyBinder.bindToggleSubtitleVisibility(
             (event) => {
@@ -2337,6 +2355,9 @@ function VideoPlayer({
                 popOutEnabled={!isMobile}
                 playModeEnabled={subtitles && subtitles.length > 0}
                 playModes={playModes}
+                subtitleStudyBlurEnabled={settings.subtitleStudyBlurEnabled}
+                subtitleStudyHideEnabled={settings.subtitleStudyHideEnabled}
+                onSubtitleStudyToggle={handleSubtitleStudyToggle}
                 previewEnabled={settings.thumbnailPreview}
                 hideSubtitlePlayerToggleEnabled={
                     subtitles?.length > 0 && !popOut && !fullscreen && !notEnoughRoomForSubtitlePlayer
