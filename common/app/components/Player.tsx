@@ -142,7 +142,12 @@ interface PlayerProps {
     keyBinder: KeyBinder;
     extension: ChromeExtension;
     videoContainerRef?: MutableRefObject<HTMLDivElement | null>;
-    renderVideo?: (videoFile: string, channel: string, disableKeyEvents: boolean) => React.ReactNode;
+    renderVideo?: (
+        videoFile: string,
+        channel: string,
+        disableKeyEvents: boolean,
+        subtitles: DisplaySubtitleModel[]
+    ) => React.ReactNode;
     videoChannelRef?: MutableRefObject<VideoChannel | null>;
     drawerOpen: boolean;
     appBarHidden: boolean;
@@ -786,6 +791,7 @@ function PlayerComponent(
     useEffect(() => {
         if (
             channel === undefined ||
+            renderVideo !== undefined ||
             subtitles === undefined ||
             subtitlesSentThroughChannel ||
             subtitleFiles === undefined ||
@@ -805,7 +811,7 @@ function PlayerComponent(
                 flattenSubtitleFiles ? [subtitleFiles[0].file.name] : subtitleFiles.map((f) => f.file.name)
             );
         });
-    }, [subtitles, channel, flattenSubtitleFiles, subtitleFiles, subtitlesSentThroughChannel]);
+    }, [subtitles, channel, flattenSubtitleFiles, subtitleFiles, subtitlesSentThroughChannel, renderVideo]);
     useEffect(
         () =>
             channel?.onReady(() => {
@@ -1449,7 +1455,12 @@ function PlayerComponent(
                             }}
                             style={{ pointerEvents: subtitlePlayerResizing ? 'none' : 'auto' }}
                         >
-                            {renderVideo?.(videoFileUrl!, channelId, parentDisableKeyEvents || !videoFocused)}
+                            {renderVideo?.(
+                                videoFileUrl!,
+                                channelId,
+                                parentDisableKeyEvents || !videoFocused,
+                                subtitles
+                            )}
                         </div>
                     </Grid>
                 )}

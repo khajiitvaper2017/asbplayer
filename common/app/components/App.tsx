@@ -2076,10 +2076,11 @@ function App({
                                     jumpToSubtitle={jumpToSubtitle}
                                     onJumpToSubtitleHandled={handleJumpToSubtitleHandled}
                                     rewindSubtitle={rewindSubtitle}
-                                    renderVideo={(videoFile, channel, disableVideoKeyEvents) => (
+                                    renderVideo={(videoFile, channel, disableVideoKeyEvents, playerSubtitles) => (
                                         <VideoPlayer
                                             key={videoFile}
                                             embedded
+                                            playerSubtitles={playerSubtitles}
                                             topControls={appBarHidden ? headerControls : undefined}
                                             videoFile={videoFile}
                                             channel={channel}

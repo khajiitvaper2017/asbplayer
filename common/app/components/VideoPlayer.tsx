@@ -280,6 +280,7 @@ export interface SeekRequest {
 
 interface Props {
     embedded?: boolean;
+    playerSubtitles?: IndexedSubtitleModel[];
     topControls?: React.ReactNode;
     disableKeyEvents?: boolean;
     settings: AsbplayerSettings;
@@ -340,6 +341,7 @@ const saveLastControlType = async (controlType: ControlType): Promise<void> => {
 
 function VideoPlayer({
     embedded = false,
+    playerSubtitles,
     topControls,
     disableKeyEvents = false,
     settings,
@@ -393,7 +395,8 @@ function VideoPlayer({
     const [audioTracks, setAudioTracks] = useState<AudioTrackModel[]>();
     const [selectedAudioTrack, setSelectedAudioTrack] = useState<string>();
     const [wasPlayingOnAnkiDialogRequest, setWasPlayingOnAnkiDialogRequest] = useState<boolean>(false);
-    const [subtitles, setSubtitles] = useState<IndexedSubtitleModel[]>([]);
+    const [channelSubtitles, setChannelSubtitles] = useState<IndexedSubtitleModel[]>([]);
+    const subtitles = embedded && playerSubtitles !== undefined ? playerSubtitles : channelSubtitles;
     const subtitlesRef = useRef(subtitles);
     subtitlesRef.current = subtitles;
     const [showSubtitles, setShowSubtitles] = useState<IndexedSubtitleModel[]>([]);
@@ -452,6 +455,9 @@ function VideoPlayer({
     const [lastMinedRecord, setLastMinedRecord] = useState<MinedRecord>();
     const [trackCount, setTrackCount] = useState<number>(0);
     const [, forceRender] = useState<any>();
+    useEffect(() => {
+        setTrackCount(subtitles.reduce((count, subtitle) => Math.max(count, subtitle.track + 1), 0));
+    }, [subtitles]);
     const [mineIntervalStartTimestamp, setMineIntervalStartTimestamp] = useState<number>();
     const [blurOverlayVisible, setBlurOverlayVisible] = useState<boolean>(false);
     const handleBlurOverlayToggle = useCallback(() => setBlurOverlayVisible((v) => !v), []);
@@ -644,7 +650,7 @@ function VideoPlayer({
             tokenization: s.tokenization,
         }));
         subtitlesRef.current = shiftedSubtitles;
-        setSubtitles(shiftedSubtitles);
+        setChannelSubtitles(shiftedSubtitles);
     }, []);
 
     useEffect(() => {
@@ -902,9 +908,7 @@ function VideoPlayer({
                 index: i,
             }));
             subtitlesRef.current = videoSubtitles;
-            setSubtitles(videoSubtitles);
-            setTrackCount(Math.max(...videoSubtitles.map((s) => s.track)) + 1);
-
+            setChannelSubtitles(videoSubtitles);
             if (videoSubtitles.length > 0) {
                 offsetRef.current = offset;
                 setOffset(offset);
@@ -944,7 +948,7 @@ function VideoPlayer({
                 };
             }
             subtitlesRef.current = allSubtitles;
-            setSubtitles(allSubtitles);
+            setChannelSubtitles(allSubtitles);
         });
 
         playerChannel.onPlayMode((targetMode) => togglePlaybackMode(targetMode));
