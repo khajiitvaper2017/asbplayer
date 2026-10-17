@@ -13,6 +13,7 @@ import type { GenericParseType, GlobalState, OnlineSubtitleSourceConfig } from '
 import type {
     RectModel,
     SubtitleModel,
+    AssSubtitleTrack,
     SubtitleTrack,
     AudioTrackModel,
     AnkiUiSavedState,
@@ -417,6 +418,7 @@ export interface SubtitlesToVideoMessage extends Message {
     readonly value: SubtitleModel[];
     readonly name?: string;
     readonly names: string[];
+    readonly assTracks?: readonly AssSubtitleTrack[];
 }
 
 export interface SubtitlesUpdatedToVideoMessage extends Message {

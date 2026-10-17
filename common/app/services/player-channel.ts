@@ -30,6 +30,7 @@ import type {
     ReadyStateFromVideoMessage,
     ReadyToVideoMessage,
     SubtitleModel,
+    AssSubtitleTrack,
     SubtitleSettingsToVideoMessage,
     SubtitlesToVideoMessage,
     SubtitlesUpdatedFromVideoMessage,
@@ -58,7 +59,11 @@ export default class PlayerChannel {
     private currentTimeCallbacks: ((currentTime: number) => void)[];
     private audioTrackSelectedCallbacks: ((id: string) => void)[];
     private closeCallbacks: (() => void)[];
-    private subtitlesCallbacks: ((subtitles: SubtitleModel[], subtitleFileName: string) => void)[];
+    private subtitlesCallbacks: ((
+        subtitles: SubtitleModel[],
+        subtitleFileName: string,
+        assTracks?: readonly AssSubtitleTrack[]
+    ) => void)[];
     private subtitlesUpdatedCallbacks: ((updatedSubtitles: readonly IndexedSubtitleModel[]) => void)[];
     private saveTokenLocalCallbacks: ((
         track: number,
@@ -166,7 +171,8 @@ export default class PlayerChannel {
                     for (const callback of this.subtitlesCallbacks) {
                         callback(
                             subtitlesMessage.value,
-                            subtitlesMessage.names.length > 0 ? subtitlesMessage.names[0] : ''
+                            subtitlesMessage.names.length > 0 ? subtitlesMessage.names[0] : '',
+                            subtitlesMessage.assTracks
                         );
                     }
                     break;
@@ -343,7 +349,13 @@ export default class PlayerChannel {
         return () => this._remove(callback, this.readyCallbacks);
     }
 
-    onSubtitles(callback: (subtitles: SubtitleModel[], subtitleFileName: string) => void) {
+    onSubtitles(
+        callback: (
+            subtitles: SubtitleModel[],
+            subtitleFileName: string,
+            assTracks?: readonly AssSubtitleTrack[]
+        ) => void
+    ) {
         this.subtitlesCallbacks.push(callback);
         return () => this._remove(callback, this.subtitlesCallbacks);
     }

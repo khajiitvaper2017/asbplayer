@@ -1010,6 +1010,7 @@ type SubtitleModelComparators = {
 
 const subtitleModelComparators: SubtitleModelComparators = {
     text: (a, b) => a === b,
+    assText: (a, b) => a === b || (!!a && !!b && arrayEquals(a, b, (left, right) => left === right)),
     originalText: (a, b) => a === b,
     textImage: (a, b) => areSubtitleTextImagesEqual(a, b),
     start: (a, b) => a === b,

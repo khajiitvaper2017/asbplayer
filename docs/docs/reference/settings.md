@@ -87,6 +87,14 @@ Control how many surrounding subtitles and how much surrounding time are include
 
 Configure subtitle tracks, text styling, colors, and layout.
 
+### ASS styling in local videos {#ass-subtitle-styles}
+
+**Use ASS styling in local videos** is on by default. It uses the fonts, colors, positions, and effects defined in an ASS subtitle file during local video playback, including the popped-out player.
+
+The styled text supports selection, Jiten Reader lookup, and mining. Font, size, color, alignment, and margins come from the file. The subtitle list keeps its usual appearance. To use asbplayer's text styling instead, turn this setting off.
+
+Install the fonts named in the file for the intended appearance. In Chrome or Edge, click the lock beside **Use ASS styling in local videos** and allow access to installed fonts for accurate ASS text sizing. This is the same permission used by the **Font family** menu and also applies to the popped-out player. Browsers without local font access use approximate sizing. Fonts attached to MKV files are not loaded automatically. ASS.js approximates ASS rendering; some effects, including karaoke, may differ from a native player.
+
 The **Subtitle list** section controls timestamps, mining-button visibility, preview thumbnails, and subtitle placement above thumbnails. **Behavior** controls the remembered timing offset, automatic clipboard copying, and tracks eligible for copying. **Text processing** contains the regex filter and replacement, HTML handling, and ruby detection.
 
 ## Jiten Reader styles {#jiten-reader-styles}

@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Baixar áudio",
         "downloadImage": "Baixar imagem",
+        "downloadSubtitles": "Baixar legendas",
+        "downloadOriginalSubtitles": "Baixar legendas originais",
         "downloadSubtitlesAsSrt": "Baixar legenda como SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Exportar legendas em lote",
@@ -484,7 +486,7 @@
         "themeDark": "Escuro",
         "themeLight": "Claro",
         "title": "Configurações",
-        "unlockLocalFonts": "Clique para desbloquear o menu de fontes",
+        "unlockLocalFonts": "Permitir acesso às fontes instaladas",
         "unboundBind": "Não vinculado",
         "customFieldName": "Nome do campo",
         "missingFieldError": "O campo \"{{field}}\" não foi encontrado no tipo de nota",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "As instruções para configurar a API do Yomitan estão <0>aqui<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Usar estilos ASS em vídeos locais",
+        "assSubtitleStylesDescription": "Mantém as fontes, cores, posições e efeitos do arquivo de legendas. O texto continua interativo para estudar. Para exibir o texto no tamanho correto, clique no cadeado e permita o acesso às fontes instaladas."
     },
     "statistics": {
         "title": "Statistics",

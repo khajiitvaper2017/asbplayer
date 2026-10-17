@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Скачать аудио",
         "downloadImage": "Скачать изображение",
+        "downloadSubtitles": "Скачать субтитры",
+        "downloadOriginalSubtitles": "Скачать оригинальные субтитры",
         "downloadSubtitlesAsSrt": "Скачать субтитры в формате SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Bulk Export Subtitles",
@@ -484,7 +486,7 @@
         "themeDark": "Темная",
         "themeLight": "Светлая",
         "title": "Настройки",
-        "unlockLocalFonts": "Нажмите, чтобы разблокировать меню шрифтов",
+        "unlockLocalFonts": "Разрешить доступ к установленным шрифтам",
         "unboundBind": "Не задано",
         "customFieldName": "Имя (кастомного) поля",
         "missingFieldError": "Поле \"{{field}}\" не найдено в Anki-записи",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Использовать оформление ASS в локальных видео",
+        "assSubtitleStylesDescription": "Сохраняет шрифты, цвета, расположение и эффекты из файла субтитров. Текст остаётся интерактивным для изучения языка. Для точного размера текста нажмите на замок и разрешите доступ к установленным шрифтам."
     },
     "statistics": {
         "title": "Statistics",

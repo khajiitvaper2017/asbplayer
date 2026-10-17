@@ -60,6 +60,7 @@ export const defaultSettings: AsbplayerSettings = {
     subtitleStudyFadeSeconds: 0.05,
 
     ...defaultSubtitleTextSettings,
+    assSubtitleStyles: true,
     subtitlePositionOffset: 75,
     topSubtitlePositionOffset: 75,
     subtitleAlignment: 'bottom',

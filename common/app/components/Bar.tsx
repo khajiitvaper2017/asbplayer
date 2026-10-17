@@ -27,6 +27,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import Popover from '@mui/material/Popover';
 import ErrorIcon from '@mui/icons-material/Error';
 import type { FileWithId } from '@project/common/file-selector';
+import { download } from '@project/common/util';
 
 interface BarProps {
     drawerWidth: number;
@@ -152,6 +153,12 @@ export default function Bar({
     const handleDownloadMenuClose = useCallback(() => {
         setDownloadMenuOpen(false);
     }, []);
+    const handleDownloadOriginalSubtitles = useCallback(() => {
+        handleDownloadMenuClose();
+        for (const { file } of subtitleFiles ?? []) {
+            download(file, file.name);
+        }
+    }, [handleDownloadMenuClose, subtitleFiles]);
     const handleDownloadSrt = useCallback(() => {
         handleDownloadMenuClose();
         onDownloadSubtitleFilesAsSrt();
@@ -189,8 +196,8 @@ export default function Bar({
 
     const downloadButton = (
         <>
-            {canSaveAsSrt && (
-                <Tooltip title={t('action.downloadSubtitlesAsSrt')}>
+            {subtitleFiles !== undefined && subtitleFiles.length > 0 && (
+                <Tooltip title={t('action.downloadSubtitles')}>
                     <IconButton
                         edge={controlsOnly ? false : 'start'}
                         color="inherit"
@@ -264,7 +271,15 @@ export default function Bar({
             >
                 <List dense onMouseLeave={handleDownloadMenuClose}>
                     <ListItem disablePadding>
-                        <ListItemButton onClick={handleDownloadSrt}>
+                        <ListItemButton onClick={handleDownloadOriginalSubtitles}>
+                            <ListItemIcon>
+                                <SaveAltIcon />
+                            </ListItemIcon>
+                            <ListItemText primary={t('action.downloadOriginalSubtitles')} />
+                        </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding>
+                        <ListItemButton onClick={handleDownloadSrt} disabled={!canSaveAsSrt}>
                             <ListItemIcon>
                                 <SaveAltIcon />
                             </ListItemIcon>

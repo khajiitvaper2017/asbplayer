@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Audio herunterladen",
         "downloadImage": "Bild herunterladen",
+        "downloadSubtitles": "Untertitel herunterladen",
+        "downloadOriginalSubtitles": "Originaluntertitel herunterladen",
         "downloadSubtitlesAsSrt": "Untertitel als SRT herunterladen",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Massenexportuntertitel",
@@ -484,7 +486,7 @@
         "themeDark": "Dunkel",
         "themeLight": "Hell",
         "title": "Einstellungen",
-        "unlockLocalFonts": "Click to unlock font menu",
+        "unlockLocalFonts": "Zugriff auf installierte Schriftarten erlauben",
         "unboundBind": "Nicht gesetzt",
         "customFieldName": "Field name",
         "missingFieldError": "Field \"{{field}}\" not found in note type",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "ASS-Stile in lokalen Videos verwenden",
+        "assSubtitleStylesDescription": "Schriftarten, Farben, Positionen und Effekte aus der Untertiteldatei beibehalten. Der Text bleibt zum Lernen interaktiv. Für genaue Schriftgrößen klicke auf das Schloss und erlaube den Zugriff auf installierte Schriftarten."
     },
     "statistics": {
         "title": "Statistics",

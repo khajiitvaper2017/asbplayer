@@ -8,6 +8,8 @@
         "preview": "Vista Previa",
         "downloadAudio": "Descargar Audio",
         "downloadImage": "Descargar Imagen",
+        "downloadSubtitles": "Descargar subtítulos",
+        "downloadOriginalSubtitles": "Descargar subtítulos originales",
         "downloadSubtitlesAsSrt": "Descargar Subtítulos como SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Exportación Masiva de Subtítulos",
@@ -484,7 +486,7 @@
         "themeDark": "Oscuro",
         "themeLight": "Claro",
         "title": "Ajustes",
-        "unlockLocalFonts": "Haz click para desbloquear el menú de fuentes",
+        "unlockLocalFonts": "Permitir acceso a las fuentes instaladas",
         "unboundBind": "Sin Asignar",
         "customFieldName": "Nombre del campo",
         "missingFieldError": "No se pudo encontrar el campo \"{{field}}\" en el tipo de nota de Anki.",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Usar los estilos ASS en vídeos locales",
+        "assSubtitleStylesDescription": "Conserva las fuentes, los colores, las posiciones y los efectos del archivo de subtítulos. El texto sigue siendo interactivo para estudiar. Para que el tamaño sea correcto, haz clic en el candado y permite el acceso a las fuentes instaladas."
     },
     "statistics": {
         "title": "Statistics",

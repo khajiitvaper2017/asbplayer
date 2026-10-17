@@ -78,6 +78,7 @@ const settingsSchema = {
     type: 'object',
     properties: {
         subtitleStudyBlurEnabled: { type: 'boolean' },
+        assSubtitleStyles: { type: 'boolean' },
         subtitleStudyHideEnabled: { type: 'boolean' },
         subtitleStudyBlurWordTypes: {
             type: 'array',

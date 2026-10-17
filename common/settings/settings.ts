@@ -657,6 +657,7 @@ export interface AsbplayerSettings
         JitenSettings,
         SubtitleStudySettings {
     readonly subtitlePreview: string;
+    readonly assSubtitleStyles: boolean;
     readonly rememberEmbeddedSubtitleLanguage: boolean;
     readonly embeddedSubtitleLanguage: string;
 }

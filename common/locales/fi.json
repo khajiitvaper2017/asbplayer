@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Lataa ääni",
         "downloadImage": "Lataa kuva",
+        "downloadSubtitles": "Lataa tekstitykset",
+        "downloadOriginalSubtitles": "Lataa alkuperäiset tekstitykset",
         "downloadSubtitlesAsSrt": "Lataa (SRT)",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Bulk Export Subtitles",
@@ -484,7 +486,7 @@
         "themeDark": "Tumma",
         "themeLight": "Vaalea",
         "title": "Asetukset",
-        "unlockLocalFonts": "Klikkaa avataksesi fonttivalikon",
+        "unlockLocalFonts": "Salli asennettujen fonttien käyttö",
         "unboundBind": "Ei sitoumuksia",
         "customFieldName": "Kentän nimi",
         "missingFieldError": "Kenttä \"{{field}}\" ei löydy merkintätyypistä",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Käytä ASS-tyylejä paikallisissa videoissa",
+        "assSubtitleStylesDescription": "Säilyttää tekstitystiedoston fontit, värit, sijainnit ja tehosteet. Teksti pysyy vuorovaikutteisena opiskelua varten. Jotta tekstin koko olisi oikea, napsauta lukkoa ja salli asennettujen fonttien käyttö."
     },
     "statistics": {
         "title": "Statistics",

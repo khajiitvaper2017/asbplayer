@@ -167,6 +167,7 @@ function SubtitlesWidthUnitSelect({ value, onValueChange }: SubtitlesWidthUnitSe
 }
 
 interface Props {
+    insideApp?: boolean;
     settings: AsbplayerSettings;
     onSettingChanged: <K extends keyof AsbplayerSettings>(key: K, value: AsbplayerSettings[K]) => Promise<void>;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
@@ -182,6 +183,7 @@ interface Props {
 }
 
 const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
+    insideApp,
     settings,
     onSettingChanged,
     onSettingsChanged,
@@ -248,6 +250,33 @@ const SubtitleAppearanceSettingsTab: React.FC<Props> = ({
         textSubtitleSettingsAreDirty(settings, selectedSubtitleAppearanceTrack);
     return (
         <Stack spacing={1}>
+            {insideApp && (
+                <Stack direction="row" alignItems="center" spacing={1}>
+                    <Tooltip title={t('settings.assSubtitleStylesDescription')}>
+                        <SwitchLabelWithHoverEffect
+                            sx={{ flex: 1 }}
+                            label={t('settings.assSubtitleStyles')}
+                            labelPlacement="start"
+                            control={
+                                <Switch
+                                    checked={settings.assSubtitleStyles}
+                                    onChange={(_, checked) => onSettingChanged('assSubtitleStyles', checked)}
+                                />
+                            }
+                        />
+                    </Tooltip>
+                    {settings.assSubtitleStyles &&
+                        localFontFamilies.length === 0 &&
+                        localFontsAvailable &&
+                        localFontsPermission === 'prompt' && (
+                            <Tooltip title={t('settings.unlockLocalFonts')}>
+                                <IconButton aria-label={t('settings.unlockLocalFonts')} onClick={onUnlockLocalFonts}>
+                                    <LockIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                </Stack>
+            )}
             {(!extensionInstalled || extensionSupportsTrackSpecificSettings) && (
                 <>
                     <SubtitleAppearanceTrackSelector

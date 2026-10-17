@@ -396,6 +396,7 @@ export default function SettingsForm({
                 >
                     <Stack spacing={2}>
                         <SubtitleAppearanceSettingsTab
+                            insideApp={insideApp}
                             settings={settings}
                             onSettingChanged={handleSettingChanged}
                             onSettingsChanged={onSettingsChanged}

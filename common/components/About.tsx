@@ -800,6 +800,13 @@ const dependencies: Dependency[] = [
         purpose: 'Subtitle parsing',
     },
     {
+        name: 'ASS.js',
+        projectLink: 'https://github.com/weizhenye/ASS',
+        license: 'MIT',
+        licenseLink: 'https://github.com/weizhenye/ASS/blob/master/LICENSE',
+        purpose: 'ASS subtitle rendering',
+    },
+    {
         name: 'pgs-parser',
         projectLink: 'https://github.com/killergerbah/pgs-parser',
         license: 'MIT',

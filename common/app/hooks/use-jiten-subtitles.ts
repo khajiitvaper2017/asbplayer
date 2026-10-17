@@ -7,16 +7,26 @@ import { useCallback, useEffect, useLayoutEffect, useSyncExternalStore } from 'r
 const kanaOnly = /^[\u3040-\u309f\u30a0-\u30ff\s・ー]+$/;
 const subtitleHomes = new WeakMap<HTMLElement, HTMLElement>();
 
+export const markKanaOnlyWords = (element: ParentNode) => {
+    for (const word of element.querySelectorAll('.jiten-word:not(.unparsed):not(.asb-kana-only)')) {
+        if (word.textContent?.trim() && kanaOnly.test(word.textContent)) word.classList.add('asb-kana-only');
+    }
+};
+
 const displayCopy = (element: HTMLElement) => {
     const copy = element.cloneNode(true) as HTMLElement;
     for (const word of copy.querySelectorAll('.hovered')) word.classList.remove('hovered');
     return copy;
 };
 
-export const useJitenSubtitleSource = (subtitles: readonly IndexedSubtitleModel[], enabled = true) => {
+export const useJitenSubtitleSource = (
+    subtitles: readonly IndexedSubtitleModel[],
+    enabled = true,
+    assStyles = false
+) => {
     useLayoutEffect(() => {
-        if (enabled) source.setSubtitles(subtitles);
-    }, [subtitles, enabled]);
+        if (enabled) source.setSubtitles(subtitles, assStyles);
+    }, [subtitles, enabled, assStyles]);
     useEffect(
         () => () => {
             if (enabled) source.clear();
@@ -46,11 +56,7 @@ export const useJitenSubtitleElement = <T extends HTMLElement = HTMLDivElement>(
             const hasReaderMarkup = () => element.matches('[ajb]') || element.querySelector('[ajb]');
             const update = () => {
                 if (!hasReaderMarkup()) return;
-                for (const word of element.querySelectorAll('.jiten-word:not(.unparsed):not(.asb-kana-only)')) {
-                    if (word.textContent?.trim() && kanaOnly.test(word.textContent)) {
-                        word.classList.add('asb-kana-only');
-                    }
-                }
+                markKanaOnlyWords(element);
                 if (element.parentElement === home) target.replaceChildren(element);
                 else if (element.parentElement !== target) target.replaceChildren(displayCopy(element));
             };

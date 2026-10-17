@@ -4,6 +4,25 @@
     top: 100% !important;
 }
 
+.asbplayer-ass-subtitles {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.asbplayer-ass-subtitles .ASS-dialogue [data-text] {
+    pointer-events: auto;
+    user-select: text;
+}
+
+.asbplayer-ass-subtitles .asbplayer-ass-fragment,
+.asbplayer-ass-subtitles .jiten-word {
+    display: inline;
+    margin-inline: 0;
+    color: inherit !important;
+}
+
 .asbplayer-subtitles {
     margin: 0;
     padding: 0;

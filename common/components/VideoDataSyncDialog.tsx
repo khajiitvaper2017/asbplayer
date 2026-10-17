@@ -286,8 +286,8 @@ export default function VideoDataSyncDialog({
                             : calculateVideoName(trimmedName, label, false);
 
                     return {
-                        name: trackName,
                         ...subtitle,
+                        name: subtitle.name ?? trackName,
                     };
                 }
             })
@@ -416,6 +416,7 @@ export default function VideoDataSyncDialog({
             const { normalizedName, extension } = normalizeOnlineSubtitleFileName(name, url);
             const track = {
                 label: normalizedName,
+                name: normalizedName.substring(0, normalizedName.lastIndexOf('.')),
                 id: url,
                 url,
                 extension,

@@ -8,6 +8,8 @@
         "preview": "Pratinjau",
         "downloadAudio": "Unduh Audio",
         "downloadImage": "Unduh Gambar",
+        "downloadSubtitles": "Unduh takarir",
+        "downloadOriginalSubtitles": "Unduh takarir asli",
         "downloadSubtitlesAsSrt": "Unduh Takarir sebagai SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Ekspor Massal Subtitle",
@@ -484,7 +486,7 @@
         "themeDark": "Gelap",
         "themeLight": "Terang",
         "title": "Pengaturan",
-        "unlockLocalFonts": "Klik untuk membuka menu font",
+        "unlockLocalFonts": "Izinkan akses ke font yang terpasang",
         "unboundBind": "Tidak Terikat",
         "customFieldName": "Nama Kolom",
         "missingFieldError": "Kolom \"{{field}}\" tidak ditemukan di jenis catatan",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Gunakan gaya ASS pada video lokal",
+        "assSubtitleStylesDescription": "Mempertahankan font, warna, posisi, dan efek dari berkas takarir. Teks tetap interaktif untuk belajar. Agar ukurannya tepat, klik ikon gembok dan izinkan akses ke font yang terpasang."
     },
     "statistics": {
         "title": "Statistics",

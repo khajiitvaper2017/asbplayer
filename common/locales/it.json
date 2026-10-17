@@ -8,6 +8,8 @@
         "preview": "Anteprima",
         "downloadAudio": "Salva Audio",
         "downloadImage": "Salva Immagine",
+        "downloadSubtitles": "Scarica i sottotitoli",
+        "downloadOriginalSubtitles": "Scarica i sottotitoli originali",
         "downloadSubtitlesAsSrt": "Salva Sottotitoli in SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Esporta Sottotitoli in Massa",
@@ -484,7 +486,7 @@
         "themeDark": "Scuro",
         "themeLight": "Chiaro",
         "title": "Impostazioni",
-        "unlockLocalFonts": "Clicca per sbloccare il menu dei caratteri",
+        "unlockLocalFonts": "Consenti l’accesso ai caratteri installati",
         "unboundBind": "Non assegnato",
         "customFieldName": "Nome campo",
         "missingFieldError": "Campo \"{{field}}\" non trovato nel tipo di nota",
@@ -656,7 +658,9 @@
         "webSocketInterface": "Interfaccia WebSocket",
         "yomitanHelperText": "Le istruzioni per configurare l'API Yomitan sono <0>qui</0>.",
         "seekableTracks": "Tracce dei sottotitoli influenzate dalle modalità di riproduzione e dalle scorciatoie da tastiera",
-        "autoCopyableTracks": "Tracce dei sottotitoli idonee per la copia automatica"
+        "autoCopyableTracks": "Tracce dei sottotitoli idonee per la copia automatica",
+        "assSubtitleStyles": "Usa gli stili ASS nei video locali",
+        "assSubtitleStylesDescription": "Mantiene caratteri, colori, posizioni ed effetti del file dei sottotitoli. Il testo resta interattivo per lo studio. Per visualizzare il testo nelle dimensioni corrette, fai clic sul lucchetto e consenti l’accesso ai caratteri installati."
     },
     "statistics": {
         "title": "Statistiche",

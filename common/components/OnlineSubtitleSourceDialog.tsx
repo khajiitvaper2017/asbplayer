@@ -72,7 +72,7 @@ const normalizeDetectedTitle = (title: string) => {
     const titleSeparator = title.search(TITLE_SEPARATOR);
     let normalized = (titleSeparator === -1 ? title : title.slice(0, titleSeparator))
         .trim()
-        .replace(/\.(?:mkv|mp4|m4v|avi|webm)$/i, '')
+        .replace(/\.(?:mkv|mp4|m4v|avi|webm|ass|srt)$/i, '')
         .replace(/[._-]+/g, ' ')
         .replace(/[!?]+/g, ' ')
         .replace(/\s+/g, ' ')

@@ -54,6 +54,7 @@ export interface Tokenization {
 
 export interface SubtitleModel {
     readonly text: string;
+    readonly assText?: readonly string[];
     readonly originalText?: string;
     readonly textImage?: SubtitleTextImage;
     readonly start: number;
@@ -65,6 +66,11 @@ export interface SubtitleModel {
     readonly track: number;
     readonly index?: number;
     readonly tokenization?: Tokenization;
+}
+
+export interface AssSubtitleTrack {
+    readonly track: number;
+    readonly content: string;
 }
 
 export interface IndexedSubtitleModel extends SubtitleModel {
@@ -223,6 +229,7 @@ export interface VideoDataSubtitleTrackDef {
 
 export interface VideoDataSubtitleTrack extends VideoDataSubtitleTrackDef {
     id: string;
+    name?: string;
 }
 
 export interface ConfirmedVideoDataSubtitleTrack extends VideoDataSubtitleTrack {

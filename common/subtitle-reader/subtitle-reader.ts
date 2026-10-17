@@ -85,6 +85,7 @@ interface SubtitleNode {
     start: number;
     end: number;
     text: string;
+    assText?: readonly string[];
     textImage?: SubtitleTextImage;
     track: number;
     tokenization?: Tokenization;
@@ -285,6 +286,19 @@ export default class SubtitleReader {
         if (file.name.endsWith('.ass')) {
             const nodes = parseAss(await file.text(), {});
             return nodes.dialogues.map((dialogue) => {
+                const assText = dialogue.slices.flatMap((slice) =>
+                    slice.fragments.flatMap((fragment) =>
+                        fragment.drawing
+                            ? []
+                            : fragment.text
+                                  .replace(/\\h/g, ' ')
+                                  .replace(/\\N/g, '\n')
+                                  .replace(/\\n/g, dialogue.q === 2 ? '\n' : ' ')
+                                  .split('\n')
+                                  .flatMap((line, index) => (index ? ['\n', line] : [line]))
+                                  .filter(Boolean)
+                    )
+                );
                 return {
                     start: Math.round(dialogue.start * 1000),
                     end: Math.round(dialogue.end * 1000),
@@ -292,6 +306,7 @@ export default class SubtitleReader {
                         dialogue.slices.flatMap((slice) => slice.fragments.map((fragment) => fragment.text)).join('')
                     ).replace(assNewLineRegex, '\n'),
                     track: track,
+                    assText,
                 };
             });
         }

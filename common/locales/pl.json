@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Pobierz audio",
         "downloadImage": "Pobierz obraz",
+        "downloadSubtitles": "Pobierz napisy",
+        "downloadOriginalSubtitles": "Pobierz oryginalne napisy",
         "downloadSubtitlesAsSrt": "Pobierz napisy w formacie SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Bulk Export Subtitles",
@@ -484,7 +486,7 @@
         "themeDark": "Ciemny",
         "themeLight": "Jasny",
         "title": "Ustawienia",
-        "unlockLocalFonts": "Kliknij, aby odblokować menu czcionek",
+        "unlockLocalFonts": "Zezwól na dostęp do zainstalowanych czcionek",
         "unboundBind": "Nieprzypisane",
         "customFieldName": "Field name",
         "missingFieldError": "Field \"{{field}}\" not found in note type",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Używaj stylów ASS w lokalnych filmach",
+        "assSubtitleStylesDescription": "Zachowuje czcionki, kolory, położenie i efekty z pliku napisów. Tekst pozostaje interaktywny i można go używać do nauki. Aby rozmiar tekstu był prawidłowy, kliknij kłódkę i zezwól na dostęp do zainstalowanych czcionek."
     },
     "statistics": {
         "title": "Statistics",

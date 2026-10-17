@@ -12,6 +12,7 @@ import type {
     CardTextFieldValues,
     ControlType,
     IndexedSubtitleModel,
+    AssSubtitleTrack,
     PlaybackState,
 } from '@project/common';
 import { PostMineAction, PlayMode, PostMinePlayback } from '@project/common';
@@ -62,6 +63,7 @@ import Controls from '@project/common/app/components/Controls';
 import PlayerChannel from '@project/common/app/services/player-channel';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import Alert from '@project/common/app/components/Alert';
+import AssSubtitles from '@project/common/app/components/AssSubtitles';
 import type { AlertNotification } from '@project/common/app/components/Alert';
 import Button from '@mui/material/Button';
 import { useJitenSubtitleElement, useJitenSubtitleSource } from '@project/common/app/hooks/use-jiten-subtitles';
@@ -281,6 +283,7 @@ export interface SeekRequest {
 interface Props {
     embedded?: boolean;
     playerSubtitles?: IndexedSubtitleModel[];
+    assTracks?: readonly AssSubtitleTrack[];
     topControls?: React.ReactNode;
     disableKeyEvents?: boolean;
     settings: AsbplayerSettings;
@@ -342,6 +345,7 @@ const saveLastControlType = async (controlType: ControlType): Promise<void> => {
 function VideoPlayer({
     embedded = false,
     playerSubtitles,
+    assTracks: playerAssTracks,
     topControls,
     disableKeyEvents = false,
     settings,
@@ -396,6 +400,18 @@ function VideoPlayer({
     const [selectedAudioTrack, setSelectedAudioTrack] = useState<string>();
     const [wasPlayingOnAnkiDialogRequest, setWasPlayingOnAnkiDialogRequest] = useState<boolean>(false);
     const [channelSubtitles, setChannelSubtitles] = useState<IndexedSubtitleModel[]>([]);
+    const [channelAssTracks, setChannelAssTracks] = useState<readonly AssSubtitleTrack[]>([]);
+    const assTracks = embedded ? (playerAssTracks ?? channelAssTracks) : channelAssTracks;
+    const [assRenderingFailed, setAssRenderingFailed] = useState(false);
+    useEffect(() => setAssRenderingFailed(false), [assTracks, settings.assSubtitleStyles]);
+    const handleAssError = useCallback(
+        (error: string) => {
+            setAssRenderingFailed(true);
+            onError(error);
+        },
+        [onError]
+    );
+    const styledAssTracks = settings.assSubtitleStyles && !assRenderingFailed ? assTracks : [];
     const subtitles = embedded && playerSubtitles !== undefined ? playerSubtitles : channelSubtitles;
     const subtitlesRef = useRef(subtitles);
     subtitlesRef.current = subtitles;
@@ -640,6 +656,7 @@ function VideoPlayer({
 
         const shiftedSubtitles = subtitlesRef.current.map((s, i) => ({
             text: s.text,
+            assText: s.assText,
             textImage: s.textImage,
             start: s.originalStart + offset,
             originalStart: s.originalStart,
@@ -896,7 +913,8 @@ function VideoPlayer({
             if (!embedded) window.close();
         });
 
-        playerChannel.onSubtitles((subtitles) => {
+        playerChannel.onSubtitles((subtitles, _fileName, assTracks) => {
+            setChannelAssTracks(assTracks ?? []);
             asbTrace('playback/video-player', 'Received subtitles from player channel', {
                 subtitleCount: subtitles.length,
             });
@@ -1993,7 +2011,7 @@ function VideoPlayer({
         [trackStyles, subtitleSettings.imageBasedSubtitleScaleFactor]
     );
 
-    useJitenSubtitleSource(subtitles, !embedded);
+    useJitenSubtitleSource(subtitles, !embedded, settings.assSubtitleStyles);
 
     const handleSwipe = useCallback(
         (direction: Direction) => {
@@ -2085,9 +2103,15 @@ function VideoPlayer({
 
     const subtitleAlignmentForTrack = (track: number) => subtitleAlignments[track] ?? subtitleAlignments[0];
     const subtitleElementsWithAlignment = (alignment: SubtitleAlignment) => {
-        const showing = showSubtitles.filter((subtitle) => subtitleAlignmentForTrack(subtitle.track) === alignment);
+        const showing = showSubtitles.filter(
+            (subtitle) =>
+                subtitleAlignmentForTrack(subtitle.track) === alignment &&
+                !styledAssTracks.some((track) => track.track === subtitle.track && subtitle.assText)
+        );
         const invisible = invisibleSubtitles.filter(
-            (subtitle) => subtitleAlignmentForTrack(subtitle.track) === alignment
+            (subtitle) =>
+                subtitleAlignmentForTrack(subtitle.track) === alignment &&
+                !styledAssTracks.some((track) => track.track === subtitle.track && subtitle.assText)
         );
         return mapSubtitlesForDisplay(showing, invisible, elementForSubtitle);
     };
@@ -2201,6 +2225,25 @@ function VideoPlayer({
             />
             {/* Optional blur mask overlay; constrained to the video bounds within the player container */}
             {blurOverlayVisible && <BlurOverlay anchorRef={containerRef} containerRef={videoRef} />}
+            {/* ASS.js captures the video dimensions at initialization, so wait for metadata. */}
+            {video &&
+                videoWidth !== undefined &&
+                videoHeight !== undefined &&
+                styledAssTracks.map((track, index) => (
+                    <AssSubtitles
+                        key={index}
+                        video={video}
+                        track={track}
+                        subtitles={subtitles}
+                        showingSubtitles={showSubtitles}
+                        offset={offset}
+                        visible={displaySubtitles && !disabledSubtitleTracks[track.track]}
+                        className={trackStyles[track.track]?.classes}
+                        onMouseOver={handleSubtitleMouseOver}
+                        onMouseOut={handleSubtitleMouseOut}
+                        onError={handleAssError}
+                    />
+                ))}
             {/* this video is for getting the seek preview below */}
             {miscSettings.thumbnailPreview && (
                 <video

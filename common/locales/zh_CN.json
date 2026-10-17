@@ -8,6 +8,8 @@
         "preview": "预览",
         "downloadAudio": "下载音频",
         "downloadImage": "下载截图",
+        "downloadSubtitles": "下载字幕",
+        "downloadOriginalSubtitles": "下载原始字幕",
         "downloadSubtitlesAsSrt": "下载字幕为 SRT 文件",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "批量导出字幕",
@@ -484,7 +486,7 @@
         "themeDark": "深色主题",
         "themeLight": "浅色主题",
         "title": "设置",
-        "unlockLocalFonts": "点击解锁本地字体菜单",
+        "unlockLocalFonts": "允许访问已安装的字体",
         "unboundBind": "未绑定",
         "customFieldName": "字段名称",
         "missingFieldError": "笔记类型中未找到字段“{{field}}”",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket 接口",
         "yomitanHelperText": "Yomitan API 配置说明详见 <0>此处</0>。",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "本地视频使用 ASS 字幕样式",
+        "assSubtitleStylesDescription": "保留字幕文件中的字体、颜色、位置和特效，文字仍可交互，方便学习。 要准确显示文字大小，请点击锁图标，并允许访问已安装的字体。"
     },
     "statistics": {
         "title": "统计数据",

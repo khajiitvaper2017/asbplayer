@@ -8,6 +8,8 @@
         "preview": "プレビュー",
         "downloadAudio": "音声をダウンロード",
         "downloadImage": "画像をダウンロード",
+        "downloadSubtitles": "字幕をダウンロード",
+        "downloadOriginalSubtitles": "元の字幕ファイルをダウンロード",
         "downloadSubtitlesAsSrt": "SRT 形式字幕をダウンロード",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Ankiに字幕を一括エクスポート",
@@ -484,7 +486,7 @@
         "themeDark": "ダーク",
         "themeLight": "ライト",
         "title": "設定",
-        "unlockLocalFonts": "フォント検出の解除",
+        "unlockLocalFonts": "インストール済みフォントへのアクセスを許可",
         "unboundBind": "キーバインドなし",
         "customFieldName": "フィールド名",
         "missingFieldError": "フィールド \"{{field}}\" がノートタイプに見つかりません",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocketインターフェース",
         "yomitanHelperText": "YomitanのAPIのセットアップは<0>こちら<0>をご参考にしてください。",
         "seekableTracks": "操作対象の字幕トラック（プレイバックモード/ショートカット）",
-        "autoCopyableTracks": "自動コピー対象の字幕トラック"
+        "autoCopyableTracks": "自動コピー対象の字幕トラック",
+        "assSubtitleStyles": "ローカル動画でASS字幕のスタイルを使用",
+        "assSubtitleStylesDescription": "字幕ファイルのフォント、色、配置、エフェクトを再現します。テキストは学習用に操作できます。 正確な文字サイズで表示するには、鍵アイコンをクリックし、インストール済みフォントへのアクセスを許可してください。"
     },
     "statistics": {
         "title": "統計",

@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Télécharger l'audio",
         "downloadImage": "Télécharger l'image",
+        "downloadSubtitles": "Télécharger les sous-titres",
+        "downloadOriginalSubtitles": "Télécharger les sous-titres d’origine",
         "downloadSubtitlesAsSrt": "Télécharger les sous-titres au format SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Bulk Export Subtitles",
@@ -484,7 +486,7 @@
         "themeDark": "Sombre",
         "themeLight": "Clair",
         "title": "Paramètres",
-        "unlockLocalFonts": "Cliquez pour déverrouiller le menu de police",
+        "unlockLocalFonts": "Autoriser l’accès aux polices installées",
         "unboundBind": "Non lié",
         "customFieldName": "Nom du champ",
         "missingFieldError": "Le champ \"{{field}}\" est introuvable dans le type de note",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Utiliser les styles ASS dans les vidéos locales",
+        "assSubtitleStylesDescription": "Conserve les polices, les couleurs, les positions et les effets du fichier de sous-titres. Le texte reste interactif pour l’apprentissage. Pour un affichage à la bonne taille, cliquez sur le cadenas et autorisez l’accès aux polices installées."
     },
     "statistics": {
         "title": "Statistics",

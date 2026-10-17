@@ -14,6 +14,7 @@ import type {
     IndexedSubtitleModel,
     PlaybackState,
     SubtitleModel,
+    AssSubtitleTrack,
     DisplaySubtitleModel,
     VideoTabModel,
 } from '@project/common';
@@ -26,6 +27,7 @@ import type { AsbplayerSettings, SettingsProvider } from '@project/common/settin
 import { isTrackAutoCopyable, VideoSubtitleSplitBehavior } from '@project/common/settings';
 import { SubtitleCollection } from '@project/common/subtitle-collection';
 import type { SubtitleReader } from '@project/common/subtitle-reader';
+import { assContentForRendering } from '@project/common/subtitle-reader/ass-content';
 import type { KeyBinder } from '@project/common/key-binder';
 import { asbTrace } from '@project/common/util/log';
 import {
@@ -146,7 +148,8 @@ interface PlayerProps {
         videoFile: string,
         channel: string,
         disableKeyEvents: boolean,
-        subtitles: DisplaySubtitleModel[]
+        subtitles: DisplaySubtitleModel[],
+        assTracks: readonly AssSubtitleTrack[]
     ) => React.ReactNode;
     videoChannelRef?: MutableRefObject<VideoChannel | null>;
     drawerOpen: boolean;
@@ -246,6 +249,7 @@ function PlayerComponent(
     const playModesRef = useRef<Set<PlayMode>>(playModes);
     playModesRef.current = playModes;
     const [subtitlesSentThroughChannel, setSubtitlesSentThroughChannel] = useState<boolean>();
+    const [assTracks, setAssTracks] = useState<readonly AssSubtitleTrack[]>([]);
     const subtitlesRef = useRef<DisplaySubtitleModel[]>(undefined);
     subtitlesRef.current = subtitles;
     const [subtitleCollection, setSubtitleCollection] = useState<SubtitleCollection<DisplaySubtitleModel>>(
@@ -260,7 +264,7 @@ function PlayerComponent(
     const videoFileUrl = sources?.videoFileUrl;
     const playbackPositionKey = videoFile?.file.name;
     const syntheticPlayback = videoFileUrl === undefined && tab === undefined;
-    useJitenSubtitleSource(subtitles, tab === undefined);
+    useJitenSubtitleSource(subtitles, tab === undefined, settings.assSubtitleStyles);
     const [videoFocused, setVideoFocused] = useState(false);
     const disableKeyEvents = parentDisableKeyEvents || (videoFocused && Boolean(videoFileUrl && !videoPopOut));
     const playModeEnabled = subtitles && subtitles.length > 0 && Boolean(videoFileUrl);
@@ -608,6 +612,7 @@ function PlayerComponent(
 
             const newSubtitles = subtitles.map((s, i) => ({
                 text: s.text,
+                assText: s.assText,
                 textImage: s.textImage,
                 start: s.originalStart + offset,
                 originalStart: s.originalStart,
@@ -688,14 +693,30 @@ function PlayerComponent(
                 setLoadingSubtitles(true);
 
                 try {
-                    const nodes = await subtitleReader.subtitles(
-                        subtitleFiles.map((f) => f.file),
-                        flattenSubtitleFiles
-                    );
+                    const [nodes, assTracks] = await Promise.all([
+                        subtitleReader.subtitles(
+                            subtitleFiles.map((f) => f.file),
+                            flattenSubtitleFiles
+                        ),
+                        Promise.all(
+                            subtitleFiles.flatMap(({ file }, track) =>
+                                tab === undefined && file.name.endsWith('.ass')
+                                    ? [
+                                          file.text().then((content) => ({
+                                              track: flattenSubtitleFiles ? 0 : track,
+                                              content: assContentForRendering(content),
+                                          })),
+                                      ]
+                                    : []
+                            )
+                        ),
+                    ]);
+                    setAssTracks(assTracks);
                     const length = nodes.length > 0 ? nodes[nodes.length - 1].end + offset : 0;
 
                     subtitles = nodes.map((s, i) => ({
                         text: s.text,
+                        assText: s.assText,
                         textImage: s.textImage,
                         start: s.start + offset,
                         originalStart: s.start,
@@ -715,6 +736,7 @@ function PlayerComponent(
                     });
                     onSubtitles(subtitles);
                 } catch (e) {
+                    setAssTracks([]);
                     asbTrace('playback/player', 'Failed to load player subtitles', { error: e });
                     onError(e);
                     onSubtitles([]);
@@ -722,6 +744,7 @@ function PlayerComponent(
                     setLoadingSubtitles(false);
                 }
             } else {
+                setAssTracks([]);
                 subtitles = undefined;
             }
         }
@@ -729,7 +752,7 @@ function PlayerComponent(
         void init()
             .then(() => onLoaded(subtitleFiles?.map((f) => f.file) ?? []))
             .catch(onError);
-    }, [subtitleReader, onLoaded, onError, subtitleFiles, flattenSubtitleFiles, onSubtitles]);
+    }, [subtitleReader, onLoaded, onError, subtitleFiles, flattenSubtitleFiles, onSubtitles, tab]);
 
     useEffect(() => {
         if (tab) {
@@ -791,7 +814,7 @@ function PlayerComponent(
     useEffect(() => {
         if (
             channel === undefined ||
-            renderVideo !== undefined ||
+            (renderVideo !== undefined && !videoPopOut) ||
             subtitles === undefined ||
             subtitlesSentThroughChannel ||
             subtitleFiles === undefined ||
@@ -808,10 +831,20 @@ function PlayerComponent(
             });
             channel.subtitles(
                 subtitles,
-                flattenSubtitleFiles ? [subtitleFiles[0].file.name] : subtitleFiles.map((f) => f.file.name)
+                flattenSubtitleFiles ? [subtitleFiles[0].file.name] : subtitleFiles.map((f) => f.file.name),
+                assTracks
             );
         });
-    }, [subtitles, channel, flattenSubtitleFiles, subtitleFiles, subtitlesSentThroughChannel, renderVideo]);
+    }, [
+        subtitles,
+        channel,
+        flattenSubtitleFiles,
+        subtitleFiles,
+        subtitlesSentThroughChannel,
+        renderVideo,
+        assTracks,
+        videoPopOut,
+    ]);
     useEffect(
         () =>
             channel?.onReady(() => {
@@ -1459,7 +1492,8 @@ function PlayerComponent(
                                 videoFileUrl!,
                                 channelId,
                                 parentDisableKeyEvents || !videoFocused,
-                                subtitles
+                                subtitles,
+                                assTracks
                             )}
                         </div>
                     </Grid>

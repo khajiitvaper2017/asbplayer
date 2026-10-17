@@ -31,6 +31,7 @@ import type {
     ReadyStateFromVideoMessage,
     ReadyToVideoMessage,
     SubtitleModel,
+    AssSubtitleTrack,
     SubtitleSettingsToVideoMessage,
     SubtitlesToVideoMessage,
     TakeScreenshotToVideoPlayerMessage,
@@ -516,12 +517,13 @@ export default class VideoChannel {
         this.protocol.postMessage(message);
     }
 
-    subtitles(subtitles: SubtitleModel[], subtitleFileNames: string[]) {
+    subtitles(subtitles: SubtitleModel[], subtitleFileNames: string[], assTracks?: readonly AssSubtitleTrack[]) {
         this.protocol.postMessage({
             command: 'subtitles',
             value: subtitles,
             name: subtitleFileNames.length > 0 ? subtitleFileNames[0] : null,
             names: subtitleFileNames,
+            assTracks,
         } as SubtitlesToVideoMessage);
     }
 

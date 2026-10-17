@@ -8,6 +8,8 @@
         "preview": "Preview",
         "downloadAudio": "Download Audio",
         "downloadImage": "Download Image",
+        "downloadSubtitles": "Download Subtitles",
+        "downloadOriginalSubtitles": "Download Original Subtitles",
         "downloadSubtitlesAsSrt": "Download Subtitles as SRT",
         "downloadSubtitleTimelineAsHtml": "Download subtitle timeline as HTML",
         "bulkExportSubtitles": "Bulk Export Subtitles",
@@ -484,7 +486,7 @@
         "themeDark": "Dark",
         "themeLight": "Light",
         "title": "Settings",
-        "unlockLocalFonts": "Click to unlock font menu",
+        "unlockLocalFonts": "Allow access to installed fonts",
         "unboundBind": "Unbound",
         "customFieldName": "Field name",
         "missingFieldError": "Field \"{{field}}\" not found in note type",
@@ -656,7 +658,9 @@
         "webSocketInterface": "WebSocket interface",
         "yomitanHelperText": "Instructions to setup Yomitan API are <0>here<0>.",
         "seekableTracks": "Subtitle tracks affected by playback modes and keyboard shortcuts",
-        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy"
+        "autoCopyableTracks": "Subtitle tracks eligible for auto-copy",
+        "assSubtitleStyles": "Use ASS styling in local videos",
+        "assSubtitleStylesDescription": "Keep the subtitle file’s fonts, colors, positions, and effects. Text remains interactive for studying. For accurate sizing, click the lock and allow access to installed fonts."
     },
     "statistics": {
         "title": "Statistics",
