@@ -62,6 +62,33 @@ const isSupportedSubtitleFile = (name: string) =>
 
 const maskApiToken = (apiToken: string) => '•'.repeat(Array.from(apiToken).length);
 
+// Release groups separate the title from episode names and extras with these markers.
+const TITLE_SEPARATOR = /\.\s*\.|\s+-\s+/;
+// Release metadata starts at the first common quality, source, or codec marker.
+const RELEASE_METADATA =
+    /\b(?:\d{1,3}s|\d{3,4}p|WEB(?:\s+DL)?|HDTV|BluRay|NF|AMZN|DUAL|AAC|H\s*264|H\s*265|HEVC|x264|x265)\b.*$/i;
+
+const normalizeDetectedTitle = (title: string) => {
+    const titleSeparator = title.search(TITLE_SEPARATOR);
+    let normalized = (titleSeparator === -1 ? title : title.slice(0, titleSeparator))
+        .trim()
+        .replace(/\.(?:mkv|mp4|m4v|avi|webm)$/i, '')
+        .replace(/[._-]+/g, ' ')
+        .replace(/[!?]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const episode = normalized.match(/\bS\d{1,2}\s*E\d{1,3}\b/i);
+    if (episode?.index !== undefined) {
+        normalized = normalized.slice(0, episode.index + episode[0].length);
+    } else {
+        normalized = normalized.replace(RELEASE_METADATA, '');
+        normalized = normalized.replace(/\s+\d{4}\s*$/, '');
+    }
+
+    return normalized.trim();
+};
+
 const FilterTextField: React.FC<{ filterString: string; onChange: (s: string) => void }> = ({
     filterString,
     onChange,
@@ -134,12 +161,9 @@ export default function OnlineSubtitleSourceDialog({
     );
 
     const { episode: detectedEpisode, cleaned: cleanedHint } = useMemo(
-        () => prepareHint(detectedTitleHint, jimakuEpisodeRegex),
+        () => prepareHint(normalizeDetectedTitle(detectedTitleHint ?? ''), jimakuEpisodeRegex),
         [detectedTitleHint, jimakuEpisodeRegex]
     );
-    // Read via ref so editing the episode regex does not reset the open dialog
-    const cleanedHintRef = useRef(cleanedHint);
-    cleanedHintRef.current = cleanedHint;
     const episodeRegexValid = useMemo(() => isValidEpisodeRegex(jimakuEpisodeRegex.trim()), [jimakuEpisodeRegex]);
     const isApiKeyMissing = jimakuApiKey.trim().length === 0;
     const jimakuApiKeyVisible = showJimakuApiKey || !jimakuApiKey;
@@ -170,9 +194,9 @@ export default function OnlineSubtitleSourceDialog({
     useEffect(() => {
         if (open) {
             resetState();
-            setQuery(cleanedHintRef.current);
+            setQuery(cleanedHint);
         }
-    }, [open, detectedTitleHint, resetState]);
+    }, [open, detectedTitleHint, cleanedHint, resetState]);
 
     useEffect(() => {
         resultsCache.current.clear();
