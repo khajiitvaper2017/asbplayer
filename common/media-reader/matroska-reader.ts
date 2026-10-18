@@ -538,6 +538,53 @@ export function matroskaFileSource(file: Blob): ByteSource {
     };
 }
 
+export async function openMatroskaAudio(file: Blob) {
+    const { reader, locations } = await matroskaMetadata(matroskaFileSource(file));
+    const position = locations.get(TRACKS);
+    if (position === undefined) throw new Error('No Matroska track metadata');
+    const header = await reader.header(position);
+    const data = await reader.body(position);
+    const entries: { start: number; end: number; id?: string; label: string; language: string }[] = [];
+    let start = 0;
+    for (const entry of children(data)) {
+        const { kind, number, language, codec, name: label } = readTrackEntry(data, entry);
+        // Reordering invalidates the Tracks checksum; a same-size Void preserves all file offsets.
+        if (entry.id === 0xbf) data[start] = 0xec;
+        entries.push({
+            start,
+            end: entry.end,
+            id: kind === 2 ? `matroska:${number}` : undefined,
+            label: label || `${codec} (${number})`,
+            language,
+        });
+        start = entry.end;
+    }
+    const tracks = entries
+        .filter((entry) => entry.id !== undefined)
+        .map((entry) => ({
+            id: entry.id!,
+            label: entry.label,
+            language: entry.language,
+        }));
+    return {
+        tracks,
+        select(id: string) {
+            const selected = entries.find((entry) => entry.id === id);
+            if (!selected) throw new Error(`Unknown Matroska audio track: ${id}`);
+            // Chromium plays the first audio TrackEntry when native audio-track selection is unavailable.
+            const ordered = [selected, ...entries.filter((entry) => entry !== selected)];
+            return new Blob(
+                [
+                    file.slice(0, header.data),
+                    ...ordered.map((entry) => data.slice(entry.start, entry.end)),
+                    file.slice(header.end),
+                ],
+                { type: file.type }
+            );
+        },
+    };
+}
+
 export interface MatroskaSubtitleFile {
     file: File;
     language: string;

@@ -407,9 +407,15 @@ class FileAudioClipper {
         this._stopAudioTimeout = undefined;
     }
 
-    private _audioElement(blobUrl: string, selectTrack: boolean): Promise<ExperimentalAudioElement> {
+    private async _audioElement(blobUrl: string, selectTrack: boolean): Promise<ExperimentalAudioElement> {
         const audio = new Audio() as ExperimentalAudioElement;
         audio.preload = 'auto';
+        if (selectTrack && this._trackId?.startsWith('matroska:')) {
+            const { openMatroskaAudio } = await import('@project/common/media-reader/matroska-reader');
+            const source = await openMatroskaAudio(await (await fetch(blobUrl)).blob());
+            blobUrl = URL.createObjectURL(source.select(this._trackId));
+            selectTrack = false;
+        }
         audio.src = blobUrl;
 
         return new Promise((resolve, reject) => {
@@ -424,15 +430,18 @@ class FileAudioClipper {
                             t.enabled = this._trackId === t.id;
                         }
                     }
-                    audio.onerror = () => {
-                        reject(audio.error?.message ?? 'Could not load audio');
-                    };
                     audio.currentTime = this._start / 1000;
                     audio.playbackRate = this._playbackRate;
                     clearInterval(interval);
                     resolve(audio);
                 }
             }, 100);
+            audio.onerror = () => {
+                clearInterval(interval);
+                const error = audio.error?.message ?? 'Could not load audio';
+                this._stopAudio(audio, false);
+                reject(error);
+            };
         });
     }
 
@@ -442,7 +451,7 @@ class FileAudioClipper {
         audio.removeAttribute('src');
         audio.load();
 
-        if (revokeBlobUrl) {
+        if (revokeBlobUrl || src !== this._file.blobUrl) {
             URL.revokeObjectURL(src);
         }
     }

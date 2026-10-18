@@ -797,7 +797,11 @@ function PlayerComponent(
                     hasVideoFileName: videoFile?.file?.name !== undefined,
                 });
                 videoDurationRef.current = channel.duration;
-                return channel?.ready(calculateLengthMs(videoDurationRef, subtitles), videoFile?.file?.name);
+                return channel?.ready(
+                    calculateLengthMs(videoDurationRef, subtitles),
+                    videoFile?.file?.name,
+                    videoFile?.file
+                );
             }),
         [channel, subtitles, videoFile]
     );
@@ -1177,19 +1181,7 @@ function PlayerComponent(
         mousePositionRef.current.y = e.screenY;
     }, []);
 
-    const handleAudioTrackSelected = useCallback(
-        async (id: string) => {
-            channel?.audioTrackSelected(id);
-            pause(clock, mediaAdapter, true);
-
-            await seek(0, clock, true, { paused: true });
-
-            if (clock.running) {
-                play(clock, mediaAdapter, true);
-            }
-        },
-        [channel, clock, mediaAdapter, seek, play]
-    );
+    const handleAudioTrackSelected = useCallback((id: string) => channel?.audioTrackSelected(id), [channel]);
 
     const handleOffsetChange = useCallback(
         (offset: number) => {

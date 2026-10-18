@@ -30,6 +30,7 @@ import {
     textSubtitleSettingsForTrack,
     PauseOnHoverMode,
     allTextSubtitleSettings,
+    embeddedTrackLanguageDisplayName,
 } from '@project/common/settings';
 import {
     adjacentSubtitle,
@@ -83,9 +84,11 @@ import MobileVideoOverlay from '@project/common/components/MobileVideoOverlay';
 import BlurOverlay from '@project/common/app/components/BlurOverlay';
 import { CachedLocalStorage } from '@project/common/app/services/cached-local-storage';
 import useLastScrollableControlType from '@project/common/hooks/use-last-scrollable-control-type';
+import { openMatroskaAudio } from '@project/common/media-reader/matroska-reader';
 import type { Theme } from '@mui/material/styles';
 
 const overlayContainerHeight = 48;
+type MatroskaAudio = Awaited<ReturnType<typeof openMatroskaAudio>> & { selectedTrack: string };
 interface ExperimentalHTMLVideoElement extends HTMLVideoElement {
     readonly audioTracks: any;
 }
@@ -117,62 +120,6 @@ const useStyles = makeStyles<Theme>((theme) => ({
         bottom: theme.spacing(1.5),
     },
 }));
-
-function notifyReady(
-    element: ExperimentalHTMLVideoElement,
-    playerChannel: PlayerChannel,
-    setAudioTracks: React.Dispatch<React.SetStateAction<AudioTrackModel[] | undefined>>,
-    setSelectedAudioTrack: React.Dispatch<React.SetStateAction<string | undefined>>,
-    popOut: boolean
-) {
-    if (popOut && window.outerWidth && element.videoWidth > 0 && element.videoHeight > 0) {
-        const availWidth = window.screen.availWidth - (window.outerWidth - window.innerWidth);
-        const availHeight = window.screen.availHeight - (window.outerHeight - window.innerHeight);
-        const resizeRatio = Math.min(1, Math.min(availWidth / element.videoWidth, availHeight / element.videoHeight));
-
-        window.resizeTo(
-            resizeRatio * element.videoWidth + (window.outerWidth - window.innerWidth),
-            resizeRatio * element.videoHeight + (window.outerHeight - window.innerHeight)
-        );
-    }
-
-    let tracks: AudioTrackModel[] | undefined;
-    let selectedTrack: string | undefined;
-
-    if (element.audioTracks) {
-        tracks = [];
-
-        for (const t of element.audioTracks) {
-            tracks.push({
-                id: t.id,
-                label: t.label,
-                language: t.language,
-            });
-
-            if (t.enabled) {
-                selectedTrack = t.id;
-            }
-        }
-    } else {
-        tracks = undefined;
-        selectedTrack = undefined;
-    }
-
-    setAudioTracks(tracks);
-    setSelectedAudioTrack(selectedTrack);
-    asbTrace('playback/video-player', 'Video media is ready', {
-        durationMs: element.duration * 1000,
-        currentTimeMs: element.currentTime * 1000,
-        paused: element.paused,
-        playbackRate: element.playbackRate,
-        readyState: element.readyState,
-        videoWidth: element.videoWidth,
-        videoHeight: element.videoHeight,
-        audioTrackCount: tracks?.length ?? 0,
-        hasSelectedAudioTrack: selectedTrack !== undefined,
-    });
-    playerChannel.ready(element.duration, element.paused, element.playbackRate, tracks, selectedTrack);
-}
 
 const showingSubtitleHtml = (
     subtitle: IndexedSubtitleModel,
@@ -399,6 +346,15 @@ function VideoPlayer({
     offsetRef.current = offset;
     const [audioTracks, setAudioTracks] = useState<AudioTrackModel[]>();
     const [selectedAudioTrack, setSelectedAudioTrack] = useState<string>();
+    const [sourceFile, setSourceFile] = useState<File>();
+    const matroskaAudioRef = useRef<MatroskaAudio>(undefined);
+    const audioSourceUrlRef = useRef<string>(undefined);
+    const pendingAudioSelectionRef = useRef<{
+        cancel: () => void;
+        timestamp: number;
+        rate: number;
+        resume: boolean;
+    }>(undefined);
     const [wasPlayingOnAnkiDialogRequest, setWasPlayingOnAnkiDialogRequest] = useState<boolean>(false);
     const [channelSubtitles, setChannelSubtitles] = useState<IndexedSubtitleModel[]>([]);
     const [channelAssTracks, setChannelAssTracks] = useState<readonly AssSubtitleTrack[]>([]);
@@ -593,6 +549,77 @@ function VideoPlayer({
         [playerChannel]
     );
 
+    const notifyVideoReady = useCallback(
+        (element: ExperimentalHTMLVideoElement) => {
+            const matroskaAudio = matroskaAudioRef.current;
+            if (popOut && window.outerWidth && element.videoWidth > 0 && element.videoHeight > 0) {
+                const availWidth = window.screen.availWidth - (window.outerWidth - window.innerWidth);
+                const availHeight = window.screen.availHeight - (window.outerHeight - window.innerHeight);
+                const resizeRatio = Math.min(
+                    1,
+                    Math.min(availWidth / element.videoWidth, availHeight / element.videoHeight)
+                );
+
+                window.resizeTo(
+                    resizeRatio * element.videoWidth + (window.outerWidth - window.innerWidth),
+                    resizeRatio * element.videoHeight + (window.outerHeight - window.innerHeight)
+                );
+            }
+
+            let tracks: AudioTrackModel[] | undefined;
+            let selectedTrack: string | undefined;
+
+            if (element.audioTracks) {
+                tracks = [];
+
+                for (const t of element.audioTracks) {
+                    tracks.push({
+                        id: t.id,
+                        label: t.label,
+                        language: t.language,
+                    });
+
+                    if (t.enabled) {
+                        selectedTrack = t.id;
+                    }
+                }
+            } else {
+                tracks = undefined;
+                selectedTrack = undefined;
+            }
+
+            if (matroskaAudio) {
+                tracks = matroskaAudio.tracks.map((track) => ({
+                    ...track,
+                    language: embeddedTrackLanguageDisplayName(track.language),
+                }));
+                selectedTrack = matroskaAudio.selectedTrack;
+            }
+            setAudioTracks(tracks);
+            setSelectedAudioTrack(selectedTrack);
+            asbTrace('playback/video-player', 'Video media is ready', {
+                durationMs: element.duration * 1000,
+                currentTimeMs: element.currentTime * 1000,
+                paused: element.paused,
+                playbackRate: element.playbackRate,
+                readyState: element.readyState,
+                videoWidth: element.videoWidth,
+                videoHeight: element.videoHeight,
+                audioTrackCount: tracks?.length ?? 0,
+                hasSelectedAudioTrack: selectedTrack !== undefined,
+            });
+            playerChannel.ready(
+                element.duration,
+                element.paused,
+                element.playbackRate,
+                tracks,
+                selectedTrack,
+                element.currentTime
+            );
+        },
+        [playerChannel, popOut]
+    );
+
     const videoRefCallback = useCallback(
         (element: HTMLVideoElement | null) => {
             if (!element) {
@@ -616,17 +643,16 @@ function VideoPlayer({
             clock.setTime(videoElement.currentTime * 1000, { paused: videoElement.paused });
 
             if (videoElement.readyState === 4) {
-                notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack, popOut);
+                notifyVideoReady(videoElement);
                 setVideoWidth(videoElement.videoWidth);
                 setVideoHeight(videoElement.videoHeight);
             } else {
                 videoElement.onloadeddata = () => {
-                    notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack, popOut);
+                    notifyVideoReady(videoElement);
                     setVideoWidth(videoElement.videoWidth);
                     setVideoHeight(videoElement.videoHeight);
                 };
-                videoElement.ondurationchange = () =>
-                    notifyReady(videoElement, playerChannel, setAudioTracks, setSelectedAudioTrack, popOut);
+                videoElement.ondurationchange = () => notifyVideoReady(videoElement);
             }
 
             videoElement.oncanplay = () => {
@@ -640,7 +666,7 @@ function VideoPlayer({
 
             if (isMobile) videoElement.volume = 1; // Force volume to 1 on mobile - users can control device volume
         },
-        [clock, playerChannel, popOut]
+        [clock, playerChannel, notifyVideoReady]
     );
 
     const updateSubtitlesWithOffset = useCallback((offset: number, notifyPlayer: boolean, notificationKey: string) => {
@@ -738,9 +764,15 @@ function VideoPlayer({
                             });
                             const audioTrack = [...(video.audioTracks ?? [])].find((track) => track.enabled)?.id;
                             if (audioTrack !== undefined) {
-                                video.addEventListener('loadedmetadata', () => selectAudioTrack(audioTrack), {
-                                    once: true,
-                                });
+                                video.addEventListener(
+                                    'loadedmetadata',
+                                    () => {
+                                        void selectAudioTrack(audioTrack).catch(onErrorRef.current);
+                                    },
+                                    {
+                                        once: true,
+                                    }
+                                );
                             }
                             // Reloading clears a failed decoder without changing the requested position.
                             video.load();
@@ -858,7 +890,94 @@ function VideoPlayer({
         playbackEngineRef.current?.profileChanged(profile);
     }, [profile]);
 
-    function selectAudioTrack(id: string) {
+    useEffect(() => {
+        if (!video || !sourceFile) return;
+        if (!/\.(mkv|webm)$/i.test(sourceFile.name)) {
+            notifyVideoReady(video);
+            return;
+        }
+        if (matroskaAudioRef.current) {
+            notifyVideoReady(video);
+            return;
+        }
+        if (video.audioTracks?.length > 1) {
+            notifyVideoReady(video);
+            return;
+        }
+        let disposed = false;
+        void openMatroskaAudio(sourceFile)
+            .then((source) => {
+                if (disposed || source.tracks.length === 0) return;
+                matroskaAudioRef.current = {
+                    ...source,
+                    selectedTrack: source.tracks[0].id,
+                };
+                notifyVideoReady(video);
+            })
+            .catch((error) => asbWarn('playback/audio', 'Failed to read Matroska audio tracks', error));
+        return () => {
+            disposed = true;
+        };
+    }, [sourceFile, video, notifyVideoReady]);
+
+    useEffect(() => {
+        return () => {
+            pendingAudioSelectionRef.current?.cancel();
+            matroskaAudioRef.current = undefined;
+            if (audioSourceUrlRef.current) URL.revokeObjectURL(audioSourceUrlRef.current);
+            audioSourceUrlRef.current = undefined;
+        };
+    }, [videoFile]);
+
+    async function selectAudioTrack(id: string) {
+        const source = matroskaAudioRef.current;
+        const video = videoRef.current;
+        if (source && video) {
+            const blob = source.select(id);
+            const { timestamp, rate, resume } = pendingAudioSelectionRef.current ?? {
+                timestamp: video.currentTime,
+                rate: video.playbackRate,
+                resume: !video.paused,
+            };
+            pendingAudioSelectionRef.current?.cancel();
+            video.pause();
+            const previousUrl = audioSourceUrlRef.current;
+            const url = URL.createObjectURL(blob);
+            audioSourceUrlRef.current = url;
+            source.selectedTrack = id;
+            await new Promise<void>((resolve, reject) => {
+                const cleanup = () => {
+                    video.removeEventListener('loadedmetadata', loaded);
+                    video.removeEventListener('error', failed);
+                    pendingAudioSelectionRef.current = undefined;
+                };
+                const loaded = () => {
+                    cleanup();
+                    video.currentTime = timestamp;
+                    video.playbackRate = rate;
+                    resolve();
+                };
+                const failed = () => {
+                    cleanup();
+                    reject(new Error(errorMessageFromVideo(video)));
+                };
+                pendingAudioSelectionRef.current = {
+                    timestamp,
+                    rate,
+                    resume,
+                    cancel: () => {
+                        cleanup();
+                        reject(new DOMException('Audio selection cancelled', 'AbortError'));
+                    },
+                };
+                video.addEventListener('loadedmetadata', loaded);
+                video.addEventListener('error', failed);
+                video.src = url;
+                if (previousUrl) URL.revokeObjectURL(previousUrl);
+            });
+            if (resume) await video.play();
+            return;
+        }
         const audioTracks = videoRef.current?.audioTracks;
 
         if (!audioTracks) {
@@ -873,6 +992,20 @@ function VideoPlayer({
             }
         }
     }
+
+    const handleAudioTrackSelected = useCallback(
+        (id: string) => {
+            void selectAudioTrack(id)
+                .then(() => {
+                    setSelectedAudioTrack(id);
+                    playerChannel.audioTrackSelected(id);
+                })
+                .catch((error) => {
+                    if (error.name !== 'AbortError') onErrorRef.current(error);
+                });
+        },
+        [playerChannel]
+    );
 
     const togglePlaybackMode = useCallback(
         (targetMode: PlayMode) => playbackEngineRef.current?.togglePlaybackMode(targetMode),
@@ -893,7 +1026,8 @@ function VideoPlayer({
 
     useEffect(() => {
         asbTrace('playback/video-player', 'Subscribing to player channel');
-        playerChannel.onReady((duration, videoFileName) => {
+        playerChannel.onReady((duration, videoFileName, file) => {
+            if (file) setSourceFile((current) => current ?? file);
             asbTrace('playback/video-player', 'Received player-channel ready event', {
                 durationMs: duration * 1000,
                 hasVideoFileName: videoFileName !== undefined,
@@ -933,11 +1067,7 @@ function VideoPlayer({
             clock.setTime(actualCurrentTime * 1000, { paused: true });
         });
 
-        playerChannel.onAudioTrackSelected((id) => {
-            selectAudioTrack(id);
-            setSelectedAudioTrack(id);
-            playerChannel.audioTrackSelected(id);
-        });
+        playerChannel.onAudioTrackSelected(handleAudioTrackSelected);
 
         playerChannel.onClose(() => {
             asbTrace('playback/video-player', 'Received player-channel close command');
@@ -1038,6 +1168,7 @@ function VideoPlayer({
         clock,
         playerChannel,
         requestFullscreen,
+        handleAudioTrackSelected,
         togglePlaybackMode,
         updatePlaybackRate,
         updateSubtitlesWithOffset,
@@ -1156,21 +1287,6 @@ function VideoPlayer({
     const handleMouseLeave = useCallback(() => {
         mousePositionRef.current = undefined;
     }, []);
-
-    const handleAudioTrackSelected = useCallback(
-        (id: string) => {
-            if (playing()) {
-                clock.stop();
-                playerChannel.pause();
-            }
-
-            selectAudioTrack(id);
-            setSelectedAudioTrack(id);
-            playerChannel.currentTime(0);
-            playerChannel.audioTrackSelected(id);
-        },
-        [playerChannel, clock]
-    );
 
     const handleLoadFiles = useCallback(() => {
         playerChannel.loadFiles();
