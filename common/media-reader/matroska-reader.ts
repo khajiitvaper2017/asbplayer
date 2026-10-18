@@ -132,18 +132,17 @@ class Reader {
     }
 }
 
-function readTracks(data: Uint8Array) {
-    const tracks: SubtitleTrack[] = [];
-    for (const entry of children(data)) {
-        if (entry.id !== 0xae) continue;
-        let number = 0,
-            kind = 0,
-            codec = '',
-            language = 'eng',
-            ietf = '',
-            name = '',
-            header = '',
-            compressed = false;
+function readTrackEntry(data: Uint8Array, entry: Element) {
+    let number = 0,
+        kind = 0,
+        codec = '',
+        language = 'eng',
+        ietf = '',
+        name = '',
+        header = '',
+        compressed = false;
+
+    if (entry.id === 0xae) {
         for (const field of children(data, entry.data, entry.end)) {
             switch (field.id) {
                 case 0xd7:
@@ -172,6 +171,14 @@ function readTracks(data: Uint8Array) {
                     break;
             }
         }
+    }
+    return { number, kind, codec, language: ietf || language, name, header, compressed };
+}
+
+function readTracks(data: Uint8Array) {
+    const tracks: SubtitleTrack[] = [];
+    for (const entry of children(data)) {
+        const { number, kind, codec, language, name, header, compressed } = readTrackEntry(data, entry);
         const type =
             codec === 'S_TEXT/UTF8' || codec === 'S_TEXT/ASCII'
                 ? 'srt'
@@ -185,7 +192,7 @@ function readTracks(data: Uint8Array) {
         if (kind !== 17 || type === undefined || compressed) continue;
         tracks.push({
             number,
-            language: ietf || language,
+            language,
             name,
             type,
             header,
@@ -329,7 +336,7 @@ async function* readBatches(source: ByteSource, queue: Batch[]) {
     }
 }
 
-export async function openMkvSubtitles(source: ByteSource) {
+async function matroskaMetadata(source: ByteSource) {
     const reader = new Reader(source);
     let segment = await reader.header(0);
     if (segment.id !== 0x1a45dfa3) throw new Error('Not an EBML file');
@@ -366,6 +373,11 @@ export async function openMkvSubtitles(source: ByteSource) {
             if (id === SEEK_HEAD) pendingHeads.push(segment.data + position);
         }
     }
+    return { reader, segment, locations };
+}
+
+export async function openMatroskaSubtitles(source: ByteSource) {
+    const { reader, segment, locations } = await matroskaMetadata(source);
     const tracksPosition = locations.get(TRACKS);
     if (tracksPosition === undefined) throw new Error('No indexed subtitle track metadata');
     const tracks = readTracks(await reader.body(tracksPosition));
@@ -517,7 +529,7 @@ export function subtitleFile(track: ExtractedTrack): string | Uint8Array {
     return `${header}\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n${track.cues.map((c) => `Dialogue: ${c.ass![0]},${timestamp(c.start, 'ass')},${timestamp(c.end, 'ass')},${c.ass!.slice(1).join(',')},${c.text}`).join('\n')}\n`;
 }
 
-export function mkvFileSource(file: Blob): ByteSource {
+export function matroskaFileSource(file: Blob): ByteSource {
     return {
         size: file.size,
         async read(offset, length) {
@@ -534,7 +546,7 @@ export interface MatroskaSubtitleFile {
 }
 
 export async function extractMatroskaSubtitleFiles(file: File): Promise<MatroskaSubtitleFile[]> {
-    const matroska = await openMkvSubtitles(mkvFileSource(file));
+    const matroska = await openMatroskaSubtitles(matroskaFileSource(file));
     const tracks = await matroska.extract();
     const baseName = file.name.replace(/\.(?:mkv|webm)$/i, '');
 

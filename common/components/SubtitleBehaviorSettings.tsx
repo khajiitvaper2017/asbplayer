@@ -20,7 +20,7 @@ import SettingsTextField from '@project/common/components/SettingsTextField';
 import SwitchLabelWithHoverEffect from '@project/common/components/SwitchLabelWithHoverEffect';
 import type { AsbplayerSettings } from '@project/common/settings';
 import {
-    embeddedSubtitleLanguages,
+    embeddedTrackLanguages,
     isTrackAutoCopyable,
     SubtitleListTimestampDisplay,
     updateAutoCopyableTracksValue,
@@ -197,7 +197,7 @@ const SubtitleBehaviorSettings: React.FC<Props> = ({
                             value={embeddedSubtitleLanguage}
                             onChange={(event) => onSettingChanged('embeddedSubtitleLanguage', event.target.value)}
                         >
-                            {embeddedSubtitleLanguages.map(({ code, name }) => (
+                            {embeddedTrackLanguages.map(({ code, name }) => (
                                 <MenuItem key={code} value={code}>
                                     {name}
                                 </MenuItem>

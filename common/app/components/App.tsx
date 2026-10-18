@@ -26,12 +26,12 @@ import type {
 } from '@project/common';
 import { MediaFragment, PostMineAction, MediaFragmentErrorCode, VideoDataUiOpenReason } from '@project/common';
 import { createTheme } from '@project/common/theme';
-import { embeddedSubtitleLanguageDisplayName } from '@project/common/settings';
+import { embeddedTrackLanguageDisplayName } from '@project/common/settings';
 import type { AsbplayerSettings, Profile, SettingsProvider } from '@project/common/settings';
 import { AudioClip, Mp3Encoder } from '@project/common/audio-clip';
 import type { ExportParams } from '@project/common/anki';
 import { SubtitleReader } from '@project/common/subtitle-reader';
-import { extractMatroskaSubtitleFiles } from '@project/common/subtitle-reader/matroska-subtitles';
+import { extractMatroskaSubtitleFiles } from '@project/common/media-reader/matroska-reader';
 import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
 import Alert from '@project/common/app/components/Alert';
@@ -1105,7 +1105,7 @@ function App({
                             return {
                                 id,
                                 file,
-                                label: `Embedded · ${embeddedSubtitleLanguageDisplayName(language)} · ${type.toUpperCase()}${name ? ` · ${name}` : ''}`,
+                                label: `Embedded · ${embeddedTrackLanguageDisplayName(language)} · ${type.toUpperCase()}${name ? ` · ${name}` : ''}`,
                                 language,
                                 extension: type,
                             };
@@ -1116,13 +1116,11 @@ function App({
                     setSubtitleTrackSelectorTracks([...tracks, emptySubtitleTrack(t)]);
                     setSubtitleTrackSelectorSelectedTrackIds([]);
                     if (autoLoadRememberedLanguage && settings.rememberEmbeddedSubtitleLanguage) {
-                        const rememberedLanguage = embeddedSubtitleLanguageDisplayName(
-                            settings.embeddedSubtitleLanguage
-                        );
+                        const rememberedLanguage = embeddedTrackLanguageDisplayName(settings.embeddedSubtitleLanguage);
                         const matchingTracks = tracks.filter(
                             (track) =>
                                 track.language !== undefined &&
-                                embeddedSubtitleLanguageDisplayName(track.language) === rememberedLanguage
+                                embeddedTrackLanguageDisplayName(track.language) === rememberedLanguage
                         );
                         const rememberedTrack =
                             matchingTracks.find((track) => track.extension === 'srt') ?? matchingTracks[0];

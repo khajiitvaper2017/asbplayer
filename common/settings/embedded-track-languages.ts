@@ -1,4 +1,4 @@
-const embeddedSubtitleLanguageCodes = `
+const embeddedTrackLanguageCodes = `
 aar abk ace ach ada ady afa afh afr ain aka akk ale alg alt amh
 ang anp apa ara arc arg arn arp art arw asm ast ath aus ava ave
 awa aym aze bad bai bak bal bam ban bas bat bej bel bem ben ber
@@ -35,7 +35,7 @@ zbl zen zgh zha chi zho znd zul zun zxx zza
     .trim()
     .split(/\s+/);
 
-export function embeddedSubtitleLanguageDisplayName(language: string): string {
+export function embeddedTrackLanguageDisplayName(language: string): string {
     try {
         return (
             new Intl.DisplayNames(['en'], {
@@ -49,8 +49,8 @@ export function embeddedSubtitleLanguageDisplayName(language: string): string {
     }
 }
 
-export const embeddedSubtitleLanguages = embeddedSubtitleLanguageCodes
-    .map((code) => ({ code, name: embeddedSubtitleLanguageDisplayName(code) }))
+export const embeddedTrackLanguages = embeddedTrackLanguageCodes
+    .map((code) => ({ code, name: embeddedTrackLanguageDisplayName(code) }))
     .filter(({ code, name }) => code !== name)
     .sort((a, b) => a.name.localeCompare(b.name) || a.code.localeCompare(b.code))
     .filter((language, index, languages) => index === 0 || language.name !== languages[index - 1].name);
