@@ -35,4 +35,6 @@ See the [Android guide](../guides/android).
 ## Video files {#video-files}
 
 1. Open the [website](https://asbplayer-jiten.pages.dev/asbplayer).
-2. Drag-and-drop video and subtitle files into the website.
+2. Drag-and-drop a video and any separate subtitle files into the website.
+
+For MKV and WebM files, you can load subtitles stored inside the video instead of opening a separate subtitle file. Choose the language and which embedded tracks to load in [Settings → Embedded tracks](../reference/settings#embedded-tracks).

@@ -123,6 +123,36 @@ A word can have several Reader labels, and matching any selected label is enough
 
 To blur an entire subtitle track instead, use **Subtitles → Subtitle blur**.
 
+## Embedded tracks {#embedded-tracks}
+
+Open **Settings → Embedded tracks** in the web app to configure audio and subtitles stored inside local MKV and WebM files. These settings do not control subtitle detection on streaming websites.
+
+All four switches are on by default. Video and audio playback still depend on your [browser's format support](../compatibility#browsers-and-media-formats).
+
+### Load embedded audio {#load-embedded-audio}
+
+Make embedded audio tracks available in the player's audio-track selector. Turn this off to skip audio-track discovery. The video's default audio still plays; this is not a mute switch.
+
+### Load embedded subtitles {#load-embedded-subtitles}
+
+Read subtitles stored inside the video, without a separate subtitle file. Turn this off to skip embedded-subtitle loading. You can still open external subtitle files.
+
+### Auto-select preferred language {#auto-select-preferred-language}
+
+Automatically select matching audio and subtitles when opening a video. Both use **Preferred track language**. Choosing another embedded audio or subtitle track also updates this shared preference while auto-selection is on.
+
+Turn this off to choose tracks manually. **Load preferred language only** is then disabled and ignored.
+
+### Load preferred language only {#load-preferred-language-only}
+
+Only make tracks in the preferred language available. Subtitles in other languages are not extracted, which can reduce loading time for files with many subtitle tracks.
+
+Turn this off to make all supported embedded tracks available, while still auto-selecting the preferred language. If a file has no matching track, turn this off to choose another language.
+
+### Preferred track language {#preferred-track-language}
+
+Choose one language from the list for both audio and subtitles. The default is **Japanese**. The selector is available when **Auto-select preferred language** is on.
+
 ## Playback {#playback}
 
 Configure playback speed, speed notifications, and remembered playback rate and modes. **Auto-pause** controls pausing on hover or subtitle boundaries, automatic resume, pause durations, and subtitle visibility during playback modes.
