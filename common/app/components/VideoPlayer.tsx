@@ -31,6 +31,7 @@ import {
     PauseOnHoverMode,
     allTextSubtitleSettings,
     embeddedTrackLanguageDisplayName,
+    embeddedTrackLanguages,
 } from '@project/common/settings';
 import {
     adjacentSubtitle,
@@ -315,6 +316,8 @@ function VideoPlayer({
     const poppingInRef = useRef<boolean>(undefined);
     const onSettingsChangedRef = useRef(onSettingsChanged);
     onSettingsChangedRef.current = onSettingsChanged;
+    const settingsRef = useRef(settings);
+    settingsRef.current = settings;
     const videoRef = useRef<ExperimentalHTMLVideoElement>(undefined);
     const [video, setVideo] = useState<ExperimentalHTMLVideoElement>();
     const playbackEngineRef = useRef<PlaybackEngine<IndexedSubtitleModel>>(undefined);
@@ -348,6 +351,7 @@ function VideoPlayer({
     const [selectedAudioTrack, setSelectedAudioTrack] = useState<string>();
     const [sourceFile, setSourceFile] = useState<File>();
     const matroskaAudioRef = useRef<MatroskaAudio>(undefined);
+    const autoSelectedAudioFileRef = useRef<File>(undefined);
     const audioSourceUrlRef = useRef<string>(undefined);
     const pendingAudioSelectionRef = useRef<{
         cancel: () => void;
@@ -552,6 +556,12 @@ function VideoPlayer({
     const notifyVideoReady = useCallback(
         (element: ExperimentalHTMLVideoElement) => {
             const matroskaAudio = matroskaAudioRef.current;
+            const loadAudioTracks = settingsRef.current.loadEmbeddedAudio;
+            const preferredLanguage =
+                settingsRef.current.rememberEmbeddedLanguage && settingsRef.current.loadPreferredEmbeddedLanguageOnly
+                    ? settingsRef.current.embeddedLanguage
+                    : undefined;
+
             if (popOut && window.outerWidth && element.videoWidth > 0 && element.videoHeight > 0) {
                 const availWidth = window.screen.availWidth - (window.outerWidth - window.innerWidth);
                 const availHeight = window.screen.availHeight - (window.outerHeight - window.innerHeight);
@@ -595,6 +605,13 @@ function VideoPlayer({
                 }));
                 selectedTrack = matroskaAudio.selectedTrack;
             }
+            if (!loadAudioTracks) tracks = undefined;
+            if (preferredLanguage !== undefined)
+                tracks = tracks?.filter(
+                    (track) =>
+                        embeddedTrackLanguageDisplayName(track.language) ===
+                        embeddedTrackLanguageDisplayName(preferredLanguage)
+                );
             setAudioTracks(tracks);
             setSelectedAudioTrack(selectedTrack);
             asbTrace('playback/video-player', 'Video media is ready', {
@@ -892,11 +909,12 @@ function VideoPlayer({
 
     useEffect(() => {
         if (!video || !sourceFile) return;
+        autoSelectedAudioFileRef.current = undefined;
         if (!/\.(mkv|webm)$/i.test(sourceFile.name)) {
             notifyVideoReady(video);
             return;
         }
-        if (matroskaAudioRef.current) {
+        if (!settings.loadEmbeddedAudio || matroskaAudioRef.current) {
             notifyVideoReady(video);
             return;
         }
@@ -918,12 +936,21 @@ function VideoPlayer({
         return () => {
             disposed = true;
         };
-    }, [sourceFile, video, notifyVideoReady]);
+    }, [
+        sourceFile,
+        video,
+        notifyVideoReady,
+        settings.loadEmbeddedAudio,
+        settings.rememberEmbeddedLanguage,
+        settings.loadPreferredEmbeddedLanguageOnly,
+        settings.embeddedLanguage,
+    ]);
 
     useEffect(() => {
         return () => {
             pendingAudioSelectionRef.current?.cancel();
             matroskaAudioRef.current = undefined;
+            autoSelectedAudioFileRef.current = undefined;
             if (audioSourceUrlRef.current) URL.revokeObjectURL(audioSourceUrlRef.current);
             audioSourceUrlRef.current = undefined;
         };
@@ -997,6 +1024,18 @@ function VideoPlayer({
         (id: string) => {
             void selectAudioTrack(id)
                 .then(() => {
+                    const source = matroskaAudioRef.current;
+                    const track =
+                        source?.tracks.find((track) => track.id === id) ??
+                        [...(videoRef.current?.audioTracks ?? [])].find((track) => track.id === id);
+                    if (track?.language && settingsRef.current.rememberEmbeddedLanguage) {
+                        const embeddedLanguage =
+                            embeddedTrackLanguages.find(
+                                ({ name }) => name === embeddedTrackLanguageDisplayName(track.language)
+                            )?.code ?? track.language;
+                        if (embeddedLanguage !== settingsRef.current.embeddedLanguage)
+                            onSettingsChangedRef.current({ embeddedLanguage });
+                    }
                     setSelectedAudioTrack(id);
                     playerChannel.audioTrackSelected(id);
                 })
@@ -1006,6 +1045,34 @@ function VideoPlayer({
         },
         [playerChannel]
     );
+
+    useEffect(() => {
+        if (
+            !settings.loadEmbeddedAudio ||
+            !settings.rememberEmbeddedLanguage ||
+            !sourceFile ||
+            !audioTracks?.length ||
+            autoSelectedAudioFileRef.current === sourceFile
+        )
+            return;
+        if (!matroskaAudioRef.current && (videoRef.current?.audioTracks?.length ?? 0) < 2) return;
+        const preferredLanguage = embeddedTrackLanguageDisplayName(settings.embeddedLanguage);
+        const track = audioTracks.find(
+            (track) => embeddedTrackLanguageDisplayName(track.language) === preferredLanguage
+        );
+        if (!track) return;
+        autoSelectedAudioFileRef.current = sourceFile;
+        const selected = matroskaAudioRef.current?.selectedTrack ?? selectedAudioTrack;
+        if (track.id !== selected) handleAudioTrackSelected(track.id);
+    }, [
+        sourceFile,
+        audioTracks,
+        selectedAudioTrack,
+        settings.loadEmbeddedAudio,
+        settings.rememberEmbeddedLanguage,
+        settings.embeddedLanguage,
+        handleAudioTrackSelected,
+    ]);
 
     const togglePlaybackMode = useCallback(
         (targetMode: PlayMode) => playbackEngineRef.current?.togglePlaybackMode(targetMode),

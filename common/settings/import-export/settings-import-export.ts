@@ -419,10 +419,19 @@ const settingsSchema = {
         rememberSubtitleOffset: {
             type: 'boolean',
         },
-        rememberEmbeddedSubtitleLanguage: {
+        loadEmbeddedAudio: {
             type: 'boolean',
         },
-        embeddedSubtitleLanguage: {
+        loadEmbeddedSubtitles: {
+            type: 'boolean',
+        },
+        loadPreferredEmbeddedLanguageOnly: {
+            type: 'boolean',
+        },
+        rememberEmbeddedLanguage: {
+            type: 'boolean',
+        },
+        embeddedLanguage: {
             type: 'string',
         },
         lastSubtitleOffset: {

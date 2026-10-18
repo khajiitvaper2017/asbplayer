@@ -26,7 +26,7 @@ import type {
 } from '@project/common';
 import { MediaFragment, PostMineAction, MediaFragmentErrorCode, VideoDataUiOpenReason } from '@project/common';
 import { createTheme } from '@project/common/theme';
-import { embeddedTrackLanguageDisplayName } from '@project/common/settings';
+import { embeddedTrackLanguageDisplayName, embeddedTrackLanguages } from '@project/common/settings';
 import type { AsbplayerSettings, Profile, SettingsProvider } from '@project/common/settings';
 import { AudioClip, Mp3Encoder } from '@project/common/audio-clip';
 import type { ExportParams } from '@project/common/anki';
@@ -1094,10 +1094,17 @@ function App({
         setSubtitleTrackSelectorDisabled,
     } = useVideoDataSyncDialogState();
     const embeddedSubtitleVideoRef = useRef<File>(undefined);
+    const embeddedSubtitleLanguageRef = useRef<string>(undefined);
+    const embeddedSubtitleIdsRef = useRef(new Set<string>());
 
     const populateEmbeddedSubtitleTracks = useCallback(
-        (videoFile: File, autoLoadRememberedLanguage: boolean) => {
-            void extractMatroskaSubtitleFiles(videoFile)
+        (videoFile: File, autoLoadPreferredLanguage: boolean) => {
+            if (!settingsRef.current.loadEmbeddedSubtitles) return;
+            const language =
+                settingsRef.current.rememberEmbeddedLanguage && settingsRef.current.loadPreferredEmbeddedLanguageOnly
+                    ? settingsRef.current.embeddedLanguage
+                    : undefined;
+            void extractMatroskaSubtitleFiles(videoFile, language)
                 .then((embeddedSubtitleFiles) => {
                     const tracks: VideoDataSubtitleTrack[] = embeddedSubtitleFiles.map(
                         ({ file, language, name, type }) => {
@@ -1111,38 +1118,50 @@ function App({
                             };
                         }
                     );
-                    if (sourcesRef.current.videoFile?.file !== videoFile) return;
+                    if (
+                        sourcesRef.current.videoFile?.file !== videoFile ||
+                        !settingsRef.current.loadEmbeddedSubtitles ||
+                        language !==
+                            (settingsRef.current.rememberEmbeddedLanguage &&
+                            settingsRef.current.loadPreferredEmbeddedLanguageOnly
+                                ? settingsRef.current.embeddedLanguage
+                                : undefined)
+                    )
+                        return;
                     embeddedSubtitleVideoRef.current = videoFile;
+                    embeddedSubtitleLanguageRef.current = language;
+                    embeddedSubtitleIdsRef.current = new Set([
+                        ...sourcesRef.current.subtitleFiles
+                            .map((file) => file.id)
+                            .filter((id) => embeddedSubtitleIdsRef.current.has(id)),
+                        ...tracks.map((track) => track.id),
+                    ]);
                     setSubtitleTrackSelectorTracks([...tracks, emptySubtitleTrack(t)]);
                     setSubtitleTrackSelectorSelectedTrackIds([]);
-                    if (autoLoadRememberedLanguage && settings.rememberEmbeddedSubtitleLanguage) {
-                        const rememberedLanguage = embeddedTrackLanguageDisplayName(settings.embeddedSubtitleLanguage);
+                    if (autoLoadPreferredLanguage && settingsRef.current.rememberEmbeddedLanguage) {
+                        const preferredLanguage = embeddedTrackLanguageDisplayName(
+                            settingsRef.current.embeddedLanguage
+                        );
                         const matchingTracks = tracks.filter(
                             (track) =>
                                 track.language !== undefined &&
-                                embeddedTrackLanguageDisplayName(track.language) === rememberedLanguage
+                                embeddedTrackLanguageDisplayName(track.language) === preferredLanguage
                         );
-                        const rememberedTrack =
+                        const preferredTrack =
                             matchingTracks.find((track) => track.extension === 'srt') ?? matchingTracks[0];
-                        if (rememberedTrack?.file !== undefined) {
+                        if (preferredTrack?.file !== undefined) {
                             handleFilesRef.current?.({
-                                files: [{ file: rememberedTrack.file, id: rememberedTrack.id }],
+                                files: [{ file: preferredTrack.file, id: preferredTrack.id }],
                             });
                             return;
                         }
                     }
+                    if (autoLoadPreferredLanguage && tracks.length === 0) return;
                     openSubtitleTrackSelector();
                 })
                 .catch((e) => asbWarn('app/subtitles', 'Failed to extract embedded Matroska subtitles:', e));
         },
-        [
-            openSubtitleTrackSelector,
-            setSubtitleTrackSelectorSelectedTrackIds,
-            setSubtitleTrackSelectorTracks,
-            settings.embeddedSubtitleLanguage,
-            settings.rememberEmbeddedSubtitleLanguage,
-            t,
-        ]
+        [openSubtitleTrackSelector, setSubtitleTrackSelectorSelectedTrackIds, setSubtitleTrackSelectorTracks, t]
     );
 
     const handleFiles = useCallback(
@@ -1209,7 +1228,7 @@ function App({
                     selectedVideoFile &&
                     isMatroskaFile(selectedVideoFile.file.name) &&
                     subtitleFiles.length === 0 &&
-                    sourcesRef.current.subtitleFiles.length === 0
+                    sourcesRef.current.subtitleFiles.every((file) => embeddedSubtitleIdsRef.current.has(file.id))
                 ) {
                     populateEmbeddedSubtitleTracks(selectedVideoFile.file, true);
                 }
@@ -1839,6 +1858,14 @@ function App({
                         }
                     }
                     if (handleFiles({ files })) {
+                        const language = tracks.find((track) => embeddedSubtitleIdsRef.current.has(track.id))?.language;
+                        if (language && settingsRef.current.rememberEmbeddedLanguage) {
+                            const embeddedLanguage =
+                                embeddedTrackLanguages.find(
+                                    ({ name }) => name === embeddedTrackLanguageDisplayName(language)
+                                )?.code ?? language;
+                            onSettingsChanged({ embeddedLanguage });
+                        }
                         await saveCachedSubtitleFilesToFileSession(cachedSubtitleFiles);
                         await promoteBufferedHandlesInFileSession(files.map((f) => f.id));
                         closeSubtitleTrackSelector();
@@ -1858,6 +1885,7 @@ function App({
             promoteBufferedHandlesInFileSession,
             saveCachedSubtitleFilesToFileSession,
             setSubtitleTrackSelectorDisabled,
+            onSettingsChanged,
         ]
     );
 
@@ -1880,9 +1908,24 @@ function App({
 
     const handleOpenSubtitleTrackSelector = useCallback(() => {
         const videoFile = sourcesRef.current.videoFile?.file;
-        if (videoFile && isMatroskaFile(videoFile.name) && embeddedSubtitleVideoRef.current !== videoFile) {
+        if (
+            settings.loadEmbeddedSubtitles &&
+            videoFile &&
+            isMatroskaFile(videoFile.name) &&
+            (embeddedSubtitleVideoRef.current !== videoFile ||
+                embeddedSubtitleLanguageRef.current !==
+                    (settings.rememberEmbeddedLanguage && settings.loadPreferredEmbeddedLanguageOnly
+                        ? settings.embeddedLanguage
+                        : undefined))
+        ) {
             populateEmbeddedSubtitleTracks(videoFile, false);
         } else {
+            if (!settings.loadEmbeddedSubtitles) {
+                const embeddedIds = embeddedSubtitleIdsRef.current;
+                setSubtitleTrackSelectorTracks((tracks) => tracks.filter((track) => !embeddedIds.has(track.id)));
+                embeddedSubtitleVideoRef.current = undefined;
+                embeddedSubtitleIdsRef.current = new Set();
+            }
             setSubtitleTrackSelectorSelectedTrackIds(
                 sourcesRef.current.subtitleFiles
                     .map((file) => file.id)
@@ -1895,6 +1938,11 @@ function App({
         populateEmbeddedSubtitleTracks,
         setSubtitleTrackSelectorSelectedTrackIds,
         subtitleTrackSelectorTracks,
+        settings.loadEmbeddedSubtitles,
+        settings.rememberEmbeddedLanguage,
+        settings.loadPreferredEmbeddedLanguageOnly,
+        settings.embeddedLanguage,
+        setSubtitleTrackSelectorTracks,
     ]);
 
     const handleCloseSubtitleTrackSelector = useCallback(() => {

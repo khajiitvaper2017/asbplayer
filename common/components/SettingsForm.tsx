@@ -23,6 +23,7 @@ import StreamingVideoSettingsTab from '@project/common/components/StreamingVideo
 import GeneralSettingsTab from '@project/common/components/GeneralSettingsTab';
 import PlaybackSettingsTab from '@project/common/components/PlaybackSettingsTab';
 import SubtitleBehaviorSettings from '@project/common/components/SubtitleBehaviorSettings';
+import EmbeddedTracksSettingsTab from '@project/common/components/EmbeddedTracksSettingsTab';
 import type { LogProvider } from '@project/common/util/log';
 
 interface StylesProps {
@@ -150,6 +151,7 @@ type TabName =
     | 'mining-settings'
     | 'subtitle-appearance'
     | 'subtitle-study'
+    | 'embedded-tracks'
     | 'playback-settings'
     | 'keyboard-shortcuts'
     | 'streaming-video'
@@ -270,6 +272,7 @@ export default function SettingsForm({
             'anki-settings',
             'subtitle-appearance',
             'subtitle-study',
+            'embedded-tracks',
             'playback-settings',
             'keyboard-shortcuts',
             'streaming-video',
@@ -279,6 +282,7 @@ export default function SettingsForm({
 
         if (!extensionSupportsAppIntegration) tabs.splice(tabs.indexOf('streaming-video'), 1);
         if (!insideApp) tabs.splice(tabs.indexOf('subtitle-study'), 1);
+        if (!insideApp) tabs.splice(tabs.indexOf('embedded-tracks'), 1);
         return Object.fromEntries(tabs.map((tab, i) => [tab, i]));
     }, [extensionSupportsAppIntegration, insideApp]);
 
@@ -344,6 +348,13 @@ export default function SettingsForm({
                             tabIndex={tabIndicesById['subtitle-study']}
                             label={t('subtitleStudy.title')}
                             id="subtitle-study"
+                        />
+                    )}
+                    {insideApp && (
+                        <Tab
+                            tabIndex={tabIndicesById['embedded-tracks']}
+                            label={t('settings.embeddedTracks')}
+                            id="embedded-tracks"
                         />
                     )}
                     <Tab
@@ -424,6 +435,15 @@ export default function SettingsForm({
                         />
                     </Stack>
                 </TabPanel>
+                {insideApp && (
+                    <TabPanel
+                        value={tabIndex}
+                        index={tabIndicesById['embedded-tracks']}
+                        tabsOrientation={tabsOrientation}
+                    >
+                        <EmbeddedTracksSettingsTab settings={settings} onSettingChanged={handleSettingChanged} />
+                    </TabPanel>
+                )}
                 <TabPanel
                     value={tabIndex}
                     index={tabIndicesById['playback-settings']}

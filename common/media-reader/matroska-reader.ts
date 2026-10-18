@@ -1,3 +1,5 @@
+import { embeddedTrackLanguageDisplayName } from '@project/common/settings/embedded-track-languages';
+
 export interface ByteSource {
     size: number;
     read(offset: number, length: number): Promise<Uint8Array>;
@@ -592,9 +594,22 @@ export interface MatroskaSubtitleFile {
     type: SubtitleTrack['type'];
 }
 
-export async function extractMatroskaSubtitleFiles(file: File): Promise<MatroskaSubtitleFile[]> {
+export async function extractMatroskaSubtitleFiles(
+    file: File,
+    preferredLanguage?: string
+): Promise<MatroskaSubtitleFile[]> {
     const matroska = await openMatroskaSubtitles(matroskaFileSource(file));
-    const tracks = await matroska.extract();
+    const trackNumbers =
+        preferredLanguage === undefined
+            ? undefined
+            : matroska.tracks
+                  .filter(
+                      (track) =>
+                          embeddedTrackLanguageDisplayName(track.language) ===
+                          embeddedTrackLanguageDisplayName(preferredLanguage)
+                  )
+                  .map((track) => track.number);
+    const tracks = await matroska.extract(trackNumbers);
     const baseName = file.name.replace(/\.(?:mkv|webm)$/i, '');
 
     return tracks.map((track) => {

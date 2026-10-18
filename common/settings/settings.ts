@@ -660,8 +660,11 @@ export interface AsbplayerSettings
         SubtitleStudySettings {
     readonly subtitlePreview: string;
     readonly assSubtitleStyles: boolean;
-    readonly rememberEmbeddedSubtitleLanguage: boolean;
-    readonly embeddedSubtitleLanguage: string;
+    readonly loadEmbeddedAudio: boolean;
+    readonly loadEmbeddedSubtitles: boolean;
+    readonly loadPreferredEmbeddedLanguageOnly: boolean;
+    readonly rememberEmbeddedLanguage: boolean;
+    readonly embeddedLanguage: string;
 }
 
 const keyBindNameMap: any = {
