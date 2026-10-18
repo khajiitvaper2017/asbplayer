@@ -611,18 +611,12 @@ function PlayerComponent(
             const length = subtitles.length > 0 ? subtitles[subtitles.length - 1].end + offset : 0;
 
             const newSubtitles = subtitles.map((s, i) => ({
-                text: s.text,
-                assText: s.assText,
-                textImage: s.textImage,
+                ...s,
                 start: s.originalStart + offset,
-                originalStart: s.originalStart,
                 end: s.originalEnd + offset,
-                originalEnd: s.originalEnd,
                 displayTime: timeDurationDisplay(s.originalStart + offset, length),
                 displayEndTime: timeDurationDisplay(s.originalEnd + offset, length),
-                track: s.track,
                 index: i,
-                tokenization: s.tokenization,
             }));
 
             if (forwardToVideo) {
@@ -715,18 +709,14 @@ function PlayerComponent(
                     const length = nodes.length > 0 ? nodes[nodes.length - 1].end + offset : 0;
 
                     subtitles = nodes.map((s, i) => ({
-                        text: s.text,
-                        assText: s.assText,
-                        textImage: s.textImage,
+                        ...s,
                         start: s.start + offset,
                         originalStart: s.start,
                         end: s.end + offset,
                         originalEnd: s.end,
                         displayTime: timeDurationDisplay(s.start + offset, length),
                         displayEndTime: timeDurationDisplay(s.end + offset, length),
-                        track: s.track,
                         index: i,
-                        tokenization: s.tokenization,
                     }));
 
                     setSubtitlesSentThroughChannel(false);

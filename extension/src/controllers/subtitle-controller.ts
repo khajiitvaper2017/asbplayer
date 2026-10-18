@@ -130,6 +130,10 @@ export default class SubtitleController {
 
     set subtitles(subtitles) {
         this._subtitles = subtitles;
+        this.shouldRenderTopOverlay =
+            Object.values(this.subtitleTrackAlignments).includes('top') ||
+            subtitles.some((subtitle) => subtitle.alignment === 'top');
+        if (!this.shouldRenderTopOverlay) this.topSubtitlesElementOverlay.hide();
     }
 
     reset() {
@@ -154,12 +158,8 @@ export default class SubtitleController {
         if (bottomOverlay instanceof CachingElementOverlay) bottomOverlay.uncacheHtml();
         if (topOverlay instanceof CachingElementOverlay) topOverlay.uncacheHtml();
 
-        const bottomSubtitles = this.subtitles.filter(
-            (subtitle) => this._getSubtitleTrackAlignment(subtitle.track) === 'bottom'
-        );
-        const topSubtitles = this.subtitles.filter(
-            (subtitle) => this._getSubtitleTrackAlignment(subtitle.track) === 'top'
-        );
+        const bottomSubtitles = this.subtitles.filter((subtitle) => this._getSubtitleAlignment(subtitle) === 'bottom');
+        const topSubtitles = this.subtitles.filter((subtitle) => this._getSubtitleAlignment(subtitle) === 'top');
 
         if (this.shouldRenderBottomOverlay && bottomOverlay instanceof CachingElementOverlay) {
             for (const html of this._buildSubtitlesHtml(bottomSubtitles)) {
@@ -222,7 +222,9 @@ export default class SubtitleController {
         if (alignmentChanged) {
             this.subtitleTrackAlignments = newAlignments;
             this.shouldRenderBottomOverlay = Object.values(this.subtitleTrackAlignments).includes('bottom');
-            this.shouldRenderTopOverlay = Object.values(this.subtitleTrackAlignments).includes('top');
+            this.shouldRenderTopOverlay =
+                Object.values(this.subtitleTrackAlignments).includes('top') ||
+                this.subtitles.some((subtitle) => subtitle.alignment === 'top');
             const { subtitleOverlayParams, topSubtitleOverlayParams, notificationOverlayParams } =
                 this._elementOverlayParams();
             this._applyElementOverlayParams(this.bottomSubtitlesElementOverlay, subtitleOverlayParams);
@@ -255,6 +257,10 @@ export default class SubtitleController {
 
     private _getSubtitleTrackAlignment(trackIndex: number) {
         return this.subtitleTrackAlignments[trackIndex] || this.subtitleTrackAlignments[0];
+    }
+
+    private _getSubtitleAlignment(subtitle: IndexedSubtitleModel) {
+        return subtitle.alignment ?? this._getSubtitleTrackAlignment(subtitle.track);
     }
 
     private _applyElementOverlayParams(overlay: ElementOverlay, params: ElementOverlayParams) {
@@ -395,15 +401,15 @@ export default class SubtitleController {
         this._resetUnblurState();
         if (this.shouldRenderBottomOverlay) {
             this._renderSubtitles(
-                showingSubtitles.filter((subtitle) => this._getSubtitleTrackAlignment(subtitle.track) === 'bottom'),
-                invisibleSubtitles.filter((subtitle) => this._getSubtitleTrackAlignment(subtitle.track) === 'bottom'),
+                showingSubtitles.filter((subtitle) => this._getSubtitleAlignment(subtitle) === 'bottom'),
+                invisibleSubtitles.filter((subtitle) => this._getSubtitleAlignment(subtitle) === 'bottom'),
                 OffsetAnchor.bottom
             );
         }
         if (this.shouldRenderTopOverlay) {
             this._renderSubtitles(
-                showingSubtitles.filter((subtitle) => this._getSubtitleTrackAlignment(subtitle.track) === 'top'),
-                invisibleSubtitles.filter((subtitle) => this._getSubtitleTrackAlignment(subtitle.track) === 'top'),
+                showingSubtitles.filter((subtitle) => this._getSubtitleAlignment(subtitle) === 'top'),
+                invisibleSubtitles.filter((subtitle) => this._getSubtitleAlignment(subtitle) === 'top'),
                 OffsetAnchor.top
             );
         }
@@ -601,14 +607,9 @@ export default class SubtitleController {
         if (previousOffset === offset) return;
 
         this.subtitles = this.subtitles.map((s) => ({
-            text: s.text,
-            textImage: s.textImage,
+            ...s,
             start: s.originalStart + offset,
-            originalStart: s.originalStart,
             end: s.originalEnd + offset,
-            originalEnd: s.originalEnd,
-            track: s.track,
-            index: s.index,
         }));
 
         this.lastOffsetChangeTimestamp = Date.now();

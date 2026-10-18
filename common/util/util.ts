@@ -1020,6 +1020,7 @@ const subtitleModelComparators: SubtitleModelComparators = {
     displayTime: (a, b) => a === b,
     displayEndTime: (a, b) => a === b,
     track: (a, b) => a === b,
+    alignment: (a, b) => a === b,
     index: (a, b) => a === b,
     tokenization: (a, b) => areTokenizationsEqual(a, b),
 } satisfies Required<SubtitleModelComparators>;

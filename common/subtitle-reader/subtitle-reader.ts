@@ -6,6 +6,7 @@ import { WebVTT } from 'videojs-vtt.js';
 import { XMLParser } from 'fast-xml-parser';
 import type { SubtitleTextImage, Token, Tokenization } from '@project/common';
 import { SubtitleHtml } from '@project/common';
+import type { SubtitleAlignment } from '@project/common/settings';
 import DOMPurify from 'dompurify';
 
 /**
@@ -88,6 +89,7 @@ interface SubtitleNode {
     assText?: readonly string[];
     textImage?: SubtitleTextImage;
     track: number;
+    alignment?: SubtitleAlignment;
     tokenization?: Tokenization;
 }
 
@@ -205,20 +207,50 @@ export default class SubtitleReader {
 
     private _isSame(a: SubtitleNode, b: SubtitleNode) {
         if (a.textImage || b.textImage) return false;
-        return a.start === b.start && a.end === b.end && a.text === b.text && a.track === b.track;
+        return (
+            a.start === b.start &&
+            a.end === b.end &&
+            a.text === b.text &&
+            a.track === b.track &&
+            a.alignment === b.alignment
+        );
     }
 
     async _subtitles(file: File, track: number): Promise<SubtitleNode[]> {
         if (file.name.endsWith('.srt') || file.name.endsWith('.subrip')) {
             const parser = new SrtParser({ numericTimestamps: true });
             const nodes = parser.fromSrt(await file.text());
-            return nodes.map((node) => {
+            const subtitles: SubtitleNode[] = nodes.map((node) => {
                 return {
                     start: Math.floor((node.startTime as number) * 1000),
                     end: Math.floor((node.endTime as number) * 1000),
                     text: this._filterText(node.text.replace(assOverrideTagRegex, '')),
                     track: track,
+                    alignment: node.text.match(assOverrideTagRegex)?.some((tags) => tags.includes('\\an8'))
+                        ? 'top'
+                        : undefined,
                 };
+            });
+            return subtitles.flatMap((subtitle, index) => {
+                const previous = subtitles[index - 1];
+                if (!previous?.text || subtitle.start < previous.end || subtitle.start - previous.end > 1) {
+                    return [subtitle];
+                }
+
+                // shortcut: infer overlap only from intact repeated SRT cues; use speaker metadata for other layouts.
+                let addedText: string;
+                if (subtitle.text.startsWith(previous.text + '\n')) {
+                    addedText = subtitle.text.slice(previous.text.length + 1);
+                } else if (subtitle.text.endsWith('\n' + previous.text)) {
+                    addedText = subtitle.text.slice(0, -previous.text.length - 1);
+                } else {
+                    return [subtitle];
+                }
+
+                return [
+                    { ...subtitle, text: previous.text, alignment: previous.alignment },
+                    { ...subtitle, text: addedText, alignment: 'top' },
+                ];
             });
         }
 

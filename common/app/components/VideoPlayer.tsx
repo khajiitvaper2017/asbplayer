@@ -656,16 +656,10 @@ function VideoPlayer({
         if (offset === previousOffset) return;
 
         const shiftedSubtitles = subtitlesRef.current.map((s, i) => ({
-            text: s.text,
-            assText: s.assText,
-            textImage: s.textImage,
+            ...s,
             start: s.originalStart + offset,
-            originalStart: s.originalStart,
             end: s.originalEnd + offset,
-            originalEnd: s.originalEnd,
-            track: s.track,
             index: i,
-            tokenization: s.tokenization,
         }));
         subtitlesRef.current = shiftedSubtitles;
         setChannelSubtitles(shiftedSubtitles);
@@ -2157,16 +2151,17 @@ function VideoPlayer({
         />
     );
 
-    const subtitleAlignmentForTrack = (track: number) => subtitleAlignments[track] ?? subtitleAlignments[0];
+    const subtitleAlignment = (subtitle: IndexedSubtitleModel) =>
+        subtitle.alignment ?? subtitleAlignments[subtitle.track] ?? subtitleAlignments[0];
     const subtitleElementsWithAlignment = (alignment: SubtitleAlignment) => {
         const showing = showSubtitles.filter(
             (subtitle) =>
-                subtitleAlignmentForTrack(subtitle.track) === alignment &&
+                subtitleAlignment(subtitle) === alignment &&
                 !styledAssTracks.some((track) => track.track === subtitle.track && subtitle.assText)
         );
         const invisible = invisibleSubtitles.filter(
             (subtitle) =>
-                subtitleAlignmentForTrack(subtitle.track) === alignment &&
+                subtitleAlignment(subtitle) === alignment &&
                 !styledAssTracks.some((track) => track.track === subtitle.track && subtitle.assText)
         );
         return mapSubtitlesForDisplay(showing, invisible, elementForSubtitle);

@@ -1,4 +1,4 @@
-import type { AnkiSettings, JitenSettings, TokenState, TokenStatus } from '@project/common/settings';
+import type { AnkiSettings, JitenSettings, SubtitleAlignment, TokenState, TokenStatus } from '@project/common/settings';
 import type { GenericParseType, OnlineSubtitleSourceConfig } from '@project/common/global-state';
 import type { JitenTarget, JitenPending, JitenAttachmentResult } from '@project/common/jiten/jiten';
 
@@ -64,6 +64,7 @@ export interface SubtitleModel {
     readonly displayTime?: string;
     readonly displayEndTime?: string;
     readonly track: number;
+    readonly alignment?: SubtitleAlignment;
     readonly index?: number;
     readonly tokenization?: Tokenization;
 }
