@@ -13,16 +13,11 @@ import type {
 import { ExtensionSettingsStorage } from '@/services/extension-settings-storage';
 import { ExtensionGlobalStateProvider } from '@/services/extension-global-state-provider';
 import { configureExtensionLogProvider } from '@/services/extension-log-provider';
-
-const matches = ['*://asbplayer-jiten.pages.dev/asbplayer/*'];
-
-if (import.meta.env.DEV) {
-    matches.push('*://localhost/*');
-}
+import { asbplayerMatches } from '@/constants';
 
 export default defineContentScript({
     // Set manifest options
-    matches,
+    matches: asbplayerMatches,
     allFrames: true,
     runAt: 'document_start',
 

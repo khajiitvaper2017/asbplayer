@@ -1,17 +1,12 @@
 import { asbError } from '@project/common/util/log';
 import { currentPageDelegate } from '@/services/pages';
 import { configureExtensionLogProvider } from '@/services/extension-log-provider';
-
-const excludeGlobs = ['*://asbplayer-jiten.pages.dev/asbplayer/*'];
-
-if (import.meta.env.DEV) {
-    excludeGlobs.push('*://localhost:3000/*');
-}
+import { asbplayerExcludeGlobs } from '@/constants';
 
 export default defineContentScript({
     // Set manifest options
     matches: ['<all_urls>'],
-    excludeGlobs,
+    excludeGlobs: asbplayerExcludeGlobs,
     allFrames: true,
     runAt: 'document_start',
 

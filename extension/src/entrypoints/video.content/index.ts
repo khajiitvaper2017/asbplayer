@@ -18,19 +18,14 @@ import { incrementallyFindShadowRoots, shadowRootHosts } from '@/services/shadow
 import { isFirefoxBuild } from '@/services/build-flags';
 import { mediaSourceIdentity } from '@/pages/util';
 import { configureExtensionLogProvider } from '@/services/extension-log-provider';
+import { asbplayerExcludeGlobs } from '@/constants';
 
 import './video.css';
-
-const excludeGlobs = ['*://asbplayer-jiten.pages.dev/asbplayer/*'];
-
-if (import.meta.env.DEV) {
-    excludeGlobs.push('*://localhost:3000/*');
-}
 
 export default defineContentScript({
     // Set manifest options
     matches: ['<all_urls>'],
-    excludeGlobs,
+    excludeGlobs: asbplayerExcludeGlobs,
     allFrames: true,
     runAt: 'document_idle',
 
