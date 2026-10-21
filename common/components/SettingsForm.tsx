@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { makeStyles } from '@mui/styles';
 import type { CreateCSSProperties } from '@mui/styles';
@@ -206,6 +207,7 @@ interface Props {
     localFontFamilies: string[];
     supportedLanguages: string[];
     forceVerticalTabs?: boolean;
+    tabsContainer?: HTMLDivElement | null;
     inTutorial?: boolean;
     heightConstrained?: boolean;
     onSettingsChanged: (settings: Partial<AsbplayerSettings>) => void;
@@ -248,6 +250,7 @@ export default function SettingsForm({
     onRemoveProfile,
     onSetActiveProfile,
     forceVerticalTabs,
+    tabsContainer,
     heightConstrained,
     onSettingsChanged,
     onOpenChromeExtensionShortcuts,
@@ -335,69 +338,61 @@ export default function SettingsForm({
         [tabIndicesById]
     );
 
+    const tabs = (
+        <Tabs
+            orientation={tabsOrientation}
+            variant="scrollable"
+            value={tabIndex}
+            className={classes.tabs}
+            scrollButtons={false}
+            onChange={(event, index) => {
+                setTabIndex(index);
+            }}
+            sx={{
+                maxWidth: '100vw',
+                marginLeft: smallScreen ? 'auto' : 0,
+                marginRight: smallScreen ? 'auto' : 0,
+            }}
+        >
+            <Tab tabIndex={tabIndicesById['mining-settings']} label={t('settings.mining')} id="mining-settings" />
+            <Tab tabIndex={tabIndicesById['anki-settings']} label="Jiten" id="anki-settings" />
+            <Tab
+                tabIndex={tabIndicesById['subtitle-appearance']}
+                label={t('settings.subtitles')}
+                id="subtitle-appearance"
+            />
+            {insideApp && (
+                <Tab tabIndex={tabIndicesById['subtitle-study']} label={t('subtitleStudy.title')} id="subtitle-study" />
+            )}
+            {insideApp && (
+                <Tab
+                    tabIndex={tabIndicesById['embedded-tracks']}
+                    label={t('settings.embeddedTracks')}
+                    id="embedded-tracks"
+                />
+            )}
+            <Tab tabIndex={tabIndicesById['playback-settings']} label={t('settings.playback')} id="playback-settings" />
+            <Tab
+                tabIndex={tabIndicesById['keyboard-shortcuts']}
+                label={t('settings.keyboardShortcuts')}
+                id="keyboard-shortcuts"
+            />
+            {extensionSupportsAppIntegration && (
+                <Tab
+                    tabIndex={tabIndicesById['streaming-video']}
+                    label={t('settings.streamingVideo')}
+                    id="streaming-video"
+                />
+            )}
+            <Tab tabIndex={tabIndicesById['misc-settings']} label={t('settings.general')} id="misc-settings" />
+            <Tab tabIndex={tabIndicesById['about']} label={t('about.title')} id="about" />
+        </Tabs>
+    );
+
     return (
         <ThemeProvider theme={settingsTheme}>
             <div className={classes.root}>
-                <Tabs
-                    orientation={tabsOrientation}
-                    variant="scrollable"
-                    value={tabIndex}
-                    className={classes.tabs}
-                    scrollButtons={false}
-                    onChange={(event, index) => {
-                        setTabIndex(index);
-                    }}
-                    sx={{
-                        maxWidth: '100vw',
-                        marginLeft: smallScreen ? 'auto' : 0,
-                        marginRight: smallScreen ? 'auto' : 0,
-                    }}
-                >
-                    <Tab
-                        tabIndex={tabIndicesById['mining-settings']}
-                        label={t('settings.mining')}
-                        id="mining-settings"
-                    />
-                    <Tab tabIndex={tabIndicesById['anki-settings']} label="Jiten" id="anki-settings" />
-                    <Tab
-                        tabIndex={tabIndicesById['subtitle-appearance']}
-                        label={t('settings.subtitles')}
-                        id="subtitle-appearance"
-                    />
-                    {insideApp && (
-                        <Tab
-                            tabIndex={tabIndicesById['subtitle-study']}
-                            label={t('subtitleStudy.title')}
-                            id="subtitle-study"
-                        />
-                    )}
-                    {insideApp && (
-                        <Tab
-                            tabIndex={tabIndicesById['embedded-tracks']}
-                            label={t('settings.embeddedTracks')}
-                            id="embedded-tracks"
-                        />
-                    )}
-                    <Tab
-                        tabIndex={tabIndicesById['playback-settings']}
-                        label={t('settings.playback')}
-                        id="playback-settings"
-                    />
-                    <Tab
-                        tabIndex={tabIndicesById['keyboard-shortcuts']}
-                        label={t('settings.keyboardShortcuts')}
-                        id="keyboard-shortcuts"
-                    />
-                    {extensionSupportsAppIntegration && (
-                        <Tab
-                            tabIndex={tabIndicesById['streaming-video']}
-                            label={t('settings.streamingVideo')}
-                            id="streaming-video"
-                        />
-                    )}
-                    <Tab tabIndex={tabIndicesById['misc-settings']} label={t('settings.general')} id="misc-settings" />
-                    <Tab tabIndex={tabIndicesById['about']} label={t('about.title')} id="about" />
-                </Tabs>
+                {tabsContainer === undefined ? tabs : tabsContainer ? createPortal(tabs, tabsContainer) : null}
                 {insideApp && (
                     <TabPanel
                         value={tabIndex}

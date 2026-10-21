@@ -1,8 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import makeStyles from '@mui/styles/makeStyles';
 import { useTranslation } from 'react-i18next';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import SettingsForm from '@project/common/components/SettingsForm';
 import { useLocalFontFamilies } from '@project/common/hooks';
@@ -22,16 +24,17 @@ const useStyles = makeStyles<Theme>((theme) => ({
         },
     },
     content: {
-        maxHeight: '100%',
+        flex: '1 1 0',
         minHeight: 0,
         overflow: 'hidden',
-        position: 'relative',
     },
-    closeButton: {
-        position: 'absolute',
-        top: theme.spacing(1),
-        right: theme.spacing(1),
-        zIndex: 1,
+    tabsContainer: {
+        flex: '1 1 0',
+        minWidth: 0,
+        overflow: 'hidden',
+        '& .MuiTabs-root': {
+            width: '100%',
+        },
     },
 }));
 
@@ -66,6 +69,8 @@ export default function SettingsDialog({
     const smallScreenWidth = useMediaQuery(theme.breakpoints.down(500));
     const smallScreenLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
     const smallScreen = smallScreenWidth || smallScreenLandscape;
+    const mobilePortrait = smallScreenWidth && !smallScreenLandscape;
+    const [tabsContainer, setTabsContainer] = useState<HTMLDivElement | null>(null);
 
     const {
         updateLocalFontsPermission,
@@ -81,10 +86,19 @@ export default function SettingsDialog({
 
     return (
         <Dialog open={open} maxWidth="md" fullWidth fullScreen={smallScreen} className={classes.root} onClose={onClose}>
-            <DialogContent className={classes.content}>
-                <IconButton className={classes.closeButton} aria-label={t('action.close')} onClick={onClose}>
+            <Toolbar sx={{ minHeight: mobilePortrait ? 64 : undefined }}>
+                {smallScreen ? (
+                    <div className={classes.tabsContainer} ref={(element) => setTabsContainer(element)} />
+                ) : (
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        {t('bar.settings')}
+                    </Typography>
+                )}
+                <IconButton edge="end" aria-label={t('action.close')} onClick={onClose} sx={{ marginLeft: 'auto' }}>
                     <CloseIcon />
                 </IconButton>
+            </Toolbar>
+            <DialogContent className={classes.content}>
                 <SettingsForm
                     extensionInstalled={extension.installed}
                     extensionVersion={extension.installed ? extension.version : undefined}
@@ -104,6 +118,7 @@ export default function SettingsDialog({
                     extensionSupportsSubtitleListCustomization={extension.supportsSubtitleListCustomization}
                     pageConfigs={extension.pageConfig}
                     insideApp
+                    tabsContainer={smallScreen ? tabsContainer : undefined}
                     appVersionRepoPath={import.meta.env.VITE_APP_VERSION_REPO_PATH}
                     chromeKeyBinds={extension.extensionCommands}
                     onOpenChromeExtensionShortcuts={extension.openShortcuts}
