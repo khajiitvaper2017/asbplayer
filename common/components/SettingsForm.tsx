@@ -35,13 +35,13 @@ const useStyles = makeStyles<Theme, StylesProps>((theme) => ({
     root: ({ smallScreen }) => {
         let styles: any = {
             position: 'relative',
+            minHeight: 0,
             maxHeight: '100%',
-            height: 'calc(100% - 48px)',
+            height: '100%',
+            display: 'flex',
+            flexDirection: smallScreen ? 'column' : 'row',
+            flexGrow: 1,
         };
-
-        if (!smallScreen) {
-            styles = { ...styles, flexGrow: 1, display: 'flex', height: '100%' };
-        }
 
         return styles;
     },
@@ -58,6 +58,13 @@ const useStyles = makeStyles<Theme, StylesProps>((theme) => ({
             '& .MuiTab-root': {
                 minWidth: 120,
                 height: '100%',
+            },
+            '@media (max-width: 500px)': {
+                '& .MuiTab-root': {
+                    minWidth: 96,
+                    paddingLeft: theme.spacing(1),
+                    paddingRight: theme.spacing(1),
+                },
             },
         };
 
@@ -120,10 +127,11 @@ const usePanelStyles = makeStyles<Theme, PanelStyleProps>((theme: Theme) => ({
         paddingLeft: tabsOrientation === 'horizontal' ? theme.spacing(1) : theme.spacing(2),
         paddingRight: theme.spacing(1),
         paddingTop: tabsOrientation === 'horizontal' ? theme.spacing(1) : 0,
-        overflowY: 'scroll',
+        overflowY: 'auto',
+        flex: '1 1 0',
+        minHeight: 0,
+        minWidth: 0,
         maxHeight: '100%',
-        height: '100%',
-        width: '100%',
     }),
 }));
 
@@ -186,6 +194,10 @@ interface Props {
     settings: AsbplayerSettings;
     profiles: Profile[];
     activeProfile?: string;
+    showSettingsProfiles: boolean;
+    onNewProfile: (name: string) => void;
+    onRemoveProfile: (name: string) => void;
+    onSetActiveProfile: (name: string | undefined) => void;
     pageConfigs?: PageConfigMap;
     scrollToId?: string;
     chromeKeyBinds: { [key: string]: string | undefined };
@@ -229,6 +241,12 @@ export default function SettingsForm({
     localFontsPermission,
     localFontFamilies,
     supportedLanguages,
+    profiles,
+    activeProfile,
+    showSettingsProfiles,
+    onNewProfile,
+    onRemoveProfile,
+    onSetActiveProfile,
     forceVerticalTabs,
     heightConstrained,
     onSettingsChanged,
@@ -257,7 +275,10 @@ export default function SettingsForm({
             }),
         [theme]
     );
-    const smallScreen = useMediaQuery(theme.breakpoints.down(500)) && !forceVerticalTabs;
+    const compactScreenWidth = useMediaQuery(theme.breakpoints.down(500));
+    const compactScreenLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+    const compactScreen = compactScreenWidth || compactScreenLandscape;
+    const smallScreen = compactScreen && !forceVerticalTabs;
     const classes = useStyles({ smallScreen, heightConstrained });
     const handleSettingChanged = useCallback(
         async <K extends keyof AsbplayerSettings>(key: K, value: AsbplayerSettings[K]) => {
@@ -499,6 +520,12 @@ export default function SettingsForm({
                         logProvider={logProvider}
                         supportedLanguages={supportedLanguages}
                         insideApp={insideApp}
+                        profiles={profiles}
+                        activeProfile={activeProfile}
+                        showSettingsProfiles={showSettingsProfiles}
+                        onNewProfile={onNewProfile}
+                        onRemoveProfile={onRemoveProfile}
+                        onSetActiveProfile={onSetActiveProfile}
                     />
                 </TabPanel>
                 <TabPanel value={tabIndex} index={tabIndicesById['about']} tabsOrientation={tabsOrientation}>

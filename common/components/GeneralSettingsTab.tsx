@@ -21,7 +21,8 @@ import RadioGroup from '@project/common/components/SettingsRadioGroup';
 import SettingsSection from '@project/common/components/SettingsSection';
 import SettingsTextField from '@project/common/components/SettingsTextField';
 import SwitchLabelWithHoverEffect from '@project/common/components/SwitchLabelWithHoverEffect';
-import type { AsbplayerSettings } from '@project/common/settings';
+import SettingsProfileSelectMenu from '@project/common/components/SettingsProfileSelectMenu';
+import type { AsbplayerSettings, Profile } from '@project/common/settings';
 import { VideoSubtitleSplitBehavior } from '@project/common/settings';
 import { exportSettings, mergeImportedSettings, validateSettings } from '@project/common/settings/import-export';
 import type { LogProvider } from '@project/common/util/log';
@@ -37,6 +38,12 @@ interface Props {
     logProvider: LogProvider;
     supportedLanguages: string[];
     insideApp?: boolean;
+    profiles: Profile[];
+    activeProfile?: string;
+    showSettingsProfiles: boolean;
+    onNewProfile: (name: string) => void;
+    onRemoveProfile: (name: string) => void;
+    onSetActiveProfile: (name: string | undefined) => void;
 }
 const GeneralSettingsTab: React.FC<Props> = ({
     settings,
@@ -45,6 +52,12 @@ const GeneralSettingsTab: React.FC<Props> = ({
     logProvider,
     supportedLanguages,
     insideApp,
+    profiles,
+    activeProfile,
+    showSettingsProfiles,
+    onNewProfile,
+    onRemoveProfile,
+    onSetActiveProfile,
 }) => {
     const { t } = useTranslation();
     const { themeType, videoSubtitleSplitBehavior, language, tabName, webSocketClientEnabled, webSocketServerUrl } =
@@ -108,6 +121,15 @@ const GeneralSettingsTab: React.FC<Props> = ({
     return (
         <>
             <Stack spacing={1}>
+                {showSettingsProfiles && (
+                    <SettingsProfileSelectMenu
+                        profiles={profiles}
+                        activeProfile={activeProfile}
+                        onNewProfile={onNewProfile}
+                        onRemoveProfile={onRemoveProfile}
+                        onSetActiveProfile={onSetActiveProfile}
+                    />
+                )}
                 <SettingsSection>{t('settings.interface')}</SettingsSection>
                 <ResponsiveSettingsStack>
                     <FormControl>

@@ -1421,11 +1421,10 @@ function PlayerComponent(
     const [windowWidth, windowHeight] = useWindowSize(true);
 
     const videoInWindow = Boolean(videoFileUrl && !videoPopOut);
-    const shouldLoadVideoAspectRatio =
-        videoInWindow && settings.videoSubtitleSplitBehavior !== VideoSubtitleSplitBehavior.rememberSplitPosition;
+    const playerHeight = appBarHidden ? windowHeight : Math.max(0, windowHeight - appBarHeight);
+    const shouldLoadVideoAspectRatio = videoInWindow;
     const videoAspectRatio = useVideoAspectRatio(videoFileUrl, shouldLoadVideoAspectRatio);
     const loaded = videoFileUrl || (sources?.subtitleFiles.length ?? 0) > 0 || tab;
-    const playerHeight = appBarHidden ? windowHeight : Math.max(0, windowHeight - appBarHeight);
     const aspectFitVideoWidth = videoAspectRatio
         ? Math.max(minVideoPlayerWidth, Math.round(playerHeight * videoAspectRatio))
         : undefined;
@@ -1436,11 +1435,33 @@ function PlayerComponent(
         persistedWidth: playbackPreferences.subtitlePlayerWidth,
         autoWidth: autoSubtitlePlayerInitialWidth,
     });
+    const horizontalSubtitlePlayerWidth = Math.max(
+        minSubtitlePlayerWidth,
+        subtitlePlayerInitialWidth ?? Math.max(350, windowWidth * 0.25)
+    );
+    const horizontalVideoWidth = Math.max(0, windowWidth - horizontalSubtitlePlayerWidth);
+    const verticalVideoHeight = Math.max(0, playerHeight - minSubtitlePlayerWidth);
+    const videoArea = (width: number, height: number) => {
+        if (videoAspectRatio === undefined) {
+            return 0;
+        }
+
+        const displayedWidth = Math.min(width, height * videoAspectRatio);
+        return displayedWidth * (displayedWidth / videoAspectRatio);
+    };
+    const verticalLayout =
+        videoInWindow &&
+        (windowWidth < minVideoPlayerWidth + minSubtitlePlayerWidth ||
+            (videoAspectRatio !== undefined &&
+                videoArea(windowWidth, verticalVideoHeight) > videoArea(horizontalVideoWidth, playerHeight)));
     const subtitlePlayerMaxResizeWidth = Math.max(0, windowWidth - minVideoPlayerWidth);
     const notEnoughSpaceForSubtitlePlayer = subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
+    const showSubtitleLoadingState = verticalLayout && loadingSubtitles;
     const actuallyHideSubtitlePlayer =
         videoInWindow &&
-        (hideSubtitlePlayer || !subtitles || subtitles?.length === 0 || notEnoughSpaceForSubtitlePlayer);
+        (hideSubtitlePlayer ||
+            (!showSubtitleLoadingState &&
+                (!subtitles || subtitles.length === 0 || (!verticalLayout && notEnoughSpaceForSubtitlePlayer))));
     const handleAlertClosed = useCallback(() => setAlert((alert) => ({ ...alert, open: false })), []);
 
     return (
@@ -1475,9 +1496,20 @@ function PlayerComponent(
                 useAppLogo={false}
                 anchor="top"
             />
-            <Grid container direction="row" wrap="nowrap" className={classes.container}>
+            <Grid container direction={verticalLayout ? 'column' : 'row'} wrap="nowrap" className={classes.container}>
                 {videoInWindow && channelId && (
-                    <Grid item style={{ flexGrow: 1, minWidth: minVideoPlayerWidth, position: 'relative' }}>
+                    <Grid
+                        item
+                        style={{
+                            flexGrow: verticalLayout ? 0 : 1,
+                            flexBasis: verticalLayout ? 'auto' : undefined,
+                            minWidth: verticalLayout ? 0 : minVideoPlayerWidth,
+                            minHeight: verticalLayout ? 0 : undefined,
+                            width: verticalLayout ? '100%' : undefined,
+                            aspectRatio: verticalLayout ? (videoAspectRatio ?? 16 / 9) : undefined,
+                            position: 'relative',
+                        }}
+                    >
                         <div
                             ref={videoContainerRef}
                             className={classes.videoContainer}
@@ -1505,8 +1537,11 @@ function PlayerComponent(
                     onPointerDownCapture={() => setVideoFocused(false)}
                     onFocusCapture={() => setVideoFocused(false)}
                     style={{
-                        flexGrow: videoInWindow ? 0 : 1,
-                        width: 'auto',
+                        flexGrow: verticalLayout ? 1 : videoInWindow ? 0 : 1,
+                        flexShrink: verticalLayout ? 1 : 0,
+                        width: verticalLayout ? '100%' : 'auto',
+                        minWidth: verticalLayout ? 0 : undefined,
+                        minHeight: verticalLayout ? 0 : undefined,
                     }}
                 >
                     {loaded && !(videoFileUrl && !videoPopOut) && !hideControls && (
@@ -1555,7 +1590,8 @@ function PlayerComponent(
                         drawerOpen={drawerOpen}
                         appBarHidden={appBarHidden}
                         compressed={videoInWindow || (forceCompressedMode ?? false)}
-                        resizable={videoInWindow}
+                        resizable={videoInWindow && !verticalLayout}
+                        verticalLayout={verticalLayout}
                         showCopyButton={showCopyButton}
                         loading={loadingSubtitles}
                         displayHelp={(videoPopOut && videoFile?.file?.name) || undefined}

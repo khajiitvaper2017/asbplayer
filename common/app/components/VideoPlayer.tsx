@@ -118,7 +118,7 @@ const useStyles = makeStyles<Theme>((theme) => ({
     mobileOverlay: {
         position: 'absolute',
         zIndex: 10,
-        bottom: theme.spacing(1.5),
+        bottom: theme.spacing(7),
     },
 }));
 
@@ -2563,7 +2563,6 @@ function VideoPlayer({
                 subtitleAlignment={subtitleAlignments[0]}
                 subtitleAlignmentEnabled={subtitleAlignments.length === 1}
                 onSubtitleAlignment={handleSubtitleAlignment}
-                hideToolbar={isMobile}
                 onLoadFiles={popOut ? undefined : handleLoadFiles}
                 onLoadSubtitles={popOut ? undefined : handleLoadSubtitles}
                 blurOverlayEnabled={blurOverlayVisible}

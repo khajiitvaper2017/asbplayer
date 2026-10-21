@@ -547,7 +547,9 @@ interface ResponsiveButtonGroupProps {
 
 const ResponsiveButtonGroup = ({ children }: ResponsiveButtonGroupProps) => {
     const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down(600));
+    const isSmallScreenWidth = useMediaQuery(theme.breakpoints.down(600));
+    const isSmallScreenLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+    const isSmallScreen = isSmallScreenWidth || isSmallScreenLandscape;
     const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement>();
 
     const handleCloseMenu = () => {
@@ -571,7 +573,31 @@ const ResponsiveButtonGroup = ({ children }: ResponsiveButtonGroupProps) => {
                 </Grid>
                 <Menu anchorEl={anchorExists ? anchorEl : undefined} open={anchorExists} onClose={handleCloseMenu}>
                     {definedChildren.map((child, i) => {
-                        return <MenuItem key={i}>{child}</MenuItem>;
+                        const wrapper = React.isValidElement<{
+                            title?: React.ReactNode;
+                            children?: React.ReactNode;
+                        }>(child)
+                            ? child
+                            : undefined;
+                        const label = wrapper?.props.title;
+                        const control =
+                            (wrapper &&
+                                React.isValidElement<{ onClick?: React.MouseEventHandler }>(wrapper.props.children) &&
+                                wrapper.props.children) ||
+                            (React.isValidElement<{ onClick?: React.MouseEventHandler }>(child) ? child : undefined);
+                        const onClick = control?.props.onClick;
+                        return (
+                            <MenuItem
+                                key={i}
+                                onClick={(event) => {
+                                    onClick?.(event);
+                                    handleCloseMenu();
+                                }}
+                            >
+                                {control ? React.cloneElement(control, { onClick: undefined }) : child}
+                                {label !== undefined && <ListItemText primary={label} />}
+                            </MenuItem>
+                        );
                     })}
                 </Menu>
             </>
@@ -738,6 +764,9 @@ export default function Controls({
     const [volume, setVolume] = useState<number>(100);
     const [lastCommittedVolume, setLastCommittedVolume] = useState<number>(100);
     const theme = useTheme();
+    const isSmallScreenWidth = useMediaQuery(theme.breakpoints.down(600));
+    const isSmallScreenLandscape = useMediaQuery('(orientation: landscape) and (max-height: 500px)');
+    const isSmallScreen = isSmallScreenWidth || isSmallScreenLandscape;
     const isReallySmallScreen = useMediaQuery(theme.breakpoints.down(380));
     const lastMousePositionRef = useRef<Point | undefined>(undefined);
     const lastShowTimestampRef = useRef<number>(Date.now());
@@ -1259,7 +1288,7 @@ export default function Controls({
                                             </IconButton>
                                         </Tooltip>
                                     )}
-                                    {popOutEnabled && (
+                                    {popOutEnabled && !isSmallScreen && (
                                         <Tooltip title={popOut ? t('controls.popIn') : t('controls.popOut')}>
                                             <IconButton color="inherit" onClick={onPopOutToggle}>
                                                 <OpenInNewIcon

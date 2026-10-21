@@ -44,6 +44,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -107,11 +108,13 @@ interface StylesProps {
     resizable: boolean;
     appBarHidden: boolean;
     appBarHeight: number;
+    verticalLayout: boolean;
 }
 
 const useSubtitlePlayerStyles = makeStyles<Theme, StylesProps, string>((theme) => ({
     container: {
-        height: ({ appBarHidden, appBarHeight }) => (appBarHidden ? '100dvh' : `calc(100dvh - ${appBarHeight}px)`),
+        height: ({ appBarHidden, appBarHeight, verticalLayout }) =>
+            verticalLayout ? '100%' : appBarHidden ? '100dvh' : `calc(100dvh - ${appBarHeight}px)`,
         position: 'relative',
         overflow: 'hidden',
         backgroundColor: theme.palette.background.default,
@@ -137,9 +140,15 @@ const useSubtitleRowStyles = makeStyles<Theme>((theme) => ({
             backgroundColor: theme.palette.action.hover,
         },
         minWidth: 250,
+        '@media (orientation: landscape) and (max-height: 500px)': {
+            minWidth: 0,
+        },
     },
     selectedSubtitleRow: {
         minWidth: 250,
+        '@media (orientation: landscape) and (max-height: 500px)': {
+            minWidth: 0,
+        },
         '& td': {
             borderColor: theme.palette.background.paper,
         },
@@ -152,6 +161,9 @@ const useSubtitleRowStyles = makeStyles<Theme>((theme) => ({
     },
     unselectedSubtitleRow: {
         minWidth: 250,
+        '@media (orientation: landscape) and (max-height: 500px)': {
+            minWidth: 0,
+        },
         animation: `$unselect-subtitle-row 300ms ${theme.transitions.easing.easeInOut} forwards`,
     },
     '@keyframes unselect-subtitle-row': {
@@ -672,6 +684,7 @@ interface SubtitlePlayerProps {
     maxResizeWidth: number;
     initialWidth?: number;
     webSocketClient?: WebSocketClient;
+    verticalLayout: boolean;
 }
 
 export default function SubtitlePlayer({
@@ -709,6 +722,7 @@ export default function SubtitlePlayer({
     maxResizeWidth,
     initialWidth,
     webSocketClient,
+    verticalLayout,
 }: SubtitlePlayerProps) {
     const { t } = useTranslation();
     const clockRef = useRef<Clock>(clock);
@@ -756,7 +770,7 @@ export default function SubtitlePlayer({
     const drawerOpenRef = useRef<boolean>(undefined);
     drawerOpenRef.current = drawerOpen;
     const appBarHeight = useAppBarHeight();
-    const classes = useSubtitlePlayerStyles({ resizable, appBarHidden, appBarHeight });
+    const classes = useSubtitlePlayerStyles({ resizable, appBarHidden, appBarHeight, verticalLayout });
     const onSubtitlesHighlightedRef = useRef<(subtitles: SubtitleModel[]) => void>(undefined);
     onSubtitlesHighlightedRef.current = onSubtitlesHighlighted;
     const find = useSubtitleFind({
@@ -1403,7 +1417,13 @@ export default function SubtitlePlayer({
 
     let subtitleContent: ReactNode | null = null;
 
-    if (!subtitles || subtitles.length === 0) {
+    if (loading) {
+        subtitleContent = (
+            <div className={classes.noSubtitles}>
+                <CircularProgress size={28} />
+            </div>
+        );
+    } else if (!subtitles || subtitles.length === 0) {
         if (!loading && displayHelp) {
             subtitleContent = (
                 <div className={classes.noSubtitles}>
@@ -1439,7 +1459,7 @@ export default function SubtitlePlayer({
             className={`${classes.container} asbplayer-token-container`}
             tabIndex={-1}
             style={{
-                width: resizable ? width : 'auto',
+                width: verticalLayout ? '100%' : resizable ? width : 'auto',
                 userSelect: isResizing || dragging ? 'none' : undefined,
             }}
         >
