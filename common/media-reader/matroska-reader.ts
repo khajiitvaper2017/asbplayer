@@ -44,7 +44,7 @@ const SEEK_HEAD = 0x114d9b74;
 const READ_GAP = 16 * 1024;
 const BATCH_SIZE = 1024 * 1024;
 const BLOCK_PROBE = 512;
-const IN_FLIGHT = 4;
+const IN_FLIGHT = 32;
 
 function width(first: number) {
     if (!first) throw new Error('Invalid EBML integer');
