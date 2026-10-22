@@ -1,4 +1,5 @@
 import { embeddedTrackLanguageDisplayName } from '@project/common/settings/embedded-track-languages';
+import { asbInfo } from '@project/common/util/log';
 
 export interface ByteSource {
     size: number;
@@ -598,7 +599,26 @@ export async function extractMatroskaSubtitleFiles(
     file: File,
     preferredLanguage?: string
 ): Promise<MatroskaSubtitleFile[]> {
-    const matroska = await openMatroskaSubtitles(matroskaFileSource(file));
+    const started = performance.now();
+    const source = matroskaFileSource(file);
+    let reads = 0,
+        bytesRead = 0,
+        summedReadMs = 0,
+        slowestReadMs = 0;
+    const matroska = await openMatroskaSubtitles({
+        size: source.size,
+        async read(offset, length) {
+            const readStarted = performance.now();
+            const data = await source.read(offset, length);
+            const elapsed = performance.now() - readStarted;
+            reads++;
+            bytesRead += data.length;
+            summedReadMs += elapsed;
+            slowestReadMs = Math.max(slowestReadMs, elapsed);
+            return data;
+        },
+    });
+    const metadataFinished = performance.now();
     const trackNumbers =
         preferredLanguage === undefined
             ? undefined
@@ -610,9 +630,10 @@ export async function extractMatroskaSubtitleFiles(
                   )
                   .map((track) => track.number);
     const tracks = await matroska.extract(trackNumbers);
+    const extractionFinished = performance.now();
     const baseName = file.name.replace(/\.(?:mkv|webm)$/i, '');
 
-    return tracks.map((track) => {
+    const files = tracks.map((track) => {
         const label = `${track.language}${track.name ? ` - ${track.name}` : ''} (${track.number})`;
         return {
             file: new File([subtitleFile(track)], `${baseName} [${label}].${track.type}`),
@@ -621,4 +642,17 @@ export async function extractMatroskaSubtitleFiles(
             type: track.type,
         };
     });
+    asbInfo('matroska/subtitles', 'Extraction timing', {
+        fileBytes: file.size,
+        tracks: tracks.length,
+        cues: tracks.reduce((count, track) => count + track.cues.length, 0),
+        metadataMs: Math.round(metadataFinished - started),
+        extractionMs: Math.round(extractionFinished - metadataFinished),
+        serializationMs: Math.round(performance.now() - extractionFinished),
+        reads,
+        bytesRead,
+        summedReadMs: Math.round(summedReadMs),
+        slowestReadMs: Math.round(slowestReadMs),
+    });
+    return files;
 }
