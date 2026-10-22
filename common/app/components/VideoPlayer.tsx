@@ -88,7 +88,6 @@ import useLastScrollableControlType from '@project/common/hooks/use-last-scrolla
 import { openMatroskaAudio } from '@project/common/media-reader/matroska-reader';
 import type { Theme } from '@mui/material/styles';
 
-const overlayContainerHeight = 48;
 type MatroskaAudio = Awaited<ReturnType<typeof openMatroskaAudio>> & { selectedTrack: string };
 interface ExperimentalHTMLVideoElement extends HTMLVideoElement {
     readonly audioTracks: any;
@@ -118,7 +117,13 @@ const useStyles = makeStyles<Theme>((theme) => ({
     mobileOverlay: {
         position: 'absolute',
         zIndex: 10,
-        bottom: theme.spacing(7),
+        right: theme.spacing(1),
+        top: '50%',
+        transform: 'translateY(-50%)',
+        flexDirection: 'column',
+        alignItems: 'center',
+        maxHeight: `calc(100% - ${theme.spacing(14)})`,
+        overflowY: 'auto',
     },
 }));
 
@@ -2380,7 +2385,6 @@ function VideoPlayer({
             themeType: settings.themeType,
         };
     };
-    const baseBottomSubtitleOffset = !playing() && isMobile ? overlayContainerHeight : 0;
     const alertAnchor = subtitleAlignments[0] === 'top' ? 'bottom' : 'top';
     const resumePlaybackPrompt = useMemo(
         () => (
@@ -2508,7 +2512,7 @@ function VideoPlayer({
                     ref={bottomSubtitleContainerRef}
                     alignment={'bottom'}
                     subtitleSettings={subtitleSettings}
-                    baseOffset={baseBottomSubtitleOffset}
+                    baseOffset={0}
                     subtitleZIndex={settings.subtitleAboveThumbnail}
                 >
                     {bottomSubtitleElements}
