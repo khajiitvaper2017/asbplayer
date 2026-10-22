@@ -166,6 +166,7 @@
         "openStatistics": "Open statistics"
     },
     "controls": {
+        "loadingSubtitles": "자막 불러오는 중…",
         "autoPauseMode": "자동 일시정지:",
         "condensedMode": "자막 없는 부분 건너뛰기",
         "newWordsMode": "새 단어",

@@ -166,6 +166,7 @@
         "openStatistics": "Buka statistik"
     },
     "controls": {
+        "loadingSubtitles": "Memuat subtitel…",
         "autoPauseMode": "Jeda Otomatis",
         "condensedMode": "Ringkas",
         "newWordsMode": "Kata baru",

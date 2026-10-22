@@ -233,6 +233,8 @@ interface Props {
     playerSubtitles?: IndexedSubtitleModel[];
     assTracks?: readonly AssSubtitleTrack[];
     topControls?: React.ReactNode;
+    subtitleExtractionProgress?: number;
+    onCancelSubtitleExtraction?: () => void;
     disableKeyEvents?: boolean;
     settings: AsbplayerSettings;
     settingsProvider: SettingsProvider;
@@ -295,6 +297,8 @@ function VideoPlayer({
     playerSubtitles,
     assTracks: playerAssTracks,
     topControls,
+    subtitleExtractionProgress,
+    onCancelSubtitleExtraction,
     disableKeyEvents = false,
     settings,
     settingsProvider,
@@ -2512,6 +2516,8 @@ function VideoPlayer({
             )}
             <Controls
                 topControls={topControls}
+                subtitleExtractionProgress={subtitleExtractionProgress}
+                onCancelSubtitleExtraction={onCancelSubtitleExtraction}
                 videoWidth={videoWidth}
                 videoHeight={videoHeight}
                 mousePositionRef={mousePositionRef}

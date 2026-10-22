@@ -166,6 +166,7 @@
         "openStatistics": "Open statistics"
     },
     "controls": {
+        "loadingSubtitles": "Загрузка субтитров…",
         "autoPauseMode": "Режим с автоматической паузой",
         "condensedMode": "Режим сжатого воспроизведения",
         "newWordsMode": "Новые слова",

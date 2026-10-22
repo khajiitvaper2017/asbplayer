@@ -453,7 +453,11 @@ export async function openMatroskaSubtitles(source: ByteSource) {
 
     return {
         tracks,
-        async extract(trackNumbers = tracks.map((t) => t.number)): Promise<ExtractedTrack[]> {
+        async extract(
+            trackNumbers = tracks.map((t) => t.number),
+            onProgress?: (progress: number) => void
+        ): Promise<ExtractedTrack[]> {
+            onProgress?.(0);
             const selected = new Set(trackNumbers);
             const result = tracks
                 .filter((t) => selected.has(t.number))
@@ -489,6 +493,7 @@ export async function openMatroskaSubtitles(source: ByteSource) {
             const oversized: Request[] = [];
             // Android file-provider opens are expensive; desktop indexed reads avoid scanning video data.
             const read = isAndroid ? readStreamedBatches : readBatches;
+            let completed = 0;
             for await (const { batch, data } of read(source, queue)) {
                 for (const request of batch.requests) {
                     if (!request.cue) {
@@ -512,6 +517,7 @@ export async function openMatroskaSubtitles(source: ByteSource) {
                         });
                     else parseBlock(data, item, cue, byTrack.get(cue.track)!, scale);
                 }
+                onProgress?.(++completed / queue.length);
             }
             // Re-read only subtitle packets that exceed the initial probe, in file order.
             for await (const { batch, data } of readBatches(source, batches(oversized))) {
@@ -594,11 +600,13 @@ export function subtitleFile(track: ExtractedTrack): string | Uint8Array {
     return `${header}\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n${track.cues.map((c) => `Dialogue: ${c.ass![0]},${timestamp(c.start, 'ass')},${timestamp(c.end, 'ass')},${c.ass!.slice(1).join(',')},${c.text}`).join('\n')}\n`;
 }
 
-export function matroskaFileSource(file: Blob) {
+export function matroskaFileSource(file: Blob, signal?: AbortSignal) {
     const stats = { reads: 0, ranges: 0, streams: 0, bytesRead: 0, summedReadMs: 0, slowestReadMs: 0 };
     const measure = async (read: () => Promise<Uint8Array>) => {
+        signal?.throwIfAborted();
         const started = performance.now();
         const data = await read();
+        signal?.throwIfAborted();
         const elapsed = performance.now() - started;
         stats.bytesRead += data.length;
         stats.summedReadMs += elapsed;
@@ -621,8 +629,11 @@ export function matroskaFileSource(file: Blob) {
             );
         },
         async *stream(offset: number) {
+            signal?.throwIfAborted();
             stats.streams++;
             const reader = file.slice(offset).stream().getReader({ mode: 'byob' });
+            const cancel = () => void reader.cancel().catch(() => {});
+            signal?.addEventListener('abort', cancel, { once: true });
             const read: (view: Uint8Array, options: { min: number }) => Promise<ReadableStreamReadResult<Uint8Array>> =
                 reader.read.bind(reader);
             try {
@@ -636,6 +647,7 @@ export function matroskaFileSource(file: Blob) {
                     yield data;
                 }
             } finally {
+                signal?.removeEventListener('abort', cancel);
                 try {
                     await reader.cancel();
                 } finally {
@@ -702,10 +714,11 @@ export interface MatroskaSubtitleFile {
 
 export async function extractMatroskaSubtitleFiles(
     file: File,
-    preferredLanguage?: string
+    preferredLanguage?: string,
+    options: { signal?: AbortSignal; onProgress?: (progress: number) => void } = {}
 ): Promise<MatroskaSubtitleFile[]> {
     const started = performance.now();
-    const source = matroskaFileSource(file);
+    const source = matroskaFileSource(file, options.signal);
     const matroska = await openMatroskaSubtitles(source);
     const metadataFinished = performance.now();
     const trackNumbers =
@@ -718,7 +731,8 @@ export async function extractMatroskaSubtitleFiles(
                           embeddedTrackLanguageDisplayName(preferredLanguage)
                   )
                   .map((track) => track.number);
-    const tracks = await matroska.extract(trackNumbers);
+    const tracks = await matroska.extract(trackNumbers, options.onProgress);
+    options.signal?.throwIfAborted();
     const extractionFinished = performance.now();
     const baseName = file.name.replace(/\.(?:mkv|webm)$/i, '');
 

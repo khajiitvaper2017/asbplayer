@@ -175,6 +175,8 @@ interface PlayerProps {
     onSubtitles: React.Dispatch<React.SetStateAction<DisplaySubtitleModel[] | undefined>>;
     onLoadFiles?: () => void;
     onLoadSubtitles?: () => void;
+    subtitleExtractionProgress?: number;
+    onCancelSubtitleExtraction?: () => void;
     disableKeyEvents: boolean;
     jumpToSubtitle?: SubtitleModel;
     onJumpToSubtitleHandled?: () => void;
@@ -231,6 +233,8 @@ function PlayerComponent(
         onSubtitles,
         onLoadFiles,
         onLoadSubtitles,
+        subtitleExtractionProgress,
+        onCancelSubtitleExtraction,
         disableKeyEvents: parentDisableKeyEvents,
         jumpToSubtitle,
         onJumpToSubtitleHandled,
@@ -1465,7 +1469,15 @@ function PlayerComponent(
     const handleAlertClosed = useCallback(() => setAlert((alert) => ({ ...alert, open: false })), []);
 
     return (
-        <div onMouseMove={handleMouseMove} className={classes.root}>
+        <div
+            onMouseMove={handleMouseMove}
+            className={classes.root}
+            style={{
+                paddingBottom:
+                    subtitleExtractionProgress !== undefined ? 'calc(52px + env(safe-area-inset-bottom))' : undefined,
+                boxSizing: 'border-box',
+            }}
+        >
             <Alert
                 open={resumePlaybackSnackbar.open}
                 useAppLogo={false}
@@ -1569,6 +1581,8 @@ function PlayerComponent(
                             onOffsetChange={handleOffsetChange}
                             onPlayMode={handlePlayMode}
                             onLoadSubtitles={onLoadSubtitles}
+                            subtitleExtractionProgress={subtitleExtractionProgress}
+                            onCancelSubtitleExtraction={onCancelSubtitleExtraction}
                             disableKeyEvents={disableKeyEvents}
                             playbackPreferences={playbackPreferences}
                             showOnMouseMovement={true}

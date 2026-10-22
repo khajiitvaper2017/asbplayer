@@ -166,6 +166,7 @@
         "openStatistics": "打开数据统计"
     },
     "controls": {
+        "loadingSubtitles": "正在加载字幕…",
         "autoPauseMode": "自动暂停",
         "condensedMode": "紧凑模式",
         "newWordsMode": "新词",

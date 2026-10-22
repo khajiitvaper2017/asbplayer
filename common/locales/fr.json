@@ -166,6 +166,7 @@
         "openStatistics": "Open statistics"
     },
     "controls": {
+        "loadingSubtitles": "Chargement des sous-titres…",
         "autoPauseMode": "Pause automatique",
         "condensedMode": "Condensé",
         "newWordsMode": "Mots nouveaux",

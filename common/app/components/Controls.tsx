@@ -58,6 +58,9 @@ import {
     progressBarTrackWidth,
 } from '@project/common/app/components/progress-bar';
 import LoadSubtitlesIcon from '@project/common/components/LoadSubtitlesIcon';
+import Box from '@mui/material/Box';
+import LinearProgress from '@mui/material/LinearProgress';
+import Typography from '@mui/material/Typography';
 
 const useControlStyles = makeStyles<Theme>((theme) => ({
     container: {
@@ -680,6 +683,8 @@ interface ControlsProps {
     hideToolbar?: boolean;
     onLoadFiles?: () => void;
     onLoadSubtitles?: () => void;
+    subtitleExtractionProgress?: number;
+    onCancelSubtitleExtraction?: () => void;
     blurOverlayEnabled?: boolean;
     onBlurOverlayToggle?: () => void;
     videoWidth?: number | undefined;
@@ -744,6 +749,8 @@ export default function Controls({
     hideToolbar,
     onLoadFiles,
     onLoadSubtitles,
+    subtitleExtractionProgress,
+    onCancelSubtitleExtraction,
     blurOverlayEnabled,
     onBlurOverlayToggle,
     videoWidth,
@@ -995,6 +1002,43 @@ export default function Controls({
 
     return (
         <React.Fragment>
+            {subtitleExtractionProgress !== undefined && (
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: theme.zIndex.snackbar,
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
+                        px: 2,
+                        pb: 'max(8px, env(safe-area-inset-bottom))',
+                        pointerEvents: 'auto',
+                    }}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" role="status" sx={{ flex: 1 }}>
+                            {t('controls.loadingSubtitles')}
+                            {subtitleExtractionProgress >= 0 && ` ${subtitleExtractionProgress}%`}
+                        </Typography>
+                        <Tooltip title={t('action.cancel')}>
+                            <IconButton
+                                color="inherit"
+                                aria-label={t('action.cancel')}
+                                onClick={onCancelSubtitleExtraction}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                    <LinearProgress
+                        aria-label={t('controls.loadingSubtitles')}
+                        variant={subtitleExtractionProgress < 0 ? 'indeterminate' : 'determinate'}
+                        value={Math.max(0, subtitleExtractionProgress)}
+                    />
+                </Box>
+            )}
             <Fade in={show} timeout={200}>
                 <Grid container className={classes.topContainer}>
                     <Grid item>
@@ -1087,6 +1131,12 @@ export default function Controls({
             <div
                 ref={containerRef}
                 className={classes.container}
+                style={{
+                    bottom:
+                        subtitleExtractionProgress !== undefined && fullscreen
+                            ? 'calc(52px + env(safe-area-inset-bottom))'
+                            : undefined,
+                }}
                 onMouseOver={handleMouseOver}
                 onMouseOut={handleMouseOut}
             >
@@ -1259,6 +1309,7 @@ export default function Controls({
                                             <IconButton
                                                 color="inherit"
                                                 onClick={onLoadSubtitles}
+                                                aria-label={t('action.loadSubtitles')}
                                                 onMouseOver={handleMouseOver}
                                                 onMouseOut={handleMouseOut}
                                             >

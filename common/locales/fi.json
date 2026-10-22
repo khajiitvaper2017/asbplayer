@@ -166,6 +166,7 @@
         "openStatistics": "Open statistics"
     },
     "controls": {
+        "loadingSubtitles": "Ladataan tekstityksiä…",
         "autoPauseMode": "Automaattipysäytys",
         "condensedMode": "Tiivistetty",
         "newWordsMode": "Uudet sanat",
