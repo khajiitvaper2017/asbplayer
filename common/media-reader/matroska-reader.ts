@@ -1,9 +1,12 @@
 import { embeddedTrackLanguageDisplayName } from '@project/common/settings/embedded-track-languages';
 import { asbInfo } from '@project/common/util/log';
+import { isAndroid } from 'react-device-detect';
 
 export interface ByteSource {
     size: number;
     read(offset: number, length: number): Promise<Uint8Array>;
+    readRanges(ranges: readonly { start: number; end: number }[]): Promise<Uint8Array>;
+    stream(offset: number): AsyncGenerator<Uint8Array, void>;
 }
 
 export interface SubtitleTrack {
@@ -42,10 +45,12 @@ const TRACKS = 0x1654ae6b;
 const INFO = 0x1549a966;
 const CUES = 0x1c53bb6b;
 const SEEK_HEAD = 0x114d9b74;
-const READ_GAP = 16 * 1024;
 const BATCH_SIZE = 1024 * 1024;
+const READ_GAP = 16 * 1024;
 const BLOCK_PROBE = 512;
-const IN_FLIGHT = 32;
+const RANGES_PER_READ = 32;
+const IN_FLIGHT = 4;
+const STREAM_CHUNK_SIZE = 16 * 1024 * 1024;
 
 function width(first: number) {
     if (!first) throw new Error('Invalid EBML integer');
@@ -322,20 +327,75 @@ function batches(requests: Request[]) {
 }
 
 async function* readBatches(source: ByteSource, queue: Batch[]) {
+    const groups: Batch[][] = [];
+    let bytes = 0;
+    for (const batch of queue) {
+        let group = groups[groups.length - 1];
+        if (!group || group.length === RANGES_PER_READ || bytes + batch.end - batch.start > BATCH_SIZE) {
+            groups.push((group = []));
+            bytes = 0;
+        }
+        group.push(batch);
+        bytes += batch.end - batch.start;
+    }
     const read = (i: number) => {
-        const batch = queue[i];
-        return source.read(batch.start, batch.end - batch.start).then(
+        return source.readRanges(groups[i]).then(
             (data) => ({ data, error: undefined }),
             (error) => ({ data: undefined, error })
         );
     };
-    const pending = queue.slice(0, IN_FLIGHT).map((_, i) => read(i));
-    for (let i = 0; i < queue.length; i++) {
+    const pending = groups.slice(0, IN_FLIGHT).map((_, i) => read(i));
+    for (let i = 0; i < groups.length; i++) {
         const slot = i % IN_FLIGHT;
         const result = await pending[slot];
         if (!result.data) throw result.error;
-        if (i + IN_FLIGHT < queue.length) pending[slot] = read(i + IN_FLIGHT);
-        yield { batch: queue[i], data: result.data };
+        if (i + IN_FLIGHT < groups.length) pending[slot] = read(i + IN_FLIGHT);
+        let offset = 0;
+        for (const batch of groups[i]) {
+            const length = batch.end - batch.start;
+            yield { batch, data: result.data.subarray(offset, offset + length) };
+            offset += length;
+        }
+    }
+}
+
+async function* readStreamedBatches(source: ByteSource, queue: Batch[]) {
+    if (!queue.length) return;
+    const stream = source.stream(queue[0].start);
+    let offset = queue[0].start;
+    let data: Uint8Array = new Uint8Array();
+    const next = async () => {
+        const result = await stream.next();
+        if (result.done) throw new Error('Unexpected end of MKV stream');
+        return result.value;
+    };
+    try {
+        for (const batch of queue) {
+            while (offset + data.length <= batch.start) {
+                offset += data.length;
+                data = await next();
+            }
+            data = data.subarray(batch.start - offset);
+            offset = batch.start;
+            const parts = [data];
+            let length = data.length;
+            while (offset + length < batch.end) {
+                const part = await next();
+                parts.push(part);
+                length += part.length;
+            }
+            if (parts.length > 1) {
+                data = new Uint8Array(length);
+                let copied = 0;
+                for (const part of parts) {
+                    data.set(part, copied);
+                    copied += part.length;
+                }
+            }
+            yield { batch, data };
+        }
+    } finally {
+        await stream.return(undefined);
     }
 }
 
@@ -427,7 +487,9 @@ export async function openMatroskaSubtitles(source: ByteSource) {
             }
             const queue = batches(requests);
             const oversized: Request[] = [];
-            for await (const { batch, data } of readBatches(source, queue)) {
+            // Android file-provider opens are expensive; desktop indexed reads avoid scanning video data.
+            const read = isAndroid ? readStreamedBatches : readBatches;
+            for await (const { batch, data } of read(source, queue)) {
                 for (const request of batch.requests) {
                     if (!request.cue) {
                         const item = element(data, request.cluster - batch.start);
@@ -532,11 +594,54 @@ export function subtitleFile(track: ExtractedTrack): string | Uint8Array {
     return `${header}\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n${track.cues.map((c) => `Dialogue: ${c.ass![0]},${timestamp(c.start, 'ass')},${timestamp(c.end, 'ass')},${c.ass!.slice(1).join(',')},${c.text}`).join('\n')}\n`;
 }
 
-export function matroskaFileSource(file: Blob): ByteSource {
+export function matroskaFileSource(file: Blob) {
+    const stats = { reads: 0, ranges: 0, streams: 0, bytesRead: 0, summedReadMs: 0, slowestReadMs: 0 };
+    const measure = async (read: () => Promise<Uint8Array>) => {
+        const started = performance.now();
+        const data = await read();
+        const elapsed = performance.now() - started;
+        stats.bytesRead += data.length;
+        stats.summedReadMs += elapsed;
+        stats.slowestReadMs = Math.max(stats.slowestReadMs, elapsed);
+        return data;
+    };
     return {
         size: file.size,
-        async read(offset, length) {
-            return new Uint8Array(await file.slice(offset, offset + length).arrayBuffer());
+        stats,
+        read(offset: number, length: number) {
+            stats.reads++;
+            stats.ranges++;
+            return measure(async () => new Uint8Array(await file.slice(offset, offset + length).arrayBuffer()));
+        },
+        readRanges(ranges: readonly { start: number; end: number }[]) {
+            stats.reads++;
+            stats.ranges += ranges.length;
+            return measure(
+                async () => new Uint8Array(await new Blob(ranges.map((r) => file.slice(r.start, r.end))).arrayBuffer())
+            );
+        },
+        async *stream(offset: number) {
+            stats.streams++;
+            const reader = file.slice(offset).stream().getReader({ mode: 'byob' });
+            const read: (view: Uint8Array, options: { min: number }) => Promise<ReadableStreamReadResult<Uint8Array>> =
+                reader.read.bind(reader);
+            try {
+                while (true) {
+                    const data = await measure(
+                        async () =>
+                            (await read(new Uint8Array(STREAM_CHUNK_SIZE), { min: STREAM_CHUNK_SIZE })).value ??
+                            new Uint8Array()
+                    );
+                    if (!data.length) return;
+                    yield data;
+                }
+            } finally {
+                try {
+                    await reader.cancel();
+                } finally {
+                    reader.releaseLock();
+                }
+            }
         },
     };
 }
@@ -601,23 +706,7 @@ export async function extractMatroskaSubtitleFiles(
 ): Promise<MatroskaSubtitleFile[]> {
     const started = performance.now();
     const source = matroskaFileSource(file);
-    let reads = 0,
-        bytesRead = 0,
-        summedReadMs = 0,
-        slowestReadMs = 0;
-    const matroska = await openMatroskaSubtitles({
-        size: source.size,
-        async read(offset, length) {
-            const readStarted = performance.now();
-            const data = await source.read(offset, length);
-            const elapsed = performance.now() - readStarted;
-            reads++;
-            bytesRead += data.length;
-            summedReadMs += elapsed;
-            slowestReadMs = Math.max(slowestReadMs, elapsed);
-            return data;
-        },
-    });
+    const matroska = await openMatroskaSubtitles(source);
     const metadataFinished = performance.now();
     const trackNumbers =
         preferredLanguage === undefined
@@ -649,10 +738,9 @@ export async function extractMatroskaSubtitleFiles(
         metadataMs: Math.round(metadataFinished - started),
         extractionMs: Math.round(extractionFinished - metadataFinished),
         serializationMs: Math.round(performance.now() - extractionFinished),
-        reads,
-        bytesRead,
-        summedReadMs: Math.round(summedReadMs),
-        slowestReadMs: Math.round(slowestReadMs),
+        ...source.stats,
+        summedReadMs: Math.round(source.stats.summedReadMs),
+        slowestReadMs: Math.round(source.stats.slowestReadMs),
     });
     return files;
 }
