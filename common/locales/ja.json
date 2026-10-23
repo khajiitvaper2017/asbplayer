@@ -184,7 +184,6 @@
         "popOut": "動画をポップアウト",
         "popIn": "動画をポップイン",
         "toggleFullscreen": "フルスクリーンオン/オフ",
-        "toggleTheaterMode": "シアターモードオン/オフ",
         "showSubtitlePlayer": "字幕リストを表示",
         "hideSubtitlePlayer": "字幕リストを非表示",
         "currentTimestamp": "タイムスタンプ",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "動作",
         "interface": "インターフェース",
+        "showFloatingControls": "動画のフローティング操作ボタンを表示",
         "subtitleStyling": "文字のスタイル",
         "skipping": "スキップ",
         "general": "一般",

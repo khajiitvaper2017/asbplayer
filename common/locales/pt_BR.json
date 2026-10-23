@@ -184,7 +184,6 @@
         "popOut": "Destacar",
         "popIn": "Recuar",
         "toggleFullscreen": "Alternar tela cheia",
-        "toggleTheaterMode": "Alternar modo teatro",
         "showSubtitlePlayer": "Mostrar lista de legendas",
         "hideSubtitlePlayer": "Ocultar lista de legendas",
         "currentTimestamp": "Timestamp atual",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Comportamento",
         "interface": "Interface",
+        "showFloatingControls": "Mostrar controles flutuantes de vídeo",
         "subtitleStyling": "Estilo do texto",
         "skipping": "Saltos",
         "general": "Geral",

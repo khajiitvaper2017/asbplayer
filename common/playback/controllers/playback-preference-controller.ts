@@ -2,7 +2,6 @@ import { CachedLocalStorage } from '@project/common/app/services/cached-local-st
 import { asbTrace } from '@project/common/util/log';
 
 const volumeKey = 'volume';
-const theaterModeKey = 'theaterMode';
 const displaySubtitlesKey = 'displaySubtitles';
 const hideSubtitleListKey = 'hideSubtitleList';
 const subtitlePlayerWidthKey = 'subtitlePlayerWidth';
@@ -34,15 +33,6 @@ export default class PlaybackPreferenceController {
     set volume(volume: number) {
         asbTrace('playback/preferences', 'Changed playback volume preference', { volume });
         this.storage.set(volumeKey, String(volume));
-    }
-
-    get theaterMode(): boolean {
-        return this.storage.get(theaterModeKey) === 'true';
-    }
-
-    set theaterMode(theaterMode: boolean) {
-        asbTrace('playback/preferences', 'Changed theater mode preference', { theaterMode });
-        this.storage.set(theaterModeKey, String(theaterMode));
     }
 
     get displaySubtitles(): boolean {

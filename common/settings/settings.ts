@@ -660,6 +660,7 @@ export interface AsbplayerSettings
         SubtitleStudySettings {
     readonly subtitlePreview: string;
     readonly assSubtitleStyles: boolean;
+    readonly showFloatingControls: boolean;
     readonly loadEmbeddedAudio: boolean;
     readonly loadEmbeddedSubtitles: boolean;
     readonly loadPreferredEmbeddedLanguageOnly: boolean;

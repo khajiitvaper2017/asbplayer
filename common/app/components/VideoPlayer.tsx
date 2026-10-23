@@ -410,7 +410,6 @@ function VideoPlayer({
         [playerChannel]
     );
     const [subtitlePlayerHidden, setSubtitlePlayerHidden] = useState<boolean>(false);
-    const [appBarHidden, setAppBarHidden] = useState<boolean>(playbackPreferences.theaterMode);
     const [subtitleAlignments, setSubtitleAlignments] = useState<SubtitleAlignment[]>(
         allSubtitleAlignments(subtitleSettings)
     );
@@ -1209,7 +1208,6 @@ function VideoPlayer({
 
         playerChannel.onPlayMode((targetMode) => togglePlaybackMode(targetMode));
         playerChannel.onHideSubtitlePlayerToggle((hidden) => setSubtitlePlayerHidden(hidden));
-        playerChannel.onAppBarToggle((hidden) => setAppBarHidden(hidden));
         playerChannel.onFullscreenToggle((fullscreen) => requestFullscreen(fullscreen));
         playerChannel.onSubtitleSettings(setSubtitleSettings);
         playerChannel.onMiscSettings(setMiscSettings);
@@ -2184,10 +2182,6 @@ function VideoPlayer({
         playerChannel.hideSubtitlePlayerToggle();
     }, [playerChannel]);
 
-    const handleTheaterModeToggle = useCallback(() => {
-        playerChannel.appBarToggle();
-    }, [playerChannel]);
-
     const handleSubtitleAlignment = useCallback(
         (alignment: SubtitleAlignment) => {
             let change: Partial<SubtitleSettings> = {};
@@ -2361,7 +2355,7 @@ function VideoPlayer({
     const topSubtitleElements = displaySubtitles ? subtitleElementsWithAlignment('top') : [];
     const bottomSubtitleElements = displaySubtitles ? subtitleElementsWithAlignment('bottom') : [];
     const mobileOverlayModel = () => {
-        if (!isMobile || (playing() && mineIntervalStartTimestamp === undefined)) {
+        if (!settings.showFloatingControls || (playing() && mineIntervalStartTimestamp === undefined)) {
             return undefined;
         }
 
@@ -2567,9 +2561,6 @@ function VideoPlayer({
                 onHideSubtitlePlayerToggle={handleHideSubtitlePlayerToggle}
                 playbackPreferences={playbackPreferences}
                 showOnMouseMovement={false}
-                theaterModeToggleEnabled={!popOut && !fullscreen}
-                theaterModeEnabled={appBarHidden}
-                onTheaterModeToggle={handleTheaterModeToggle}
                 subtitleAlignment={subtitleAlignments[0]}
                 subtitleAlignmentEnabled={subtitleAlignments.length === 1}
                 onSubtitleAlignment={handleSubtitleAlignment}

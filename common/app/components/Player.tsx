@@ -1,6 +1,6 @@
 import { findJitenSubtitle } from '@project/common/jiten/reader-events';
 import type { MutableRefObject } from 'react';
-import React, { useEffect, useState, useMemo, useCallback, useRef, useImperativeHandle } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useMemo, useCallback, useRef, useImperativeHandle } from 'react';
 import { makeStyles } from '@mui/styles';
 import type { Theme } from '@mui/material';
 import Button from '@mui/material/Button';
@@ -43,12 +43,12 @@ import Clock from '@project/common/playback/timing/clock';
 import type { Point } from '@project/common/app/components/Controls';
 import Controls from '@project/common/app/components/Controls';
 import Grid from '@mui/material/Grid';
+import Fade from '@mui/material/Fade';
 import MediaAdapter from '@project/common/app/services/media-adapter';
 import SubtitlePlayer, { minSubtitlePlayerWidth } from '@project/common/app/components/SubtitlePlayer';
 import VideoChannel from '@project/common/app/services/video-channel';
 import type ChromeExtension from '@project/common/app/services/chrome-extension';
 import type PlaybackPreferenceController from '@project/common/playback/controllers/playback-preference-controller';
-import { useWindowSize } from '@project/common/app/hooks/use-window-size';
 import { useAppBarHeight } from '@project/common/hooks/use-app-bar-height';
 import { createBlobUrl } from '@project/common/blob-url';
 import type { MiningContext } from '@project/common/app/services/mining-context';
@@ -82,11 +82,12 @@ interface StylesProps {
     appBarHeight: number;
 }
 
-const useStyles = makeStyles<Theme, StylesProps>(() => ({
+const useStyles = makeStyles<Theme, StylesProps>((theme) => ({
     root: ({ appBarHidden, appBarHeight }) => ({
         height: appBarHidden ? '100dvh' : `calc(100dvh - ${appBarHeight}px)`,
         position: 'relative',
         overflowX: 'hidden',
+        transition: theme.transitions.create('padding-bottom', { duration: 200 }),
     }),
     container: {
         width: '100%',
@@ -169,7 +170,6 @@ interface PlayerProps {
     onTabSelected: (tab: VideoTabModel) => void;
     onAnkiDialogRequest: () => void;
     onAnkiDialogRewind: () => void;
-    onAppBarToggle: () => void;
     onHideSubtitlePlayer: () => void;
     onVideoPopOut: () => void;
     onSubtitles: React.Dispatch<React.SetStateAction<DisplaySubtitleModel[] | undefined>>;
@@ -227,7 +227,6 @@ function PlayerComponent(
         onLoaded,
         onTabSelected,
         onAnkiDialogRequest,
-        onAppBarToggle,
         onHideSubtitlePlayer,
         onVideoPopOut,
         onSubtitles,
@@ -791,7 +790,6 @@ function PlayerComponent(
     );
     useEffect(() => channel?.onPopOutToggle(() => onVideoPopOut()), [channel, onVideoPopOut]);
     useEffect(() => channel?.onHideSubtitlePlayerToggle(onHideSubtitlePlayer), [channel, onHideSubtitlePlayer]);
-    useEffect(() => channel?.onAppBarToggle(onAppBarToggle), [channel, onAppBarToggle]);
     useEffect(
         () =>
             channel?.onReady(() => {
@@ -1399,7 +1397,6 @@ function PlayerComponent(
         );
     }, [disableKeyEvents, keyBinder, playModeEnabled, t]);
 
-    useEffect(() => channel?.appBarToggle(appBarHidden), [channel, appBarHidden]);
     useEffect(() => channel?.fullscreenToggle(videoFullscreen), [channel, videoFullscreen]);
 
     useEffect(() => {
@@ -1422,10 +1419,17 @@ function PlayerComponent(
         };
     }, [webSocketClient, extension, seek, clock]);
 
-    const [windowWidth, windowHeight] = useWindowSize(true);
+    const playerLayoutRef = useRef<HTMLDivElement>(null);
+    const [{ width: playerWidth, height: playerHeight }, setPlayerSize] = useState({ width: 0, height: 0 });
+    useLayoutEffect(() => {
+        const observer = new ResizeObserver(([entry]) => {
+            setPlayerSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+        });
+        observer.observe(playerLayoutRef.current!);
+        return () => observer.disconnect();
+    }, []);
 
     const videoInWindow = Boolean(videoFileUrl && !videoPopOut);
-    const playerHeight = appBarHidden ? windowHeight : Math.max(0, windowHeight - appBarHeight);
     const shouldLoadVideoAspectRatio = videoInWindow;
     const videoAspectRatio = useVideoAspectRatio(videoFileUrl, shouldLoadVideoAspectRatio);
     const loaded = videoFileUrl || (sources?.subtitleFiles.length ?? 0) > 0 || tab;
@@ -1433,7 +1437,7 @@ function PlayerComponent(
         ? Math.max(minVideoPlayerWidth, Math.round(playerHeight * videoAspectRatio))
         : undefined;
     const autoSubtitlePlayerInitialWidth =
-        videoInWindow && aspectFitVideoWidth !== undefined ? Math.max(0, windowWidth - aspectFitVideoWidth) : undefined;
+        videoInWindow && aspectFitVideoWidth !== undefined ? Math.max(0, playerWidth - aspectFitVideoWidth) : undefined;
     const subtitlePlayerInitialWidth = resolveVideoSubtitleSplitLayout({
         behavior: settings.videoSubtitleSplitBehavior,
         persistedWidth: playbackPreferences.subtitlePlayerWidth,
@@ -1441,9 +1445,9 @@ function PlayerComponent(
     });
     const horizontalSubtitlePlayerWidth = Math.max(
         minSubtitlePlayerWidth,
-        subtitlePlayerInitialWidth ?? Math.max(350, windowWidth * 0.25)
+        subtitlePlayerInitialWidth ?? Math.max(350, playerWidth * 0.25)
     );
-    const horizontalVideoWidth = Math.max(0, windowWidth - horizontalSubtitlePlayerWidth);
+    const horizontalVideoWidth = Math.max(0, playerWidth - horizontalSubtitlePlayerWidth);
     const verticalVideoHeight = Math.max(0, playerHeight - minSubtitlePlayerWidth);
     const videoArea = (width: number, height: number) => {
         if (videoAspectRatio === undefined) {
@@ -1455,10 +1459,10 @@ function PlayerComponent(
     };
     const verticalLayout =
         videoInWindow &&
-        (windowWidth < minVideoPlayerWidth + minSubtitlePlayerWidth ||
+        (playerWidth < minVideoPlayerWidth + minSubtitlePlayerWidth ||
             (videoAspectRatio !== undefined &&
-                videoArea(windowWidth, verticalVideoHeight) > videoArea(horizontalVideoWidth, playerHeight)));
-    const subtitlePlayerMaxResizeWidth = Math.max(0, windowWidth - minVideoPlayerWidth);
+                videoArea(playerWidth, verticalVideoHeight) > videoArea(horizontalVideoWidth, playerHeight)));
+    const subtitlePlayerMaxResizeWidth = Math.max(0, playerWidth - minVideoPlayerWidth);
     const notEnoughSpaceForSubtitlePlayer = subtitlePlayerMaxResizeWidth < minSubtitlePlayerWidth;
     const showSubtitleLoadingState = verticalLayout && loadingSubtitles;
     const actuallyHideSubtitlePlayer =
@@ -1508,17 +1512,26 @@ function PlayerComponent(
                 useAppLogo={false}
                 anchor="top"
             />
-            <Grid container direction={verticalLayout ? 'column' : 'row'} wrap="nowrap" className={classes.container}>
+            <Grid
+                ref={playerLayoutRef}
+                container
+                direction={verticalLayout ? 'column' : 'row'}
+                wrap="nowrap"
+                className={classes.container}
+            >
                 {videoInWindow && channelId && (
                     <Grid
                         item
                         style={{
-                            flexGrow: verticalLayout ? 0 : 1,
+                            flexGrow: verticalLayout && !actuallyHideSubtitlePlayer ? 0 : 1,
                             flexBasis: verticalLayout ? 'auto' : undefined,
                             minWidth: verticalLayout ? 0 : minVideoPlayerWidth,
                             minHeight: verticalLayout ? 0 : undefined,
                             width: verticalLayout ? '100%' : undefined,
-                            aspectRatio: verticalLayout ? (videoAspectRatio ?? 16 / 9) : undefined,
+                            aspectRatio:
+                                verticalLayout && !actuallyHideSubtitlePlayer
+                                    ? (videoAspectRatio ?? 16 / 9)
+                                    : undefined,
                             position: 'relative',
                         }}
                     >
@@ -1543,92 +1556,94 @@ function PlayerComponent(
                     </Grid>
                 )}
 
-                <Grid
-                    item
-                    hidden={actuallyHideSubtitlePlayer}
-                    onPointerDownCapture={() => setVideoFocused(false)}
-                    onFocusCapture={() => setVideoFocused(false)}
-                    style={{
-                        flexGrow: verticalLayout ? 1 : videoInWindow ? 0 : 1,
-                        flexShrink: verticalLayout ? 1 : 0,
-                        width: verticalLayout ? '100%' : 'auto',
-                        minWidth: verticalLayout ? 0 : undefined,
-                        minHeight: verticalLayout ? 0 : undefined,
-                    }}
-                >
-                    {loaded && !(videoFileUrl && !videoPopOut) && !hideControls && (
-                        <Controls
-                            mousePositionRef={mousePositionRef}
-                            clock={clock}
-                            length={calculateLengthMs(videoDurationRef)}
-                            displayLength={calculateLengthMs(videoDurationRef, subtitles)}
-                            audioTracks={audioTracks}
-                            selectedAudioTrack={selectedAudioTrack}
-                            tabs={(!videoFileUrl && availableTabs) || undefined}
-                            selectedTab={tab}
-                            offsetEnabled={true}
-                            offset={offset}
-                            playbackRate={playbackRate}
-                            playbackRateEnabled={!tab || extension.supportsPlaybackRateMessage}
-                            onPlaybackRateChange={handlePlaybackRateChange}
-                            playModeEnabled={playModeEnabled}
-                            playModes={playModes}
-                            onPlay={handlePlay}
-                            onPause={handlePause}
-                            onSeek={handleSeek}
-                            onAudioTrackSelected={handleAudioTrackSelected}
-                            onTabSelected={onTabSelected}
-                            onOffsetChange={handleOffsetChange}
-                            onPlayMode={handlePlayMode}
-                            onLoadSubtitles={onLoadSubtitles}
-                            subtitleExtractionProgress={subtitleExtractionProgress}
-                            onCancelSubtitleExtraction={onCancelSubtitleExtraction}
-                            disableKeyEvents={disableKeyEvents}
-                            playbackPreferences={playbackPreferences}
-                            showOnMouseMovement={true}
-                            subtitleStudyBlurEnabled={settings.subtitleStudyBlurEnabled}
-                            subtitleStudyHideEnabled={settings.subtitleStudyHideEnabled}
-                            onSubtitleStudyToggle={onSettingsChanged && handleSubtitleStudyToggle}
-                            previewEnabled={false}
-                        />
-                    )}
-                    <SubtitlePlayer
-                        subtitles={subtitles}
-                        subtitleCollection={subtitleCollection}
-                        playbackState={playbackState}
-                        clock={clock}
-                        extension={extension}
-                        length={calculateLengthMs(videoDurationRef)}
-                        jumpToSubtitle={jumpToSubtitle}
-                        onJumpToSubtitleHandled={onJumpToSubtitleHandled}
-                        drawerOpen={drawerOpen}
-                        appBarHidden={appBarHidden}
-                        compressed={videoInWindow || (forceCompressedMode ?? false)}
-                        resizable={videoInWindow && !verticalLayout}
-                        verticalLayout={verticalLayout}
-                        showCopyButton={showCopyButton}
-                        loading={loadingSubtitles}
-                        displayHelp={(videoPopOut && videoFile?.file?.name) || undefined}
-                        disableKeyEvents={disableKeyEvents}
-                        // On later versions of the extension, VideoPlayer will receive the mining commands instead
-                        disableMiningBinds={extension.supportsVideoPlayerMiningCommands && videoFile !== undefined}
-                        lastJumpToTopTimestamp={lastJumpToTopTimestamp}
+                <Fade in={!actuallyHideSubtitlePlayer} timeout={200} appear>
+                    <Grid
+                        item
                         hidden={actuallyHideSubtitlePlayer}
-                        disabledSubtitleTracks={disabledSubtitleTracks}
-                        onSeek={handleSeekToTimestamp}
-                        onCopy={handleCopyFromSubtitlePlayer}
-                        onOffsetChange={handleOffsetChange}
-                        onToggleSubtitleTrack={handleToggleSubtitleTrack}
-                        onSubtitlesHighlighted={handleSubtitlesHighlighted}
-                        onResizeStart={handleSubtitlePlayerResizeStart}
-                        onResizeEnd={handleSubtitlePlayerResizeEnd}
-                        maxResizeWidth={subtitlePlayerMaxResizeWidth}
-                        settings={settings}
-                        keyBinder={keyBinder}
-                        webSocketClient={webSocketClient}
-                        initialWidth={subtitlePlayerInitialWidth}
-                    />
-                </Grid>
+                        onPointerDownCapture={() => setVideoFocused(false)}
+                        onFocusCapture={() => setVideoFocused(false)}
+                        style={{
+                            flexGrow: verticalLayout ? 1 : videoInWindow ? 0 : 1,
+                            flexShrink: verticalLayout ? 1 : 0,
+                            width: verticalLayout ? '100%' : 'auto',
+                            minWidth: verticalLayout ? 0 : undefined,
+                            minHeight: verticalLayout ? 0 : undefined,
+                        }}
+                    >
+                        {loaded && !(videoFileUrl && !videoPopOut) && !hideControls && (
+                            <Controls
+                                mousePositionRef={mousePositionRef}
+                                clock={clock}
+                                length={calculateLengthMs(videoDurationRef)}
+                                displayLength={calculateLengthMs(videoDurationRef, subtitles)}
+                                audioTracks={audioTracks}
+                                selectedAudioTrack={selectedAudioTrack}
+                                tabs={(!videoFileUrl && availableTabs) || undefined}
+                                selectedTab={tab}
+                                offsetEnabled={true}
+                                offset={offset}
+                                playbackRate={playbackRate}
+                                playbackRateEnabled={!tab || extension.supportsPlaybackRateMessage}
+                                onPlaybackRateChange={handlePlaybackRateChange}
+                                playModeEnabled={playModeEnabled}
+                                playModes={playModes}
+                                onPlay={handlePlay}
+                                onPause={handlePause}
+                                onSeek={handleSeek}
+                                onAudioTrackSelected={handleAudioTrackSelected}
+                                onTabSelected={onTabSelected}
+                                onOffsetChange={handleOffsetChange}
+                                onPlayMode={handlePlayMode}
+                                onLoadSubtitles={onLoadSubtitles}
+                                subtitleExtractionProgress={subtitleExtractionProgress}
+                                onCancelSubtitleExtraction={onCancelSubtitleExtraction}
+                                disableKeyEvents={disableKeyEvents}
+                                playbackPreferences={playbackPreferences}
+                                showOnMouseMovement={true}
+                                subtitleStudyBlurEnabled={settings.subtitleStudyBlurEnabled}
+                                subtitleStudyHideEnabled={settings.subtitleStudyHideEnabled}
+                                onSubtitleStudyToggle={onSettingsChanged && handleSubtitleStudyToggle}
+                                previewEnabled={false}
+                            />
+                        )}
+                        <SubtitlePlayer
+                            subtitles={subtitles}
+                            subtitleCollection={subtitleCollection}
+                            playbackState={playbackState}
+                            clock={clock}
+                            extension={extension}
+                            length={calculateLengthMs(videoDurationRef)}
+                            jumpToSubtitle={jumpToSubtitle}
+                            onJumpToSubtitleHandled={onJumpToSubtitleHandled}
+                            drawerOpen={drawerOpen}
+                            appBarHidden={appBarHidden}
+                            compressed={videoInWindow || (forceCompressedMode ?? false)}
+                            resizable={videoInWindow && !verticalLayout}
+                            verticalLayout={verticalLayout}
+                            showCopyButton={showCopyButton}
+                            loading={loadingSubtitles}
+                            displayHelp={(videoPopOut && videoFile?.file?.name) || undefined}
+                            disableKeyEvents={disableKeyEvents}
+                            // On later versions of the extension, VideoPlayer will receive the mining commands instead
+                            disableMiningBinds={extension.supportsVideoPlayerMiningCommands && videoFile !== undefined}
+                            lastJumpToTopTimestamp={lastJumpToTopTimestamp}
+                            hidden={actuallyHideSubtitlePlayer}
+                            disabledSubtitleTracks={disabledSubtitleTracks}
+                            onSeek={handleSeekToTimestamp}
+                            onCopy={handleCopyFromSubtitlePlayer}
+                            onOffsetChange={handleOffsetChange}
+                            onToggleSubtitleTrack={handleToggleSubtitleTrack}
+                            onSubtitlesHighlighted={handleSubtitlesHighlighted}
+                            onResizeStart={handleSubtitlePlayerResizeStart}
+                            onResizeEnd={handleSubtitlePlayerResizeEnd}
+                            maxResizeWidth={subtitlePlayerMaxResizeWidth}
+                            settings={settings}
+                            keyBinder={keyBinder}
+                            webSocketClient={webSocketClient}
+                            initialWidth={subtitlePlayerInitialWidth}
+                        />
+                    </Grid>
+                </Fade>
             </Grid>
         </div>
     );

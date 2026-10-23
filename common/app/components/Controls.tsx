@@ -13,6 +13,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import FolderIcon from '@mui/icons-material/Folder';
 import Fade from '@mui/material/Fade';
+import Slide from '@mui/material/Slide';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
@@ -22,7 +23,6 @@ import ListItemText from '@mui/material/ListItemText';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Popover from '@mui/material/Popover';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
-import AspectRatioIcon from '@mui/icons-material/AspectRatio';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -70,6 +70,7 @@ const useControlStyles = makeStyles<Theme>((theme) => ({
         bottom: 0,
         pointerEvents: 'none',
         color: '#fff',
+        transition: theme.transitions.create('bottom', { duration: 200 }),
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -170,10 +171,6 @@ const useControlStyles = makeStyles<Theme>((theme) => ({
     },
     inactiveButton: {
         color: 'rgba(120, 120, 120, 0.7)',
-        pointerEvents: 'auto',
-    },
-    inactiveTopButton: {
-        color: 'rgba(255, 255, 255, 0.5)',
         pointerEvents: 'auto',
     },
     progress: {
@@ -674,9 +671,6 @@ interface ControlsProps {
     subtitlePlayerHidden?: boolean;
     onHideSubtitlePlayerToggle?: () => void;
     showOnMouseMovement: boolean;
-    theaterModeToggleEnabled?: boolean;
-    theaterModeEnabled?: boolean;
-    onTheaterModeToggle?: () => void;
     subtitleAlignmentEnabled?: boolean;
     subtitleAlignment?: SubtitleAlignment;
     onSubtitleAlignment?: (alignment: SubtitleAlignment) => void;
@@ -740,9 +734,6 @@ export default function Controls({
     subtitlePlayerHidden,
     onHideSubtitlePlayerToggle,
     showOnMouseMovement,
-    theaterModeToggleEnabled,
-    theaterModeEnabled,
-    onTheaterModeToggle,
     subtitleAlignment,
     subtitleAlignmentEnabled,
     onSubtitleAlignment,
@@ -1002,7 +993,13 @@ export default function Controls({
 
     return (
         <React.Fragment>
-            {subtitleExtractionProgress !== undefined && (
+            <Slide
+                in={subtitleExtractionProgress !== undefined}
+                direction="up"
+                timeout={200}
+                mountOnEnter
+                unmountOnExit
+            >
                 <Box
                     sx={{
                         position: 'fixed',
@@ -1020,7 +1017,9 @@ export default function Controls({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body2" role="status" sx={{ flex: 1 }}>
                             {t('controls.loadingSubtitles')}
-                            {subtitleExtractionProgress >= 0 && ` ${subtitleExtractionProgress}%`}
+                            {subtitleExtractionProgress !== undefined &&
+                                subtitleExtractionProgress >= 0 &&
+                                ` ${subtitleExtractionProgress}%`}
                         </Typography>
                         <Tooltip title={t('action.cancel')}>
                             <IconButton
@@ -1034,11 +1033,15 @@ export default function Controls({
                     </Box>
                     <LinearProgress
                         aria-label={t('controls.loadingSubtitles')}
-                        variant={subtitleExtractionProgress < 0 ? 'indeterminate' : 'determinate'}
-                        value={Math.max(0, subtitleExtractionProgress)}
+                        variant={
+                            subtitleExtractionProgress === undefined || subtitleExtractionProgress < 0
+                                ? 'indeterminate'
+                                : 'determinate'
+                        }
+                        value={Math.max(0, subtitleExtractionProgress ?? 0)}
                     />
                 </Box>
-            )}
+            </Slide>
             <Fade in={show} timeout={200}>
                 <Grid container className={classes.topContainer}>
                     <Grid item>
@@ -1069,43 +1072,18 @@ export default function Controls({
                             </IconButton>
                         </Grid>
                     )}
-                    <Grid item style={{ flexGrow: 1 }} />
                     {topControls && (
                         <Grid
                             item
                             className={classes.button}
-                            style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}
+                            style={{ flexGrow: 1 }}
                             onMouseOver={handleMouseOver}
                             onMouseOut={handleMouseOut}
                         >
                             {topControls}
                         </Grid>
                     )}
-                    <Grid item>
-                        {theaterModeToggleEnabled && (
-                            <Tooltip title={t('controls.toggleTheaterMode')}>
-                                <IconButton
-                                    color="inherit"
-                                    className={theaterModeEnabled ? classes.topButton : classes.inactiveTopButton}
-                                    onClick={onTheaterModeToggle}
-                                    onMouseOver={handleMouseOver}
-                                    onMouseOut={handleMouseOut}
-                                >
-                                    <AspectRatioIcon />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                        {fullscreenEnabled && (
-                            <Tooltip title={t('controls.toggleFullscreen')}>
-                                <IconButton color="inherit" onClick={onFullscreenToggle}>
-                                    {fullscreen ? (
-                                        <FullscreenExitIcon className={classes.topButton} />
-                                    ) : (
-                                        <FullscreenIcon className={classes.topButton} />
-                                    )}
-                                </IconButton>
-                            </Tooltip>
-                        )}
+                    <Grid item style={{ marginLeft: 'auto' }}>
                         {hideSubtitlePlayerToggleEnabled && (
                             <Tooltip
                                 title={
@@ -1367,6 +1345,21 @@ export default function Controls({
                                         </Tooltip>
                                     )}
                                 </ResponsiveButtonGroup>
+                                {fullscreenEnabled && (
+                                    <Grid item>
+                                        <Tooltip title={t('controls.toggleFullscreen')}>
+                                            <IconButton
+                                                color="inherit"
+                                                aria-label={t('controls.toggleFullscreen')}
+                                                onClick={onFullscreenToggle}
+                                                onMouseOver={handleMouseOver}
+                                                onMouseOut={handleMouseOut}
+                                            >
+                                                {fullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Grid>
+                                )}
                             </Grid>
                         )}
                     </div>

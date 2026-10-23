@@ -2,7 +2,6 @@ import { asbError } from '@project/common/util/log';
 import type {
     AlertMessage,
     AnkiSettingsToVideoMessage,
-    AppBarToggleMessageToVideoMessage,
     AudioTrackModel,
     AudioTrackSelectedFromVideoMessage,
     AudioTrackSelectedToVideoMessage,
@@ -76,7 +75,6 @@ export default class PlayerChannel {
     private playbackRateCallbacks: ((playbackRate: number) => void)[];
     private playModeCallbacks: ((playMode: PlayMode) => void)[];
     private hideSubtitlePlayerToggleCallbacks: ((hidden: boolean) => void)[];
-    private appBarToggleCallbacks: ((hidden: boolean) => void)[];
     private fullscreenToggleCallbacks: ((hidden: boolean) => void)[];
     private subtitleSettingsCallbacks: ((subtitleSettings: SubtitleSettings) => void)[];
     private miscSettingsCallbacks: ((miscSettings: MiscSettings) => void)[];
@@ -105,7 +103,6 @@ export default class PlayerChannel {
         this.playbackRateCallbacks = [];
         this.playModeCallbacks = [];
         this.hideSubtitlePlayerToggleCallbacks = [];
-        this.appBarToggleCallbacks = [];
         this.fullscreenToggleCallbacks = [];
         this.subtitleSettingsCallbacks = [];
         this.miscSettingsCallbacks = [];
@@ -229,14 +226,6 @@ export default class PlayerChannel {
 
                     for (const callback of this.hideSubtitlePlayerToggleCallbacks) {
                         callback(hideSubtitlePlayerToggleMessage.value);
-                    }
-                    break;
-                }
-                case 'appBarToggle': {
-                    const appBarToggleMessage = event.data as AppBarToggleMessageToVideoMessage;
-
-                    for (const callback of this.appBarToggleCallbacks) {
-                        callback(appBarToggleMessage.value);
                     }
                     break;
                 }
@@ -392,11 +381,6 @@ export default class PlayerChannel {
         return () => this._remove(callback, this.hideSubtitlePlayerToggleCallbacks);
     }
 
-    onAppBarToggle(callback: (hidden: boolean) => void) {
-        this.appBarToggleCallbacks.push(callback);
-        return () => this._remove(callback, this.appBarToggleCallbacks);
-    }
-
     onFullscreenToggle(callback: (fullscreen: boolean) => void) {
         this.fullscreenToggleCallbacks.push(callback);
         return () => this._remove(callback, this.fullscreenToggleCallbacks);
@@ -550,10 +534,6 @@ export default class PlayerChannel {
         this.channel?.postMessage({ command: 'hideSubtitlePlayerToggle' });
     }
 
-    appBarToggle() {
-        this.channel?.postMessage({ command: 'appBarToggle' });
-    }
-
     toggleSubtitleTrackInList(track: number) {
         const message: ToggleSubtitleTrackInListFromVideoMessage = {
             command: 'toggleSubtitleTrackInList',
@@ -601,7 +581,6 @@ export default class PlayerChannel {
             this.playbackRateCallbacks = [];
             this.playModeCallbacks = [];
             this.hideSubtitlePlayerToggleCallbacks = [];
-            this.appBarToggleCallbacks = [];
             this.fullscreenToggleCallbacks = [];
             this.subtitleSettingsCallbacks = [];
             this.miscSettingsCallbacks = [];

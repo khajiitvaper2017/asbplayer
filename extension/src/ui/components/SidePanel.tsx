@@ -618,7 +618,6 @@ export default function SidePanel({ settingsProvider, settings, extension }: Pro
                                 onTabSelected={noOp}
                                 onAnkiDialogRequest={noOp}
                                 onAnkiDialogRewind={noOp}
-                                onAppBarToggle={noOp}
                                 onHideSubtitlePlayer={noOp}
                                 onVideoPopOut={noOp}
                                 onSubtitles={setSubtitles}

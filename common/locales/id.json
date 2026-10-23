@@ -184,7 +184,6 @@
         "popOut": "Keluarkan",
         "popIn": "Masukkan",
         "toggleFullscreen": "Aktifkan/Nonaktifkan Layar Penuh",
-        "toggleTheaterMode": "Aktifkan/Nonaktifkan Mode Teater",
         "showSubtitlePlayer": "Tampilkan Daftar Takarir",
         "hideSubtitlePlayer": "Sembunyikan Daftar Takarir",
         "currentTimestamp": "Penanda Waktu Saat Ini",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Perilaku",
         "interface": "Antarmuka",
+        "showFloatingControls": "Tampilkan kontrol video mengambang",
         "subtitleStyling": "Gaya teks",
         "skipping": "Pelewatan",
         "general": "Umum",

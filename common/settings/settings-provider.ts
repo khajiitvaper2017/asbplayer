@@ -5,7 +5,7 @@ import type {
     SubtitleSettings,
     TextSubtitleSettings,
 } from '@project/common/settings/settings';
-import { isMobileOnly } from 'react-device-detect';
+import { isMobile } from 'react-device-detect';
 import {
     AutoPauseResumeMode,
     SubtitleListPreference,
@@ -26,7 +26,7 @@ import {
 const isMacOs = (navigator.userAgentData?.platform ?? navigator.platform)?.toUpperCase()?.indexOf('MAC') > -1;
 
 const defaultSubtitleTextSettings = {
-    subtitleSize: isMobileOnly ? 24 : 36,
+    subtitleSize: isMobile ? 24 : 36,
     subtitleColor: '#ffffff',
     subtitleThickness: 700,
     subtitleOutlineThickness: 0,
@@ -62,8 +62,8 @@ export const defaultSettings: AsbplayerSettings = {
 
     ...defaultSubtitleTextSettings,
     assSubtitleStyles: true,
-    subtitlePositionOffset: isMobileOnly ? 16 : 75,
-    topSubtitlePositionOffset: isMobileOnly ? 16 : 75,
+    subtitlePositionOffset: isMobile ? 16 : 75,
+    topSubtitlePositionOffset: isMobile ? 16 : 75,
     subtitleAlignment: 'bottom',
     subtitleAboveThumbnail: true,
     thumbnailPreview: false,
@@ -186,6 +186,7 @@ export const defaultSettings: AsbplayerSettings = {
 
     themeType: 'dark',
     videoSubtitleSplitBehavior: VideoSubtitleSplitBehavior.rememberSplitPosition,
+    showFloatingControls: isMobile,
     showSubtitleListMiningButton: true,
     subtitleListTimestampDisplay: SubtitleListTimestampDisplay.startAndEnd,
     subtitleListTimestampDecimalPlaces: 3,

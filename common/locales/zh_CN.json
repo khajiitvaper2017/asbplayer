@@ -184,7 +184,6 @@
         "popOut": "画中画",
         "popIn": "退出画中画",
         "toggleFullscreen": "全屏",
-        "toggleTheaterMode": "宽屏模式",
         "showSubtitlePlayer": "展开字幕列表",
         "hideSubtitlePlayer": "收起字幕列表",
         "currentTimestamp": "当前时间",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "行为",
         "interface": "界面",
+        "showFloatingControls": "显示视频悬浮控制按钮",
         "subtitleStyling": "文本样式",
         "skipping": "跳过",
         "general": "常规",

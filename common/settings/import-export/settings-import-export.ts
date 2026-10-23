@@ -402,6 +402,9 @@ const settingsSchema = {
         videoSubtitleSplitBehavior: {
             type: 'string',
         },
+        showFloatingControls: {
+            type: 'boolean',
+        },
         showSubtitleListMiningButton: {
             type: 'boolean',
         },

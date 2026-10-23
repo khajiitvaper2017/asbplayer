@@ -184,7 +184,6 @@
         "popOut": "Видео в отдельном окне",
         "popIn": "Вернуть видео обратно",
         "toggleFullscreen": "Включить/выключить полноэкранный режим",
-        "toggleTheaterMode": "Включить/выключить театральный режим",
         "showSubtitlePlayer": "Показать панель списка субтитров",
         "hideSubtitlePlayer": "Скрыть панель списка субтитров",
         "currentTimestamp": "Текущая метка времени",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Поведение",
         "interface": "Интерфейс",
+        "showFloatingControls": "Показывать плавающие кнопки управления видео",
         "subtitleStyling": "Оформление текста",
         "skipping": "Пропуск",
         "general": "Общие",

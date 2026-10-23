@@ -181,6 +181,14 @@ Configure theme, language, auto-maximizing local video, and the app tab name. En
 
 The mining history storage limit is in **Mining → History**.
 
+### Automatic video sizing {#automatic-video-sizing}
+
+Turn on **Settings → General → Interface → Auto-maximize local video** to adjust the video and subtitle-panel widths to the available player space and the video's aspect ratio. With this setting off, the player remembers the split position you set by dragging the divider. It is off by default.
+
+### Floating video controls {#floating-video-controls}
+
+Open **Settings → General → Interface** in the web app and turn **Show floating video controls** on or off. When enabled, buttons appear along the right side of a paused local video for mining, subtitle visibility, playback modes, seeking, subtitle timing, and playback speed. The buttons also remain available during manual recording. This setting is on by default on mobile devices and off on desktop computers.
+
 ## Profiles {#profiles}
 
 A profile is a separate set of settings. The active profile can be changed from the settings UI or while loading subtitles.

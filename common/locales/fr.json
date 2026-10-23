@@ -184,7 +184,6 @@
         "popOut": "Détacher",
         "popIn": "Intégrer",
         "toggleFullscreen": "Basculer en plein écran",
-        "toggleTheaterMode": "Activer/désactiver le mode théâtre",
         "showSubtitlePlayer": "Afficher la liste des sous-titres",
         "hideSubtitlePlayer": "Masquer la liste des sous-titres",
         "currentTimestamp": "Horodatage actuel",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Comportement",
         "interface": "Interface",
+        "showFloatingControls": "Afficher les commandes vidéo flottantes",
         "subtitleStyling": "Style du texte",
         "skipping": "Sauts",
         "general": "Général",

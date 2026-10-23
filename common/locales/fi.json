@@ -184,7 +184,6 @@
         "popOut": "Irrota ikkuna",
         "popIn": "Kiinnitä ikkuna",
         "toggleFullscreen": "Laajenna koko näytön kokoiseksi",
-        "toggleTheaterMode": "Vaihda teatteritilaa",
         "showSubtitlePlayer": "Näytä tekstityslista",
         "hideSubtitlePlayer": "Piilota tekstityslista",
         "currentTimestamp": "Nykyisen aikaleima",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Toiminta",
         "interface": "Käyttöliittymä",
+        "showFloatingControls": "Näytä kelluvat videopainikkeet",
         "subtitleStyling": "Tekstin tyyli",
         "skipping": "Ohittaminen",
         "general": "Yleiset",

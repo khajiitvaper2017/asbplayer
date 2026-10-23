@@ -194,6 +194,18 @@ const GeneralSettingsTab: React.FC<Props> = ({
                     labelPlacement="start"
                 />
                 {insideApp && (
+                    <SwitchLabelWithHoverEffect
+                        control={
+                            <Switch
+                                checked={settings.showFloatingControls}
+                                onChange={(event) => onSettingChanged('showFloatingControls', event.target.checked)}
+                            />
+                        }
+                        label={t('settings.showFloatingControls')}
+                        labelPlacement="start"
+                    />
+                )}
+                {insideApp && (
                     <SettingsTextField
                         size="small"
                         label={t('settings.tabName')}

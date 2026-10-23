@@ -3,7 +3,6 @@ import { asbError } from '@project/common/util/log';
 import type {
     AlertMessage,
     AnkiSettingsToVideoMessage,
-    AppBarToggleMessageToVideoMessage,
     AudioModel,
     AudioTrackModel,
     AudioTrackSelectedFromVideoMessage,
@@ -82,7 +81,6 @@ export default class VideoChannel {
         mediaTimestamp: number | undefined
     ) => void)[];
     private hideSubtitlePlayerToggleCallbacks: (() => void)[];
-    private appBarToggleCallbacks: (() => void)[];
     private ankiDialogRequestCallbacks: (() => void)[];
     private toggleSubtitleTrackInListCallbacks: ((track: number) => void)[];
     private subtitlesUpdatedCallbacks: ((updatedSubtitles: readonly IndexedSubtitleModel[]) => void)[];
@@ -129,7 +127,6 @@ export default class VideoChannel {
         this.popOutToggleCallbacks = [];
         this.copyCallbacks = [];
         this.hideSubtitlePlayerToggleCallbacks = [];
-        this.appBarToggleCallbacks = [];
         this.ankiDialogRequestCallbacks = [];
         this.toggleSubtitleTrackInListCallbacks = [];
         this.subtitlesUpdatedCallbacks = [];
@@ -270,11 +267,6 @@ export default class VideoChannel {
                     break;
                 case 'hideSubtitlePlayerToggle':
                     for (const callback of this.hideSubtitlePlayerToggleCallbacks) {
-                        callback();
-                    }
-                    break;
-                case 'appBarToggle':
-                    for (const callback of this.appBarToggleCallbacks) {
                         callback();
                     }
                     break;
@@ -445,11 +437,6 @@ export default class VideoChannel {
         return () => this._remove(callback, this.hideSubtitlePlayerToggleCallbacks);
     }
 
-    onAppBarToggle(callback: () => void) {
-        this.appBarToggleCallbacks.push(callback);
-        return () => this._remove(callback, this.appBarToggleCallbacks);
-    }
-
     onAnkiDialogRequest(callback: () => void) {
         this.ankiDialogRequestCallbacks.push(callback);
         return () => this._remove(callback, this.ankiDialogRequestCallbacks);
@@ -608,14 +595,6 @@ export default class VideoChannel {
     hideSubtitlePlayerToggle(hidden: boolean) {
         const message: HideSubtitlePlayerToggleToVideoMessage = {
             command: 'hideSubtitlePlayerToggle',
-            value: hidden,
-        };
-        this.protocol.postMessage(message);
-    }
-
-    appBarToggle(hidden: boolean) {
-        const message: AppBarToggleMessageToVideoMessage = {
-            command: 'appBarToggle',
             value: hidden,
         };
         this.protocol.postMessage(message);
@@ -788,7 +767,6 @@ export default class VideoChannel {
         this.popOutToggleCallbacks = [];
         this.copyCallbacks = [];
         this.hideSubtitlePlayerToggleCallbacks = [];
-        this.appBarToggleCallbacks = [];
         this.ankiDialogRequestCallbacks = [];
         this.toggleSubtitleTrackInListCallbacks = [];
         this.subtitlesUpdatedCallbacks = [];

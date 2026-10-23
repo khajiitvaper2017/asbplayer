@@ -184,7 +184,6 @@
         "popOut": "다른탭으로 팝업",
         "popIn": "하나의 탭으로 팝인",
         "toggleFullscreen": "전체 화면 켜기/끄기",
-        "toggleTheaterMode": "시네마 모드 켜기/끄기",
         "showSubtitlePlayer": "자막 목록 보기",
         "hideSubtitlePlayer": "자막 목록 숨기기",
         "currentTimestamp": "현재 위치 (시간)",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "동작",
         "interface": "인터페이스",
+        "showFloatingControls": "동영상 플로팅 컨트롤 표시",
         "subtitleStyling": "텍스트 스타일",
         "skipping": "건너뛰기",
         "general": "일반",

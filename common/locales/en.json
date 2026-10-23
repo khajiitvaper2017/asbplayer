@@ -184,7 +184,6 @@
         "popOut": "Pop Out",
         "popIn": "Pop In",
         "toggleFullscreen": "Toggle Fullscreen",
-        "toggleTheaterMode": "Toggle Theater Mode",
         "showSubtitlePlayer": "Show Subtitle List",
         "hideSubtitlePlayer": "Hide Subtitle List",
         "currentTimestamp": "Current Timestamp",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Behavior",
         "interface": "Interface",
+        "showFloatingControls": "Show floating video controls",
         "subtitleStyling": "Text styling",
         "skipping": "Skipping",
         "general": "General",

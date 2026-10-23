@@ -47,6 +47,7 @@ import { readJitenWords } from '@project/common/jiten/reader-words';
 import type { JitenTarget, JitenAttachmentResult } from '@project/common/jiten/jiten';
 import { readJitenTarget } from '@project/common/app/hooks/use-jiten-target';
 import Paper from '@mui/material/Paper';
+import Collapse from '@mui/material/Collapse';
 import DragOverlay from '@project/common/app/components/DragOverlay';
 import Bar from '@project/common/app/components/Bar';
 import SubtitleStudyStyles from '@project/common/components/SubtitleStudyStyles';
@@ -348,7 +349,6 @@ function App({
     const copyHistoryItemsRef = useRef<CopyHistoryItem[]>([]);
     copyHistoryItemsRef.current = copyHistoryItems;
     const [copyHistoryOpen, setCopyHistoryOpen] = useState<boolean>(false);
-    const [theaterMode, setTheaterMode] = useState<boolean>(playbackPreferences.theaterMode);
     const [hideSubtitlePlayer, setHideSubtitlePlayer] = useState<boolean>(playbackPreferences.hideSubtitleList);
     const [videoPopOut, setVideoPopOut] = useState<boolean>(false);
     const [alert, setAlert] = useState<string>();
@@ -800,12 +800,6 @@ function App({
         }
     }, [extension, refreshCopyHistory, isSidePanelOpen]);
     const handleCloseCopyHistory = useCallback(() => setCopyHistoryOpen(false), []);
-    const handleAppBarToggle = useCallback(() => {
-        const newValue = !playbackPreferences.theaterMode;
-        playbackPreferences.theaterMode = newValue;
-        setTheaterMode(newValue);
-        setVideoFullscreen(false);
-    }, [playbackPreferences]);
     useEffect(() => {
         if (videoFullscreen) {
             if (!document.fullscreenElement) {
@@ -2029,16 +2023,16 @@ function App({
     const nothingLoaded =
         tab === undefined &&
         ((loading && !videoContainerRef.current) || (sources.subtitleFiles.length === 0 && !sources.videoFile));
-    const appBarHidden = sources.videoFile !== undefined && ((theaterMode && !videoPopOut) || videoFullscreen);
+    const appBarHidden = sources.videoFile !== undefined && (!videoPopOut || videoFullscreen);
     const effectiveDrawerOpen = copyHistoryOpen && !videoFullscreen;
-    const headerControls = useMemo(
-        () => (
+    const renderHeaderControls = useCallback(
+        (controlsOnly: boolean) => (
             <Bar
                 title={fileName || 'asbplayer-jiten'}
                 drawerWidth={drawerWidth}
                 drawerOpen={effectiveDrawerOpen}
                 hidden={false}
-                controlsOnly={appBarHidden}
+                controlsOnly={controlsOnly}
                 subtitleFiles={sources.subtitleFiles}
                 onOpenCopyHistory={handleOpenCopyHistory}
                 onDownloadSubtitleFilesAsSrt={handleDownloadSubtitleFilesAsSrt}
@@ -2052,7 +2046,6 @@ function App({
             fileName,
             drawerWidth,
             effectiveDrawerOpen,
-            appBarHidden,
             sources.subtitleFiles,
             handleOpenCopyHistory,
             handleDownloadSubtitleFilesAsSrt,
@@ -2211,7 +2204,9 @@ function App({
                                 onRefresh={updateFromServiceWorker}
                                 onClose={handleCloseNeedRefreshDialog}
                             />
-                            {!appBarHidden && headerControls}
+                            <Collapse in={!appBarHidden} timeout={200} unmountOnExit>
+                                {renderHeaderControls(false)}
+                            </Collapse>
                             <input
                                 ref={fileInputRef}
                                 onChange={handleFileInputChange}
@@ -2271,7 +2266,6 @@ function App({
                                     onTabSelected={handleTabSelected}
                                     onAnkiDialogRequest={handleAnkiDialogRequest}
                                     onAnkiDialogRewind={handleAnkiDialogRewind}
-                                    onAppBarToggle={handleAppBarToggle}
                                     onHideSubtitlePlayer={handleHideSubtitlePlayer}
                                     onVideoPopOut={handleVideoPopOut}
                                     onSubtitles={
@@ -2301,7 +2295,7 @@ function App({
                                             embedded
                                             playerSubtitles={playerSubtitles}
                                             assTracks={assTracks}
-                                            topControls={appBarHidden ? headerControls : undefined}
+                                            topControls={appBarHidden ? renderHeaderControls(true) : undefined}
                                             subtitleExtractionProgress={subtitleExtractionProgress}
                                             onCancelSubtitleExtraction={cancelSubtitleExtraction}
                                             videoFile={videoFile}

@@ -241,9 +241,9 @@ export default function Bar({
     return (
         <>
             {controlsOnly ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', color: '#fff', width: '100%' }}>
                     {downloadButton}
-                    {actionButtons}
+                    <Box sx={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>{actionButtons}</Box>
                 </Box>
             ) : (
                 <AppBar

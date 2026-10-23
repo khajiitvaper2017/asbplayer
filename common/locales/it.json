@@ -184,7 +184,6 @@
         "popOut": "Estrai in finestra",
         "popIn": "Reinserisci nella scheda",
         "toggleFullscreen": "Attiva/Disattiva schermo intero",
-        "toggleTheaterMode": "Attiva/Disattiva modalità cinema",
         "showSubtitlePlayer": "Mostra elenco sottotitoli",
         "hideSubtitlePlayer": "Nascondi elenco sottotitoli",
         "currentTimestamp": "Marca temporale corrente",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Comportamento",
         "interface": "Interfaccia",
+        "showFloatingControls": "Mostra i controlli video sovrapposti",
         "subtitleStyling": "Stile del testo",
         "skipping": "Salti",
         "general": "Generale",

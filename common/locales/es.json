@@ -184,7 +184,6 @@
         "popOut": "Abrir en Otra Ventana",
         "popIn": "Volver a la Aplicación",
         "toggleFullscreen": "Pantalla Completa",
-        "toggleTheaterMode": "Modo Cine",
         "showSubtitlePlayer": "Mostrar Lista de Subtítulos",
         "hideSubtitlePlayer": "Ocultar Lista de Subtítulos",
         "currentTimestamp": "Marca de tiempo actual",
@@ -343,6 +342,7 @@
     "settings": {
         "behavior": "Comportamiento",
         "interface": "Interfaz",
+        "showFloatingControls": "Mostrar controles flotantes de vídeo",
         "subtitleStyling": "Estilo del texto",
         "skipping": "Saltos",
         "general": "General",
