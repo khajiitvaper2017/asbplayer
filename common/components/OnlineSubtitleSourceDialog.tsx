@@ -66,11 +66,12 @@ const maskApiToken = (apiToken: string) => '•'.repeat(Array.from(apiToken).len
 const TITLE_SEPARATOR = /\.\s*\.|\s+-\s+/;
 // Release metadata starts at the first common quality, source, or codec marker.
 const RELEASE_METADATA =
-    /\b(?:\d{1,3}s|\d{3,4}p|WEB(?:\s+DL)?|HDTV|BluRay|NF|AMZN|DUAL|AAC|H\s*264|H\s*265|HEVC|x264|x265)\b.*$/i;
+    /\s*[[(]?\b(?:\d{1,3}s|\d{3,4}p|WEB(?:\s+DL)?|HDTV|BluRay|BDRip|DVDRip|NF|AMZN|DUAL|AAC|H\s*264|H\s*265|HEVC|x264|x265)\b.*$/i;
 
 const normalizeDetectedTitle = (title: string) => {
-    const titleSeparator = title.search(TITLE_SEPARATOR);
-    let normalized = (titleSeparator === -1 ? title : title.slice(0, titleSeparator))
+    const withoutReleaseGroup = title.replace(/^\s*\[[^\]]*]\s*/, '');
+    const titleSeparator = withoutReleaseGroup.search(TITLE_SEPARATOR);
+    let normalized = (titleSeparator === -1 ? withoutReleaseGroup : withoutReleaseGroup.slice(0, titleSeparator))
         .trim()
         .replace(/\.(?:mkv|mp4|m4v|avi|webm|ass|srt)$/i, '')
         .replace(/[._-]+/g, ' ')
@@ -132,6 +133,8 @@ export default function OnlineSubtitleSourceDialog({
     const [error, setError] = useState<string>();
 
     const [query, setQuery] = useState('');
+    const [entryFilterString, setEntryFilterString] = useState('');
+    const [fileFilterString, setFileFilterString] = useState('');
     const [lastQuery, setLastQuery] = useState<string>();
     const [lastSearchCategory, setLastSearchCategory] = useState<string>();
     const [jimakuEntries, setJimakuEntries] = useState<{ id: number; name: string }[]>([]);
@@ -160,9 +163,13 @@ export default function OnlineSubtitleSourceDialog({
         [onJimakuRecentWorksChange]
     );
 
-    const { episode: detectedEpisode, cleaned: cleanedHint } = useMemo(
-        () => prepareHint(normalizeDetectedTitle(detectedTitleHint ?? ''), jimakuEpisodeRegex),
+    const { episode: detectedEpisode } = useMemo(
+        () => prepareHint(detectedTitleHint, jimakuEpisodeRegex),
         [detectedTitleHint, jimakuEpisodeRegex]
+    );
+    const cleanedHint = useMemo(
+        () => prepareHint(normalizeDetectedTitle(detectedTitleHint ?? '')).cleaned,
+        [detectedTitleHint]
     );
     const episodeRegexValid = useMemo(() => isValidEpisodeRegex(jimakuEpisodeRegex.trim()), [jimakuEpisodeRegex]);
     const isApiKeyMissing = jimakuApiKey.trim().length === 0;
@@ -184,6 +191,8 @@ export default function OnlineSubtitleSourceDialog({
         setLoadingJimakuFiles(false);
         setLastQuery(undefined);
         setLastSearchCategory(undefined);
+        setEntryFilterString('');
+        setFileFilterString('');
         setActiveEpisodeFilter(undefined);
         setShowJimakuApiKey(false);
         setShowEpisodeRegex(false);
@@ -205,7 +214,7 @@ export default function OnlineSubtitleSourceDialog({
     const handleSearchJimaku = useCallback(async () => {
         setError(undefined);
         setSearching(true);
-        setFilterString('');
+        setEntryFilterString('');
         fileLoadRequestIdRef.current += 1;
         selectedEntryIdRef.current = undefined;
         setLoadingJimakuFiles(false);
@@ -268,7 +277,7 @@ export default function OnlineSubtitleSourceDialog({
             fileLoadRequestIdRef.current = requestId;
 
             setError(undefined);
-            setFilterString('');
+            setFileFilterString('');
             setJimakuSelectedEntry(entry);
             selectedEntryIdRef.current = entry.id;
             setLoadingJimakuFiles(true);
@@ -350,13 +359,12 @@ export default function OnlineSubtitleSourceDialog({
 
     const handleSearch = handleSearchJimaku;
 
-    const [filterString, setFilterString] = useState<string>('');
     const filteredJimakuEntries = useMemo(() => {
-        return jimakuEntries.filter((entry) => entry.name.toLowerCase().includes(filterString.toLowerCase()));
-    }, [filterString, jimakuEntries]);
+        return jimakuEntries.filter((entry) => entry.name.toLowerCase().includes(entryFilterString.toLowerCase()));
+    }, [entryFilterString, jimakuEntries]);
     const filteredJimakuFiles = useMemo(() => {
-        return jimakuFiles?.filter((f) => f.name.toLowerCase().includes(filterString.toLowerCase()));
-    }, [filterString, jimakuFiles]);
+        return jimakuFiles?.filter((f) => f.name.toLowerCase().includes(fileFilterString.toLowerCase()));
+    }, [fileFilterString, jimakuFiles]);
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -468,7 +476,7 @@ export default function OnlineSubtitleSourceDialog({
                             <Typography variant="subtitle1" sx={{ flexGrow: 1 }}>
                                 {t('onlineSubtitleSources.entries')} ({jimakuEntries.length})
                             </Typography>
-                            <FilterTextField filterString={filterString} onChange={setFilterString} />
+                            <FilterTextField filterString={entryFilterString} onChange={setEntryFilterString} />
                             <List
                                 dense
                                 sx={{
@@ -508,7 +516,7 @@ export default function OnlineSubtitleSourceDialog({
                                         setJimakuFiles(undefined);
                                         setJimakuSelectedEntry(undefined);
                                         selectedEntryIdRef.current = undefined;
-                                        setFilterString('');
+                                        setFileFilterString('');
                                         setActiveEpisodeFilter(undefined);
                                     }}
                                 >
@@ -559,7 +567,7 @@ export default function OnlineSubtitleSourceDialog({
                                     }}
                                 />
                             )}
-                            <FilterTextField filterString={filterString} onChange={setFilterString} />
+                            <FilterTextField filterString={fileFilterString} onChange={setFileFilterString} />
                             <List
                                 dense
                                 sx={{

@@ -62,6 +62,8 @@ export const EPISODE_PATTERNS: EpisodePattern[] = [
     //=== CJK / 第N集·话 (Chinese "第十一集") · 第N話 (Japanese "第十一話"),
     //       kanji numerals — shared 中/日 coverage.
     { regex: /第([一二三四五六七八九十]+)[话集話]/, parse: parseKanji },
+    // Release filenames: "Title - 01.mkv", "Title - 005 (DVDRip ...)".
+    { regex: /\s+-\s+(\d{1,3})\b/, parse: parseNumeric },
 ];
 
 export const isValidEpisodeRegex = (source: string) => {
