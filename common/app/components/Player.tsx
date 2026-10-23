@@ -44,6 +44,8 @@ import type { Point } from '@project/common/app/components/Controls';
 import Controls from '@project/common/app/components/Controls';
 import Grid from '@mui/material/Grid';
 import Fade from '@mui/material/Fade';
+import Slide from '@mui/material/Slide';
+import { isMobile } from 'react-device-detect';
 import MediaAdapter from '@project/common/app/services/media-adapter';
 import SubtitlePlayer, { minSubtitlePlayerWidth } from '@project/common/app/components/SubtitlePlayer';
 import VideoChannel from '@project/common/app/services/video-channel';
@@ -1420,6 +1422,56 @@ function PlayerComponent(
     }, [webSocketClient, extension, seek, clock]);
 
     const playerLayoutRef = useRef<HTMLDivElement>(null);
+    const subtitlePanelRef = useRef<HTMLDivElement>(null);
+    const [fullscreenSubtitlePanelOpen, setFullscreenSubtitlePanelOpen] = useState(false);
+    const fullscreenSubtitleHoverEnabled =
+        videoFullscreen && !isMobile && Boolean(videoFileUrl && !videoPopOut && subtitles?.length);
+    useEffect(() => {
+        if (!fullscreenSubtitleHoverEnabled) {
+            return;
+        }
+
+        const layout = playerLayoutRef.current!;
+        let open = false;
+        let resumePlayback = false;
+        const closePanel = () => {
+            if (!open) {
+                return;
+            }
+
+            open = false;
+            setFullscreenSubtitlePanelOpen(false);
+            if (resumePlayback) {
+                handlePlay();
+            }
+        };
+        const handlePointerMove = (event: PointerEvent) => {
+            if (event.pointerType !== 'mouse') {
+                return;
+            }
+
+            const boundary = open
+                ? layout.getBoundingClientRect().right - subtitlePanelRef.current!.offsetWidth
+                : layout.getBoundingClientRect().right - 24;
+            if (event.clientX >= boundary) {
+                if (!open) {
+                    open = true;
+                    resumePlayback = clock.running;
+                    handlePause();
+                    setFullscreenSubtitlePanelOpen(true);
+                }
+            } else {
+                closePanel();
+            }
+        };
+        layout.addEventListener('pointermove', handlePointerMove);
+        layout.addEventListener('pointerleave', closePanel);
+        return () => {
+            layout.removeEventListener('pointermove', handlePointerMove);
+            layout.removeEventListener('pointerleave', closePanel);
+            closePanel();
+        };
+    }, [fullscreenSubtitleHoverEnabled, videoFileUrl, clock, handlePlay, handlePause]);
     const [{ width: playerWidth, height: playerHeight }, setPlayerSize] = useState({ width: 0, height: 0 });
     useLayoutEffect(() => {
         const observer = new ResizeObserver(([entry]) => {
@@ -1459,6 +1511,7 @@ function PlayerComponent(
     };
     const verticalLayout =
         videoInWindow &&
+        !videoFullscreen &&
         (playerWidth < minVideoPlayerWidth + minSubtitlePlayerWidth ||
             (videoAspectRatio !== undefined &&
                 videoArea(playerWidth, verticalVideoHeight) > videoArea(horizontalVideoWidth, playerHeight)));
@@ -1467,10 +1520,13 @@ function PlayerComponent(
     const showSubtitleLoadingState = verticalLayout && loadingSubtitles;
     const actuallyHideSubtitlePlayer =
         videoInWindow &&
-        (hideSubtitlePlayer ||
+        ((videoFullscreen ? !fullscreenSubtitlePanelOpen : hideSubtitlePlayer) ||
             (!showSubtitleLoadingState &&
-                (!subtitles || subtitles.length === 0 || (!verticalLayout && notEnoughSpaceForSubtitlePlayer))));
+                (!subtitles ||
+                    subtitles.length === 0 ||
+                    (!videoFullscreen && !verticalLayout && notEnoughSpaceForSubtitlePlayer))));
     const handleAlertClosed = useCallback(() => setAlert((alert) => ({ ...alert, open: false })), []);
+    const SubtitlePanelTransition = videoFullscreen ? Slide : Fade;
 
     return (
         <div
@@ -1556,16 +1612,31 @@ function PlayerComponent(
                     </Grid>
                 )}
 
-                <Fade in={!actuallyHideSubtitlePlayer} timeout={200} appear>
+                <SubtitlePanelTransition direction="left" in={!actuallyHideSubtitlePlayer} timeout={100} appear>
                     <Grid
+                        ref={subtitlePanelRef}
                         item
-                        hidden={actuallyHideSubtitlePlayer}
+                        hidden={!videoFullscreen && actuallyHideSubtitlePlayer}
                         onPointerDownCapture={() => setVideoFocused(false)}
                         onFocusCapture={() => setVideoFocused(false)}
                         style={{
+                            ...(videoFullscreen
+                                ? {
+                                      position: 'absolute',
+                                      top: 0,
+                                      right: 0,
+                                      height: '100%',
+                                      zIndex: 20,
+                                      maxWidth: '100%',
+                                  }
+                                : {}),
                             flexGrow: verticalLayout ? 1 : videoInWindow ? 0 : 1,
                             flexShrink: verticalLayout ? 1 : 0,
-                            width: verticalLayout ? '100%' : 'auto',
+                            width: videoFullscreen
+                                ? Math.max(300, playerWidth * 0.2)
+                                : verticalLayout
+                                  ? '100%'
+                                  : 'auto',
                             minWidth: verticalLayout ? 0 : undefined,
                             minHeight: verticalLayout ? 0 : undefined,
                         }}
@@ -1618,7 +1689,7 @@ function PlayerComponent(
                             drawerOpen={drawerOpen}
                             appBarHidden={appBarHidden}
                             compressed={videoInWindow || (forceCompressedMode ?? false)}
-                            resizable={videoInWindow && !verticalLayout}
+                            resizable={videoInWindow && !verticalLayout && !videoFullscreen}
                             verticalLayout={verticalLayout}
                             showCopyButton={showCopyButton}
                             loading={loadingSubtitles}
@@ -1643,7 +1714,7 @@ function PlayerComponent(
                             initialWidth={subtitlePlayerInitialWidth}
                         />
                     </Grid>
-                </Fade>
+                </SubtitlePanelTransition>
             </Grid>
         </div>
     );
